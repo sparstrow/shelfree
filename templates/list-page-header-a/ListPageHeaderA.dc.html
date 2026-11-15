@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="List page header — Concept A (split header)" description="List-page layout prototype: title, count and primary action on the breadcrumb line; single-row toolbar flush on the grid; pinned pagination." -->
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+option{background:var(--card);color:var(--foreground)}
+:root{
+  --background:#0c0c0e; --panel:#161618; --card:#161618;
+  --foreground:#f4f4f5; --muted:#1e1e22; --muted-fg:#8a8a93; --border:#26262b; --input:#34343b;
+  --primary:oklch(0.72 0.13 58); --primary-hover:oklch(0.66 0.13 58); --new-btn-fg:#18181b;
+  --ring:oklch(0.72 0.13 58); --row-hover:#161618;
+  --ok-bg:color-mix(in oklab, oklch(0.72 0.16 155) 16%, transparent); --ok-fg:oklch(0.82 0.13 155);
+  --warn-bg:color-mix(in oklab, oklch(0.78 0.14 70) 16%, transparent); --warn-fg:oklch(0.84 0.12 75);
+  --bad-bg:color-mix(in oklab, oklch(0.7 0.18 25) 18%, transparent); --bad-fg:oklch(0.82 0.13 25);
+  --shadow:0 1px 2px rgb(0 0 0 / .4); --shadow-lg:0 18px 44px -14px rgb(0 0 0 / .65);
+  --lift:0 7px 18px -6px rgb(0 0 0 / .7), inset 0 0 0 1px color-mix(in oklab, var(--foreground) 22%, transparent);
+}
+[data-theme="light"]{
+  --background:#fbfbfc; --panel:#fff; --card:#fff;
+  --foreground:#18181b; --muted:#f4f4f5; --muted-fg:#71717a; --border:#e4e4e7; --input:#d4d4d8;
+  --row-hover:#f7f7f8; --new-btn-fg:#2a1a08;
+  --shadow:0 1px 2px rgb(0 0 0 / .06); --shadow-lg:0 18px 44px -14px rgb(0 0 0 / .18);
+  --lift:0 6px 16px -6px rgb(0 0 0 / .18), inset 0 0 0 1px color-mix(in oklab, var(--foreground) 12%, transparent);
+}
+a{color:var(--primary)}a:hover{color:var(--primary-hover)}
+button:disabled{opacity:.4;cursor:default;transform:none!important;box-shadow:none!important}
+/* runtime-driven states that cannot be literal inline styles */
+[data-dens="compact"] td{padding-top:6px!important;padding-bottom:6px!important}
+tr[data-sel="1"]{background:color-mix(in oklab, var(--primary) 10%, transparent)}
+@keyframes sfPop{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+
+<div data-theme="{{ vm.theme }}" style="min-height:100vh; padding:26px; background:var(--background); color:var(--foreground); font-family:'Geist',ui-sans-serif,system-ui,sans-serif;">
+
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
+    <div style="font-size:11px; font-weight:600; letter-spacing:0.08em; color:var(--muted-fg);">CONCEPT A · SPLIT HEADER</div>
+    <div style="flex:1; height:1px; background:var(--border);"></div>
+    <button onClick="{{ vm.toggleTheme }}" style="height:28px; padding:0 11px; border:1px solid var(--input); border-radius:8px; background:transparent; color:var(--muted-fg); font-family:inherit; font-size:12px; cursor:pointer; transition:background .14s ease, color .14s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 8%, transparent); color:var(--foreground);">{{ vm.themeLabel }}</button>
+  </div>
+
+  <div style="border:1px solid var(--border); border-radius:14px; background:var(--background); box-shadow:var(--shadow-lg); overflow:hidden; display:flex; flex-direction:column; height:calc(100vh - 118px); min-height:560px;">
+
+    <!-- Page header row — title + count + primary action share the breadcrumb line -->
+    <div style="flex:none; display:flex; align-items:center; gap:16px; padding:0 20px; height:60px; border-bottom:1px solid var(--border); background:var(--background);">
+      <div style="display:flex; align-items:baseline; gap:10px; min-width:0;">
+        <span style="font-size:12.5px; color:var(--muted-fg);">Warehouse</span>
+        <span style="font-size:12.5px; color:var(--muted-fg); opacity:.6;">/</span>
+        <h1 style="margin:0; font-size:17px; font-weight:600; letter-spacing:-0.015em; white-space:nowrap;">Items</h1>
+        <span style="font-size:12px; font-weight:500; color:var(--muted-fg); background:var(--muted); border-radius:999px; padding:2px 9px; font-variant-numeric:tabular-nums;">22</span>
+      </div>
+      <div style="flex:1;"></div>
+      <span style="position:relative; display:inline-flex; width:230px;">
+        <span style="position:absolute; left:10px; top:0; bottom:0; display:flex; align-items:center; color:var(--muted-fg); pointer-events:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg></span>
+        <input placeholder="Search pages…" style="width:100%; height:32px; padding:0 10px 0 31px; border:1px solid var(--input); border-radius:8px; background:transparent; color:var(--foreground); font-family:inherit; font-size:12.5px; outline:none; transition:border-color .14s ease, box-shadow .14s ease;" style-focus="border-color:var(--ring); box-shadow:0 0 0 3px color-mix(in oklab, var(--primary) 20%, transparent);">
+      </span>
+      <button title="Notifications" style="width:32px; height:32px; flex:none; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--input); border-radius:8px; background:transparent; color:var(--muted-fg); cursor:pointer; transition:background .14s ease, color .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 8%, transparent); color:var(--foreground); transform:translateY(-1px); box-shadow:var(--lift);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path></svg></button>
+      <div style="width:1px; height:24px; background:var(--border);"></div>
+      <button style="flex:none; height:34px; display:inline-flex; align-items:center; gap:7px; padding:0 14px; border:none; border-radius:8px; background:var(--primary); color:var(--new-btn-fg); font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; box-shadow:var(--shadow); transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:var(--primary-hover); transform:translateY(-1px); box-shadow:0 5px 16px -5px rgb(0 0 0 / .4);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>New item</button>
+    </div>
+
+    <!-- Single-row toolbar — no card, sits directly above the grid -->
+    <div style="flex:none; display:flex; align-items:center; gap:8px; padding:12px 20px; background:var(--panel); border-bottom:1px solid var(--border);">
+      <button style="height:32px; display:inline-flex; align-items:center; gap:7px; padding:0 11px; border:1px solid var(--input); border-radius:8px; background:transparent; color:var(--foreground); font-family:inherit; font-size:12.5px; font-weight:500; cursor:pointer; transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 8%, transparent); transform:translateY(-1px); box-shadow:var(--lift);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+        All items
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.7;"><path d="m6 9 6 6 6-6"></path></svg>
+      </button>
+      <button style="height:32px; display:inline-flex; align-items:center; gap:7px; padding:0 11px; border:1px dashed var(--input); border-radius:8px; background:transparent; color:var(--muted-fg); font-family:inherit; font-size:12.5px; font-weight:500; cursor:pointer; transition:background .14s ease, color .14s ease, border-color .14s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 8%, transparent); color:var(--foreground); border-color:var(--foreground);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"></path></svg>
+        Add filter
+      </button>
+      <div style="flex:1;"></div>
+      <span style="position:relative; display:inline-flex; width:250px;">
+        <span style="position:absolute; left:10px; top:0; bottom:0; display:flex; align-items:center; color:var(--muted-fg); pointer-events:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg></span>
+        <input value="{{ vm.q }}" onChange="{{ vm.setQ }}" placeholder="Search all columns…" style="width:100%; height:32px; padding:0 10px 0 31px; border:1px solid var(--input); border-radius:8px; background:transparent; color:var(--foreground); font-family:inherit; font-size:12.5px; outline:none; transition:border-color .14s ease, box-shadow .14s ease;" style-focus="border-color:var(--ring); box-shadow:0 0 0 3px color-mix(in oklab, var(--primary) 20%, transparent);">
+      </span>
+      <span style="display:inline-flex; align-items:center; gap:6px;">
+        <button title="Refresh" style="width:32px; height:32px; flex:none; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--input); border-radius:8px; background:transparent; color:var(--muted-fg); cursor:pointer; transition:background .14s ease, color .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 8%, transparent); color:var(--foreground); transform:translateY(-1px); box-shadow:var(--lift);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"></path><path d="M21 4v5h-5"></path></svg></button>
+        <button title="Columns" style="width:32px; height:32px; flex:none; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--input); border-radius:8px; background:transparent; color:var(--muted-fg); cursor:pointer; transition:background .14s ease, color .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 8%, transparent); color:var(--foreground); transform:translateY(-1px); box-shadow:var(--lift);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="4" y1="21" y2="10"></line><line x1="4" x2="4" y1="6" y2="3"></line><line x1="12" x2="12" y1="21" y2="14"></line><line x1="12" x2="12" y1="10" y2="3"></line><line x1="20" x2="20" y1="21" y2="16"></line><line x1="20" x2="20" y1="12" y2="3"></line><line x1="2" x2="6" y1="10" y2="10"></line><line x1="10" x2="14" y1="14" y2="14"></line><line x1="18" x2="22" y1="16" y2="16"></line></svg></button>
+        <button onClick="{{ vm.toggleDens }}" title="{{ vm.densLabel }}" style="width:32px; height:32px; flex:none; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--input); border-radius:8px; background:transparent; color:var(--muted-fg); cursor:pointer; transition:background .14s ease, color .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 8%, transparent); color:var(--foreground); transform:translateY(-1px); box-shadow:var(--lift);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ vm.densPath }}"></path></svg></button>
+      </span>
+      <div style="width:1px; height:20px; background:var(--border); margin:0 2px;"></div>
+      <span style="position:relative; display:inline-flex;">
+        <button onClick="{{ vm.toggleActions }}" style="height:32px; display:inline-flex; align-items:center; gap:7px; padding:0 11px; border:1px solid var(--input); border-radius:8px; background:transparent; color:var(--foreground); font-family:inherit; font-size:12.5px; font-weight:500; cursor:pointer; transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 8%, transparent); transform:translateY(-1px); box-shadow:var(--lift);">Actions<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.7;"><path d="m6 9 6 6 6-6"></path></svg></button>
+        <sc-if value="{{ vm.actionsOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="position:fixed; inset:0; z-index:44;" onClick="{{ vm.closeActions }}"></div>
+          <div style="position:absolute; right:0; top:38px; z-index:45; width:206px; background:var(--card); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow-lg); padding:6px; animation:sfPop .15s ease-out;">
+            <div style="font-size:10.5px; font-weight:600; letter-spacing:0.06em; color:var(--muted-fg); padding:5px 8px 6px;">RECORD</div>
+            <button style="width:100%; display:flex; align-items:center; gap:9px; height:30px; padding:0 8px; border:none; border-radius:7px; background:transparent; color:var(--foreground); font-family:inherit; font-size:12.5px; cursor:pointer; text-align:left; transition:background .12s ease, color .12s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 16%, transparent);">Edit</button>
+            <button style="width:100%; display:flex; align-items:center; gap:9px; height:30px; padding:0 8px; border:none; border-radius:7px; background:transparent; color:var(--foreground); font-family:inherit; font-size:12.5px; cursor:pointer; text-align:left; transition:background .12s ease, color .12s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 16%, transparent);">View</button>
+            <button style="width:100%; display:flex; align-items:center; gap:9px; height:30px; padding:0 8px; border:none; border-radius:7px; background:transparent; color:var(--foreground); font-family:inherit; font-size:12.5px; cursor:pointer; text-align:left; transition:background .12s ease, color .12s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 16%, transparent);">Select all rows</button>
+            <div style="height:1px; background:var(--border); margin:4px 6px;"></div>
+            <button style="width:100%; display:flex; align-items:center; gap:9px; height:30px; padding:0 8px; border:none; border-radius:7px; background:transparent; color:var(--foreground); font-family:inherit; font-size:12.5px; cursor:pointer; text-align:left; transition:background .12s ease, color .12s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 16%, transparent);">Sales prices</button>
+            <button style="width:100%; display:flex; align-items:center; gap:9px; height:30px; padding:0 8px; border:none; border-radius:7px; background:transparent; color:var(--foreground); font-family:inherit; font-size:12.5px; cursor:pointer; text-align:left; transition:background .12s ease, color .12s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 16%, transparent);">Stock by location</button>
+            <div style="height:1px; background:var(--border); margin:4px 6px;"></div>
+            <button style="width:100%; display:flex; align-items:center; gap:9px; height:30px; padding:0 8px; border:none; border-radius:7px; background:transparent; color:var(--foreground); font-family:inherit; font-size:12.5px; cursor:pointer; text-align:left; transition:background .12s ease, color .12s ease;" style-hover="background:var(--bad-bg); color:var(--bad-fg);">Delete</button>
+          </div>
+        </sc-if>
+      </span>
+      <button style="height:32px; display:inline-flex; align-items:center; gap:7px; padding:0 11px; border:1px solid var(--input); border-radius:8px; background:transparent; color:var(--foreground); font-family:inherit; font-size:12.5px; font-weight:500; cursor:pointer; transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 8%, transparent); transform:translateY(-1px); box-shadow:var(--lift);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>Export<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.7;"><path d="m6 9 6 6 6-6"></path></svg></button>
+    </div>
+
+    <!-- Selection bar -->
+    <sc-if value="{{ vm.hasSel }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:none; display:flex; align-items:center; gap:8px; padding:9px 20px; background:color-mix(in oklab, var(--primary) 12%, var(--panel)); border-bottom:1px solid var(--border); animation:sfPop .15s ease-out;">
+        <span style="font-size:12.5px; font-weight:600; font-variant-numeric:tabular-nums;">{{ vm.selLabel }}</span>
+        <div style="flex:1;"></div>
+        <button style="height:28px; display:inline-flex; align-items:center; padding:0 11px; border:1px solid color-mix(in oklab, var(--foreground) 18%, transparent); border-radius:7px; background:transparent; color:var(--foreground); font-family:inherit; font-size:12px; font-weight:500; cursor:pointer; transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 10%, transparent); transform:translateY(-1px); box-shadow:var(--lift);">Edit</button>
+        <button style="height:28px; display:inline-flex; align-items:center; padding:0 11px; border:1px solid color-mix(in oklab, var(--foreground) 18%, transparent); border-radius:7px; background:transparent; color:var(--foreground); font-family:inherit; font-size:12px; font-weight:500; cursor:pointer; transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 10%, transparent); transform:translateY(-1px); box-shadow:var(--lift);">Export</button>
+        <button style="height:28px; display:inline-flex; align-items:center; padding:0 11px; border:1px solid color-mix(in oklab, var(--bad-fg) 40%, transparent); border-radius:7px; background:transparent; color:var(--bad-fg); font-family:inherit; font-size:12px; font-weight:500; cursor:pointer; transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:var(--bad-bg); transform:translateY(-1px); box-shadow:var(--lift);">Delete</button>
+        <button onClick="{{ vm.clearSel }}" style="height:28px; display:inline-flex; align-items:center; padding:0 11px; border:1px solid color-mix(in oklab, var(--foreground) 18%, transparent); border-radius:7px; background:transparent; color:var(--foreground); font-family:inherit; font-size:12px; font-weight:500; cursor:pointer; transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 10%, transparent);">Clear</button>
+      </div>
+    </sc-if>
+
+    <!-- Grid -->
+    <div data-dens="{{ vm.dens }}" style="flex:1; min-height:0; overflow:auto; background:var(--background);">
+      <table style="width:100%; border-collapse:separate; border-spacing:0; font-size:13px;">
+        <thead>
+          <tr>
+            <th style="position:sticky; top:0; z-index:2; background:var(--background); text-align:left; font-size:11.5px; font-weight:600; color:var(--muted-fg); padding:9px 12px; border-bottom:1px solid var(--border); white-space:nowrap;"><input type="checkbox" checked="{{ vm.allSel }}" onChange="{{ vm.toggleAll }}" style="width:14px; height:14px; accent-color:var(--primary); cursor:pointer;"></th>
+            <th style="position:sticky; top:0; z-index:2; background:var(--background); text-align:left; font-size:11.5px; font-weight:600; color:var(--muted-fg); padding:9px 12px; border-bottom:1px solid var(--border); white-space:nowrap;">No.</th>
+            <th style="position:sticky; top:0; z-index:2; background:var(--background); text-align:left; font-size:11.5px; font-weight:600; color:var(--muted-fg); padding:9px 12px; border-bottom:1px solid var(--border); white-space:nowrap;">Description</th>
+            <th style="position:sticky; top:0; z-index:2; background:var(--background); text-align:left; font-size:11.5px; font-weight:600; color:var(--muted-fg); padding:9px 12px; border-bottom:1px solid var(--border); white-space:nowrap;">Category</th>
+            <th style="position:sticky; top:0; z-index:2; background:var(--background); text-align:left; font-size:11.5px; font-weight:600; color:var(--muted-fg); padding:9px 12px; border-bottom:1px solid var(--border); white-space:nowrap;">Base UoM</th>
+            <th style="position:sticky; top:0; z-index:2; background:var(--background); text-align:right; font-size:11.5px; font-weight:600; color:var(--muted-fg); padding:9px 12px; border-bottom:1px solid var(--border); white-space:nowrap;">Qty on hand</th>
+            <th style="position:sticky; top:0; z-index:2; background:var(--background); text-align:right; font-size:11.5px; font-weight:600; color:var(--muted-fg); padding:9px 12px; border-bottom:1px solid var(--border); white-space:nowrap;">Unit price</th>
+            <th style="position:sticky; top:0; z-index:2; background:var(--background); text-align:left; font-size:11.5px; font-weight:600; color:var(--muted-fg); padding:9px 12px; border-bottom:1px solid var(--border); white-space:nowrap;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{ vm.rows }}" as="r" hint-placeholder-count="10">
+            <tr onClick="{{ r.pick }}" data-sel="{{ r.selAttr }}" style="cursor:pointer; transition:background .12s ease;" style-hover="background:var(--row-hover);">
+              <td style="padding:10px 12px; border-bottom:1px solid color-mix(in oklab, var(--border) 60%, transparent);"><input type="checkbox" checked="{{ r.sel }}" onChange="{{ r.toggle }}" style="width:14px; height:14px; accent-color:var(--primary); cursor:pointer;"></td>
+              <td style="padding:10px 12px; border-bottom:1px solid color-mix(in oklab, var(--border) 60%, transparent); font-family:'Geist Mono',ui-monospace,monospace; font-size:12.5px; white-space:nowrap;">{{ r.no }}</td>
+              <td style="padding:10px 12px; border-bottom:1px solid color-mix(in oklab, var(--border) 60%, transparent); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:340px;">{{ r.desc }}</td>
+              <td style="padding:10px 12px; border-bottom:1px solid color-mix(in oklab, var(--border) 60%, transparent); color:var(--muted-fg); white-space:nowrap;">{{ r.cat }}</td>
+              <td style="padding:10px 12px; border-bottom:1px solid color-mix(in oklab, var(--border) 60%, transparent); font-family:'Geist Mono',ui-monospace,monospace; font-size:12.5px; white-space:nowrap;">{{ r.uom }}</td>
+              <td style="padding:10px 12px; border-bottom:1px solid color-mix(in oklab, var(--border) 60%, transparent); text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap;">{{ r.qty }}</td>
+              <td style="padding:10px 12px; border-bottom:1px solid color-mix(in oklab, var(--border) 60%, transparent); text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap;">{{ r.price }}</td>
+              <td style="padding:10px 12px; border-bottom:1px solid color-mix(in oklab, var(--border) 60%, transparent); white-space:nowrap;">
+                <sc-if value="{{ r.isOk }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex; align-items:center; height:21px; padding:0 9px; border-radius:999px; font-size:11.5px; font-weight:600; background:var(--ok-bg); color:var(--ok-fg);">{{ r.status }}</span></sc-if>
+                <sc-if value="{{ r.isLow }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex; align-items:center; height:21px; padding:0 9px; border-radius:999px; font-size:11.5px; font-weight:600; background:var(--warn-bg); color:var(--warn-fg);">{{ r.status }}</span></sc-if>
+                <sc-if value="{{ r.isOut }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex; align-items:center; height:21px; padding:0 9px; border-radius:999px; font-size:11.5px; font-weight:600; background:var(--bad-bg); color:var(--bad-fg);">{{ r.status }}</span></sc-if>
+              </td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div style="flex:none; display:flex; align-items:center; gap:16px; padding:10px 20px; border-top:1px solid var(--border); background:var(--panel);">
+      <span style="font-size:12.5px; color:var(--muted-fg); font-variant-numeric:tabular-nums;">{{ vm.rangeLabel }}</span>
+      <div style="flex:1;"></div>
+      <span style="display:inline-flex; align-items:center; gap:8px; font-size:12.5px; color:var(--muted-fg);">
+        Rows per page
+        <select value="{{ vm.pageSize }}" onChange="{{ vm.setPageSize }}" style="height:30px; padding:0 8px; border-radius:8px; border:1px solid var(--input); background:transparent; color:var(--foreground); font-family:inherit; font-size:12.5px; cursor:pointer; outline:none;" style-focus="border-color:var(--ring); box-shadow:0 0 0 3px color-mix(in oklab, var(--primary) 20%, transparent);">
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </select>
+      </span>
+      <span style="font-size:12.5px; color:var(--muted-fg); font-variant-numeric:tabular-nums;">{{ vm.pageLabel }}</span>
+      <div style="display:flex; align-items:center; gap:4px;">
+        <button onClick="{{ vm.pgFirst }}" disabled="{{ vm.atFirst }}" title="First page" style="width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--input); border-radius:8px; background:transparent; color:var(--foreground); cursor:pointer; transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 8%, transparent); transform:translateY(-1px); box-shadow:var(--lift);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m11 17-5-5 5-5"></path><path d="m18 17-5-5 5-5"></path></svg></button>
+        <button onClick="{{ vm.pgPrev }}" disabled="{{ vm.atFirst }}" title="Previous page" style="width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--input); border-radius:8px; background:transparent; color:var(--foreground); cursor:pointer; transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 8%, transparent); transform:translateY(-1px); box-shadow:var(--lift);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+        <button onClick="{{ vm.pgNext }}" disabled="{{ vm.atLast }}" title="Next page" style="width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--input); border-radius:8px; background:transparent; color:var(--foreground); cursor:pointer; transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 8%, transparent); transform:translateY(-1px); box-shadow:var(--lift);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+        <button onClick="{{ vm.pgLast }}" disabled="{{ vm.atLast }}" title="Last page" style="width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--input); border-radius:8px; background:transparent; color:var(--foreground); cursor:pointer; transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:color-mix(in oklab, var(--foreground) 8%, transparent); transform:translateY(-1px); box-shadow:var(--lift);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m13 17 5-5-5-5"></path><path d="m6 17 5-5-5-5"></path></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:16px; font-size:12.5px; color:var(--muted-fg); line-height:1.65; max-width:800px; text-wrap:pretty;">
+    Title, count and the primary action share the breadcrumb line, so the toolbar drops to a single uncramped row sitting flush on the grid — one horizontal band fewer than the current card, and nothing wraps. The selection bar slots in between toolbar and grid.
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:880}}">
+const ITEMS = [
+  { no: 'ASH-BLK-18', desc: 'Arunachala Mountain Sambrani Holder, Charcoal Black', cat: 'Finished Goods', uom: 'NOS', qty: 148, price: 640, status: 'Active' },
+  { no: 'ASH-PWH-18', desc: 'Arunachala Mountain Sambrani Holder, Pearl White', cat: 'Finished Goods', uom: 'NOS', qty: 212, price: 640, status: 'Active' },
+  { no: 'ASH-TER-18', desc: 'Arunachala Mountain Sambrani Holder, Terracotta', cat: 'Finished Goods', uom: 'NOS', qty: 96, price: 620, status: 'Active' },
+  { no: 'ASH-STAND-WD', desc: 'Wooden Display Stand for Sambrani Holder', cat: 'Accessory', uom: 'NOS', qty: 40, price: 180, status: 'Active' },
+  { no: 'CMB-BLK-12', desc: 'Mountain Holder + 12 Dhoop Cones Combo, Charcoal', cat: 'Finished Goods', uom: 'NOS', qty: 62, price: 780, status: 'Active' },
+  { no: 'CMB-PWH-12', desc: 'Mountain Holder + 12 Dhoop Cones Combo, Pearl White', cat: 'Finished Goods', uom: 'NOS', qty: 54, price: 780, status: 'Active' },
+  { no: 'CMB-TER-12', desc: 'Mountain Holder + 12 Dhoop Cones Combo, Terracotta', cat: 'Finished Goods', uom: 'NOS', qty: 18, price: 760, status: 'Low' },
+  { no: 'PKG-BOX-PREM', desc: 'Rigid Gift Box, Arunachala Branded (Premium)', cat: 'Packaging', uom: 'NOS', qty: 320, price: 44, status: 'Active' },
+  { no: 'PKG-FOAM-INS', desc: 'Foam Insert Wrap (ceramic protection)', cat: 'Packaging', uom: 'BOX', qty: 26, price: 210, status: 'Low' },
+  { no: 'RM-BASE-STD', desc: 'Ceramic Base Tray w/ Ash Catcher (component)', cat: 'Components', uom: 'NOS', qty: 410, price: 96, status: 'Active' },
+  { no: 'RM-LID-BLK', desc: 'Ceramic Mountain Lid, Charcoal Black Glaze (component)', cat: 'Components', uom: 'NOS', qty: 288, price: 132, status: 'Active' },
+  { no: 'RM-LID-PWH', desc: 'Ceramic Mountain Lid, Pearl White Glaze (component)', cat: 'Components', uom: 'NOS', qty: 305, price: 132, status: 'Active' },
+  { no: 'RM-GASKET', desc: 'Silicone Twist-Lock Gasket Ring (component)', cat: 'Components', uom: 'NOS', qty: 0, price: 12, status: 'Out' },
+  { no: 'RM-CONE-BULK', desc: 'Raw Sambrani Dhoop Coil, Bulk (kg)', cat: 'Components', uom: 'KGS', qty: 74, price: 380, status: 'Active' },
+  { no: 'SBC-CONE-12', desc: 'Sambrani Dhoop Cones, Pack of 12', cat: 'Consumables', uom: 'BOX', qty: 180, price: 150, status: 'Active' },
+  { no: 'SBC-CONE-24', desc: 'Sambrani Dhoop Cones, Pack of 24', cat: 'Consumables', uom: 'BOX', qty: 132, price: 280, status: 'Active' },
+  { no: 'SBC-ASHTRAY', desc: 'Replacement Ash Catcher Tray (Spare)', cat: 'Accessory', uom: 'NOS', qty: 58, price: 190, status: 'Active' },
+  { no: 'PKG-CARE-CARD', desc: 'Care & Usage Instruction Card', cat: 'Packaging', uom: 'BOX', qty: 12, price: 60, status: 'Low' },
+];
+
+class Component extends DCLogic {
+  state = { theme: 'dark', q: '', dens: 'normal', sel: [], pageSize: 10, page: 0, actionsOpen: false };
+
+  filtered() {
+    const q = this.state.q.trim().toLowerCase();
+    if (!q) return ITEMS;
+    return ITEMS.filter(i => (i.no + ' ' + i.desc + ' ' + i.cat).toLowerCase().includes(q));
+  }
+  money(n) { return '\u20b9' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+  renderVals() {
+    const s = this.state;
+    const list = this.filtered();
+    const size = Number(s.pageSize) || 10;
+    const count = Math.max(1, Math.ceil(list.length / size));
+    const idx = Math.min(Math.max(0, s.page), count - 1);
+    const page = list.slice(idx * size, idx * size + size);
+    const pageNos = page.map(r => r.no);
+    const go = (p) => this.setState({ page: Math.min(count - 1, Math.max(0, p)) });
+
+    return { vm: {
+      theme: s.theme,
+      themeLabel: s.theme === 'dark' ? 'Light theme' : 'Dark theme',
+      toggleTheme: () => this.setState(st => ({ theme: st.theme === 'dark' ? 'light' : 'dark' })),
+      q: s.q, setQ: (e) => this.setState({ q: e.target.value, page: 0 }),
+      dens: s.dens,
+      densLabel: s.dens === 'compact' ? 'Comfortable rows' : 'Compact rows',
+      densPath: s.dens === 'compact' ? 'M3 6h18M3 12h18M3 18h18' : 'M3 5h18M3 9h18M3 13h18M3 17h18M3 21h18',
+      toggleDens: () => this.setState(st => ({ dens: st.dens === 'compact' ? 'normal' : 'compact' })),
+      actionsOpen: s.actionsOpen,
+      toggleActions: () => this.setState(st => ({ actionsOpen: !st.actionsOpen })),
+      closeActions: () => this.setState({ actionsOpen: false }),
+      hasSel: s.sel.length > 0,
+      selLabel: s.sel.length + (s.sel.length === 1 ? ' item selected' : ' items selected'),
+      clearSel: () => this.setState({ sel: [] }),
+      allSel: page.length > 0 && pageNos.every(n => s.sel.includes(n)),
+      toggleAll: () => this.setState(st => ({ sel: pageNos.every(n => st.sel.includes(n)) ? st.sel.filter(n => !pageNos.includes(n)) : Array.from(new Set(st.sel.concat(pageNos))) })),
+      rows: page.map(r => ({
+        no: r.no, desc: r.desc, cat: r.cat, uom: r.uom,
+        qty: r.qty.toLocaleString('en-IN'), price: this.money(r.price), status: r.status,
+        isOk: r.status === 'Active', isLow: r.status === 'Low', isOut: r.status === 'Out',
+        sel: s.sel.includes(r.no), selAttr: s.sel.includes(r.no) ? '1' : '0',
+        pick: () => this.setState({ sel: [r.no] }),
+        toggle: () => this.setState(st => ({ sel: st.sel.includes(r.no) ? st.sel.filter(n => n !== r.no) : st.sel.concat(r.no) })),
+      })),
+      rangeLabel: list.length === 0 ? 'No items' : 'Showing ' + (idx * size + 1) + '\u2013' + Math.min(list.length, (idx + 1) * size) + ' of ' + list.length + ' items',
+      pageLabel: 'Page ' + (idx + 1) + ' of ' + count,
+      pageSize: String(size),
+      setPageSize: (e) => this.setState({ pageSize: Number(e.target.value), page: 0 }),
+      atFirst: idx === 0, atLast: idx >= count - 1,
+      pgFirst: () => go(0), pgPrev: () => go(idx - 1), pgNext: () => go(idx + 1), pgLast: () => go(count - 1),
+    } };
+  }
+}
+
+</script>
+</body>
+</html>

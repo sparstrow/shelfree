@@ -1,0 +1,18 @@
+# OS / editor
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# Node / tooling (arrives with the B-later production repo)
+node_modules/
+dist/
+.cache/
+
+# Local Claude Code state (launch.json is shared on purpose)
+.claude/settings.local.json
+
+# Env / secrets — never commit
+.env
+.env.*

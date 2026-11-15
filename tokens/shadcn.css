@@ -1,0 +1,63 @@
+/* Shelfree × shadcn/ui — theme tokens (HSL channels)
+ *
+ * These feed the Tailwind (Play CDN) config in lib/tailwind-shadcn.js, which maps
+ * shadcn utility classes (bg-primary, text-muted-foreground, rounded-lg, …) to them.
+ * Values are `H S% L%` channel triples so Tailwind's `/<alpha-value>` opacity
+ * modifiers (bg-primary/90, bg-primary/15) work.
+ *
+ * NAMING: shadcn's own convention is --primary, --muted, etc. We prefix with --sh-
+ * ONLY to avoid colliding with the legacy full-colour --primary / --foreground /
+ * --card that hand-written Shelfree app chrome still consumes (see tokens/colors.css).
+ * The Tailwind config bridges the class names, so component source stays faithful:
+ * shadcn writes `bg-primary`, config resolves it to hsl(var(--sh-primary)).
+ * At the Claude Code (B) handoff, rename --sh-* → --* to match a stock shadcn repo.
+ *
+ * Dark is :root (default). Light mode: data-theme="light" on the root element.
+ */
+
+:root {
+  --sh-radius: 10px; /* @kind radius */
+
+  /* HSL channel triples (H S% L%) — @kind color so the compiler classifies them. */
+  --sh-background:            240 8% 5%;    /* @kind color */
+  --sh-foreground:            240 6% 96%;   /* @kind color */
+  --sh-card:                  240 4% 9%;    /* @kind color */
+  --sh-card-foreground:       240 6% 96%;   /* @kind color */
+  --sh-popover:               240 4% 9%;    /* @kind color */
+  --sh-popover-foreground:    240 6% 96%;   /* @kind color */
+  --sh-primary:               28 60% 58%;   /* @kind color */ /* terracotta amber */
+  --sh-primary-foreground:    32 68% 10%;   /* @kind color */
+  --sh-secondary:             240 6% 13%;   /* @kind color */
+  --sh-secondary-foreground:  240 6% 96%;   /* @kind color */
+  --sh-muted:                 240 6% 13%;   /* @kind color */
+  --sh-muted-foreground:      240 5% 56%;   /* @kind color */
+  --sh-accent:                240 6% 13%;   /* @kind color */
+  --sh-accent-foreground:     240 6% 96%;   /* @kind color */
+  --sh-destructive:           8 72% 56%;    /* @kind color */
+  --sh-destructive-foreground:0 0% 100%;    /* @kind color */
+  --sh-border:                240 6% 16%;   /* @kind color */
+  --sh-input:                 240 6% 22%;   /* @kind color */
+  --sh-ring:                  28 60% 58%;   /* @kind color */
+}
+
+[data-theme="light"] {
+  --sh-background:            0 0% 100%;    /* @kind color */
+  --sh-foreground:            240 6% 10%;   /* @kind color */
+  --sh-card:                  0 0% 100%;    /* @kind color */
+  --sh-card-foreground:       240 6% 10%;   /* @kind color */
+  --sh-popover:               0 0% 100%;    /* @kind color */
+  --sh-popover-foreground:    240 6% 10%;   /* @kind color */
+  --sh-primary:               24 64% 48%;   /* @kind color */
+  --sh-primary-foreground:    0 0% 100%;    /* @kind color */
+  --sh-secondary:             240 5% 96%;   /* @kind color */
+  --sh-secondary-foreground:  240 6% 10%;   /* @kind color */
+  --sh-muted:                 240 5% 96%;   /* @kind color */
+  --sh-muted-foreground:      240 4% 46%;   /* @kind color */
+  --sh-accent:                240 5% 96%;   /* @kind color */
+  --sh-accent-foreground:     240 6% 10%;   /* @kind color */
+  --sh-destructive:           8 72% 48%;    /* @kind color */
+  --sh-destructive-foreground:0 0% 100%;    /* @kind color */
+  --sh-border:                240 6% 90%;   /* @kind color */
+  --sh-input:                 240 5% 86%;   /* @kind color */
+  --sh-ring:                  24 64% 48%;   /* @kind color */
+}

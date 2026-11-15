@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+input,button{font-family:inherit}
+input::placeholder{color:#a1a1aa}
+</style>
+</helmet>
+
+<div style="min-height:100vh; background:#e8e8ea; padding:48px 48px 80px; font-family:'Geist',ui-sans-serif,system-ui,sans-serif; color:#18181b; -webkit-font-smoothing:antialiased;">
+
+  <!-- Page header -->
+  <div style="max-width:1120px; margin:0 0 40px;">
+    <div style="font-family:'Geist Mono',monospace; font-size:11px; letter-spacing:0.04em; text-transform:uppercase; color:#a1a1aa; margin-bottom:10px;">Shelfree · exploration</div>
+    <h1 style="margin:0 0 8px; font-size:26px; font-weight:700; letter-spacing:-0.02em;">Auth layout directions</h1>
+    <p style="margin:0; font-size:14px; color:#71717a; line-height:1.6; max-width:680px;">Five takes on the sign-in screen, all on the Shelfree palette (Geist, terracotta primary, zinc neutrals). Same form, different framing — from brand-light and minimal to product-forward and enterprise. Pick one and I'll build the full clickable flow on it: sign in / up, verify, reset, organization setup, business-type &amp; pricing tiers, invite, then land in the ERP.</p>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:44px; align-items:flex-start;">
+
+    <!-- ============================================================ -->
+    <!-- 01 · CENTERED CARD -->
+    <!-- ============================================================ -->
+    <div>
+      <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:12px;">
+        <span style="font-family:'Geist Mono',monospace; font-size:12px; font-weight:600; color:#fff; background:oklch(0.62 0.14 50); border-radius:6px; padding:3px 7px;">01</span>
+        <span style="font-size:15px; font-weight:600; color:#27272a;">Centered card</span>
+        <span style="font-size:13px; color:#a1a1aa;">— classic, minimal, brand-light. Safe and fast to scan.</span>
+      </div>
+      <div style="width:1120px; height:680px; border-radius:16px; overflow:hidden; border:1px solid #e4e4e7; box-shadow:0 16px 40px -12px rgb(0 0 0/.22);">
+        <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#f4f4f5; background-image:radial-gradient(#dededf 1px, transparent 1px); background-size:22px 22px;">
+          <div style="width:424px; background:#fff; border:1px solid #e4e4e7; border-radius:18px; box-shadow:0 24px 60px -20px rgb(0 0 0/.18); padding:38px 40px;">
+            <div style="display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:24px;">
+              <div style="width:34px; height:34px; border-radius:9px; background:oklch(0.62 0.14 50); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:18px;">S</div>
+              <span style="font-size:18px; font-weight:700; letter-spacing:-0.02em;">Shelfree</span>
+            </div>
+            <h2 style="margin:0 0 4px; font-size:21px; font-weight:700; letter-spacing:-0.02em; text-align:center;">Sign in to your workspace</h2>
+            <p style="margin:0 0 24px; font-size:13.5px; color:#71717a; text-align:center;">Welcome back. Enter your details to continue.</p>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:18px;">
+              <button style="height:42px; border:1px solid #e4e4e7; border-radius:10px; background:#fff; color:#18181b; font-weight:500; font-size:13.5px; display:flex; align-items:center; justify-content:center; gap:9px; cursor:pointer;" style-hover="background:#fafafa;">
+                <span style="font-weight:700; font-size:15px; color:#4285F4;">G</span> Continue with Google
+              </button>
+              <button style="height:42px; border:1px solid #e4e4e7; border-radius:10px; background:#fff; color:#18181b; font-weight:500; font-size:13.5px; display:flex; align-items:center; justify-content:center; gap:9px; cursor:pointer;" style-hover="background:#fafafa;">
+                <span style="display:grid; grid-template-columns:1fr 1fr; gap:1.5px; width:14px; height:14px;"><i style="background:#f25022;"></i><i style="background:#7fba00;"></i><i style="background:#00a4ef;"></i><i style="background:#ffb900;"></i></span> Continue with Microsoft
+              </button>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:18px;">
+              <div style="flex:1; height:1px; background:#e4e4e7;"></div>
+              <span style="font-size:11.5px; color:#a1a1aa;">or</span>
+              <div style="flex:1; height:1px; background:#e4e4e7;"></div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div>
+                <label style="display:block; font-size:12.5px; font-weight:500; color:#52525b; margin-bottom:6px;">Email</label>
+                <input type="email" placeholder="you@company.com" style="width:100%; height:42px; padding:0 13px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; color:#18181b; outline:none;" />
+              </div>
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                  <label style="font-size:12.5px; font-weight:500; color:#52525b;">Password</label>
+                  <span style="font-size:12px; color:oklch(0.55 0.14 50); font-weight:500; cursor:pointer;">Forgot?</span>
+                </div>
+                <input type="password" placeholder="••••••••" style="width:100%; height:42px; padding:0 13px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; color:#18181b; outline:none;" />
+              </div>
+              <button style="height:44px; border:none; border-radius:10px; background:oklch(0.62 0.14 50); color:#fff; font-weight:600; font-size:14px; cursor:pointer; margin-top:2px;" style-hover="background:oklch(0.56 0.14 50);">Sign in</button>
+            </div>
+            <p style="margin:20px 0 0; font-size:13px; color:#71717a; text-align:center;">New to Shelfree? <span style="color:oklch(0.55 0.14 50); font-weight:600; cursor:pointer;">Create an account</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- 02 · SPLIT — WARM BRAND PANEL LEFT -->
+    <!-- ============================================================ -->
+    <div>
+      <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:12px;">
+        <span style="font-family:'Geist Mono',monospace; font-size:12px; font-weight:600; color:#fff; background:oklch(0.62 0.14 50); border-radius:6px; padding:3px 7px;">02</span>
+        <span style="font-size:15px; font-weight:600; color:#27272a;">Split — warm brand panel</span>
+        <span style="font-size:13px; color:#a1a1aa;">— most branded. Room for value props, social proof, a product peek.</span>
+      </div>
+      <div style="width:1120px; height:680px; border-radius:16px; overflow:hidden; border:1px solid #e4e4e7; box-shadow:0 16px 40px -12px rgb(0 0 0/.22); display:flex; background:#fff;">
+        <!-- brand panel -->
+        <div style="width:480px; flex:none; padding:42px; display:flex; flex-direction:column; color:#fff; background:linear-gradient(155deg, oklch(0.64 0.14 55), oklch(0.46 0.13 38));">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:34px; height:34px; border-radius:9px; background:rgba(255,255,255,.18); backdrop-filter:blur(4px); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:18px;">S</div>
+            <span style="font-size:18px; font-weight:700; letter-spacing:-0.02em;">Shelfree</span>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:24px; padding:24px 0;">
+            <h2 style="margin:0; font-size:30px; font-weight:700; line-height:1.18; letter-spacing:-0.02em; max-width:340px;">Run your whole operation from one shelf.</h2>
+            <div style="display:flex; flex-direction:column; gap:13px;">
+              <div style="display:flex; align-items:center; gap:11px; font-size:14px; color:rgba(255,255,255,.92);"><span style="width:18px; height:18px; border-radius:999px; background:rgba(255,255,255,.22); display:flex; align-items:center; justify-content:center; font-size:11px;">✓</span> Inventory, sales &amp; purchasing in sync</div>
+              <div style="display:flex; align-items:center; gap:11px; font-size:14px; color:rgba(255,255,255,.92);"><span style="width:18px; height:18px; border-radius:999px; background:rgba(255,255,255,.22); display:flex; align-items:center; justify-content:center; font-size:11px;">✓</span> Modules that fit your business type</div>
+              <div style="display:flex; align-items:center; gap:11px; font-size:14px; color:rgba(255,255,255,.92);"><span style="width:18px; height:18px; border-radius:999px; background:rgba(255,255,255,.22); display:flex; align-items:center; justify-content:center; font-size:11px;">✓</span> Live stock across every location</div>
+            </div>
+          </div>
+          <div style="border-top:1px solid rgba(255,255,255,.18); padding-top:18px; font-size:13px; color:rgba(255,255,255,.82); line-height:1.55;">“We replaced four tools with Shelfree in a week.”<br><span style="font-size:12px; color:rgba(255,255,255,.62);">— Operations lead, mid-market distributor</span></div>
+        </div>
+        <!-- form -->
+        <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:42px;">
+          <div style="width:340px;">
+            <h2 style="margin:0 0 4px; font-size:22px; font-weight:700; letter-spacing:-0.02em;">Welcome back</h2>
+            <p style="margin:0 0 26px; font-size:13.5px; color:#71717a;">Sign in to continue to your workspace.</p>
+            <div style="display:flex; gap:10px; margin-bottom:18px;">
+              <button style="flex:1; height:42px; border:1px solid #e4e4e7; border-radius:10px; background:#fff; color:#18181b; font-weight:500; font-size:13px; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;" style-hover="background:#fafafa;"><span style="font-weight:700; font-size:15px; color:#4285F4;">G</span> Google</button>
+              <button style="flex:1; height:42px; border:1px solid #e4e4e7; border-radius:10px; background:#fff; color:#18181b; font-weight:500; font-size:13px; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;" style-hover="background:#fafafa;"><span style="display:grid; grid-template-columns:1fr 1fr; gap:1.5px; width:14px; height:14px;"><i style="background:#f25022;"></i><i style="background:#7fba00;"></i><i style="background:#00a4ef;"></i><i style="background:#ffb900;"></i></span> Microsoft</button>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:18px;">
+              <div style="flex:1; height:1px; background:#e4e4e7;"></div><span style="font-size:11.5px; color:#a1a1aa;">or</span><div style="flex:1; height:1px; background:#e4e4e7;"></div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div>
+                <label style="display:block; font-size:12.5px; font-weight:500; color:#52525b; margin-bottom:6px;">Email</label>
+                <input type="email" placeholder="you@company.com" style="width:100%; height:42px; padding:0 13px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; color:#18181b; outline:none;" />
+              </div>
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                  <label style="font-size:12.5px; font-weight:500; color:#52525b;">Password</label>
+                  <span style="font-size:12px; color:oklch(0.55 0.14 50); font-weight:500; cursor:pointer;">Forgot?</span>
+                </div>
+                <input type="password" placeholder="••••••••" style="width:100%; height:42px; padding:0 13px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; color:#18181b; outline:none;" />
+              </div>
+              <button style="height:44px; border:none; border-radius:10px; background:oklch(0.62 0.14 50); color:#fff; font-weight:600; font-size:14px; cursor:pointer; margin-top:2px;" style-hover="background:oklch(0.56 0.14 50);">Sign in</button>
+            </div>
+            <p style="margin:20px 0 0; font-size:13px; color:#71717a;">New here? <span style="color:oklch(0.55 0.14 50); font-weight:600; cursor:pointer;">Create an account</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- 03 · SPLIT — DARK EDITORIAL PANEL RIGHT -->
+    <!-- ============================================================ -->
+    <div>
+      <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:12px;">
+        <span style="font-family:'Geist Mono',monospace; font-size:12px; font-weight:600; color:#fff; background:oklch(0.62 0.14 50); border-radius:6px; padding:3px 7px;">03</span>
+        <span style="font-size:15px; font-weight:600; color:#27272a;">Split — dark editorial</span>
+        <span style="font-size:13px; color:#a1a1aa;">— premium, enterprise feel. Form leads, big statement on the dark side.</span>
+      </div>
+      <div style="width:1120px; height:680px; border-radius:16px; overflow:hidden; border:1px solid #e4e4e7; box-shadow:0 16px 40px -12px rgb(0 0 0/.22); display:flex; background:#fff;">
+        <!-- form -->
+        <div style="flex:1; display:flex; flex-direction:column; padding:42px 56px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:34px; height:34px; border-radius:9px; background:oklch(0.62 0.14 50); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:18px;">S</div>
+            <span style="font-size:18px; font-weight:700; letter-spacing:-0.02em;">Shelfree</span>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; justify-content:center; max-width:360px;">
+            <h2 style="margin:0 0 4px; font-size:24px; font-weight:700; letter-spacing:-0.02em;">Sign in</h2>
+            <p style="margin:0 0 26px; font-size:13.5px; color:#71717a;">Welcome back to Shelfree.</p>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div>
+                <label style="display:block; font-size:12.5px; font-weight:500; color:#52525b; margin-bottom:6px;">Email</label>
+                <input type="email" placeholder="you@company.com" style="width:100%; height:42px; padding:0 13px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; color:#18181b; outline:none;" />
+              </div>
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                  <label style="font-size:12.5px; font-weight:500; color:#52525b;">Password</label>
+                  <span style="font-size:12px; color:oklch(0.55 0.14 50); font-weight:500; cursor:pointer;">Forgot?</span>
+                </div>
+                <input type="password" placeholder="••••••••" style="width:100%; height:42px; padding:0 13px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; color:#18181b; outline:none;" />
+              </div>
+              <button style="height:44px; border:none; border-radius:10px; background:oklch(0.62 0.14 50); color:#fff; font-weight:600; font-size:14px; cursor:pointer;" style-hover="background:oklch(0.56 0.14 50);">Sign in</button>
+              <div style="display:flex; align-items:center; gap:10px; margin:4px 0;">
+                <div style="flex:1; height:1px; background:#e4e4e7;"></div><span style="font-size:11.5px; color:#a1a1aa;">or continue with</span><div style="flex:1; height:1px; background:#e4e4e7;"></div>
+              </div>
+              <div style="display:flex; gap:10px;">
+                <button style="flex:1; height:42px; border:1px solid #e4e4e7; border-radius:10px; background:#fff; font-weight:500; font-size:13px; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;" style-hover="background:#fafafa;"><span style="font-weight:700; font-size:15px; color:#4285F4;">G</span> Google</button>
+                <button style="flex:1; height:42px; border:1px solid #e4e4e7; border-radius:10px; background:#fff; font-weight:500; font-size:13px; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;" style-hover="background:#fafafa;"><span style="display:grid; grid-template-columns:1fr 1fr; gap:1.5px; width:14px; height:14px;"><i style="background:#f25022;"></i><i style="background:#7fba00;"></i><i style="background:#00a4ef;"></i><i style="background:#ffb900;"></i></span> Microsoft</button>
+              </div>
+            </div>
+          </div>
+          <p style="margin:0; font-size:13px; color:#71717a;">New to Shelfree? <span style="color:oklch(0.55 0.14 50); font-weight:600; cursor:pointer;">Create an account</span></p>
+        </div>
+        <!-- dark panel -->
+        <div style="width:452px; flex:none; background:#171311; padding:42px; display:flex; flex-direction:column; justify-content:space-between; position:relative; overflow:hidden;">
+          <div style="font-family:'Geist Mono',monospace; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:oklch(0.72 0.13 60);">One source of truth</div>
+          <div>
+            <h2 style="margin:0 0 16px; font-size:30px; font-weight:700; line-height:1.2; letter-spacing:-0.02em; color:#fff;">Every item, order and invoice — in one place.</h2>
+            <p style="margin:0; font-size:14px; color:rgba(255,255,255,.6); line-height:1.6; max-width:300px;">Configure the modules your business actually needs, and leave the rest off.</p>
+          </div>
+          <!-- product peek -->
+          <div style="height:150px; border-radius:12px 12px 0 0; border:1px solid rgba(255,255,255,.12); border-bottom:none; background:repeating-linear-gradient(135deg, rgba(255,255,255,.07) 0 11px, rgba(255,255,255,.025) 11px 22px); display:flex; align-items:center; justify-content:center; margin-bottom:-42px;">
+            <span style="font-family:'Geist Mono',monospace; font-size:11px; color:rgba(255,255,255,.45);">dashboard preview</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- 04 · PRODUCT BEHIND THE GLASS -->
+    <!-- ============================================================ -->
+    <div>
+      <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:12px;">
+        <span style="font-family:'Geist Mono',monospace; font-size:12px; font-weight:600; color:#fff; background:oklch(0.62 0.14 50); border-radius:6px; padding:3px 7px;">04</span>
+        <span style="font-size:15px; font-weight:600; color:#27272a;">Product behind the glass</span>
+        <span style="font-size:13px; color:#a1a1aa;">— shows the real app, dimmed, behind the card. Product-forward.</span>
+      </div>
+      <div style="width:1120px; height:680px; border-radius:16px; overflow:hidden; border:1px solid #e4e4e7; box-shadow:0 16px 40px -12px rgb(0 0 0/.22); position:relative; background:#18181b;">
+        <!-- faux ERP behind -->
+        <div style="position:absolute; inset:0; display:flex; opacity:0.5;">
+          <div style="width:60px; background:#fafafa; border-right:1px solid #e4e4e7; display:flex; flex-direction:column; align-items:center; gap:10px; padding-top:16px;">
+            <div style="width:30px; height:30px; border-radius:8px; background:oklch(0.62 0.14 50);"></div>
+            <div style="width:26px; height:26px; border-radius:7px; background:#e4e4e7;"></div>
+            <div style="width:26px; height:26px; border-radius:7px; background:#e4e4e7;"></div>
+            <div style="width:26px; height:26px; border-radius:7px; background:#e4e4e7;"></div>
+            <div style="width:26px; height:26px; border-radius:7px; background:#e4e4e7;"></div>
+          </div>
+          <div style="width:200px; background:#fafafa; border-right:1px solid #e4e4e7; padding:18px 14px; display:flex; flex-direction:column; gap:11px;">
+            <div style="width:90px; height:14px; border-radius:4px; background:#d4d4d8;"></div>
+            <div style="width:140px; height:10px; border-radius:4px; background:#e4e4e7; margin-top:6px;"></div>
+            <div style="width:120px; height:10px; border-radius:4px; background:#e4e4e7;"></div>
+            <div style="width:150px; height:10px; border-radius:4px; background:#e4e4e7;"></div>
+            <div style="width:110px; height:10px; border-radius:4px; background:#e4e4e7;"></div>
+          </div>
+          <div style="flex:1; background:#fff; padding:22px 26px;">
+            <div style="width:160px; height:18px; border-radius:5px; background:#e4e4e7; margin-bottom:18px;"></div>
+            <div style="display:flex; flex-direction:column; gap:9px;">
+              <div style="height:36px; border-radius:8px; background:#f4f4f5;"></div>
+              <div style="height:36px; border-radius:8px; background:#fafafa;"></div>
+              <div style="height:36px; border-radius:8px; background:#f4f4f5;"></div>
+              <div style="height:36px; border-radius:8px; background:#fafafa;"></div>
+              <div style="height:36px; border-radius:8px; background:#f4f4f5;"></div>
+              <div style="height:36px; border-radius:8px; background:#fafafa;"></div>
+            </div>
+          </div>
+        </div>
+        <!-- scrim -->
+        <div style="position:absolute; inset:0; background:linear-gradient(120deg, rgba(20,15,12,.72), rgba(20,15,12,.5));"></div>
+        <!-- card -->
+        <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
+          <div style="width:404px; background:#fff; border-radius:18px; box-shadow:0 30px 70px -20px rgb(0 0 0/.5); padding:36px 38px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:22px;">
+              <div style="width:34px; height:34px; border-radius:9px; background:oklch(0.62 0.14 50); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:18px;">S</div>
+              <span style="font-size:18px; font-weight:700; letter-spacing:-0.02em;">Shelfree</span>
+            </div>
+            <h2 style="margin:0 0 4px; font-size:21px; font-weight:700; letter-spacing:-0.02em;">Sign in</h2>
+            <p style="margin:0 0 22px; font-size:13.5px; color:#71717a;">Pick up right where you left off.</p>
+            <div style="display:flex; flex-direction:column; gap:13px;">
+              <div>
+                <label style="display:block; font-size:12.5px; font-weight:500; color:#52525b; margin-bottom:6px;">Email</label>
+                <input type="email" placeholder="you@company.com" style="width:100%; height:42px; padding:0 13px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; color:#18181b; outline:none;" />
+              </div>
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                  <label style="font-size:12.5px; font-weight:500; color:#52525b;">Password</label>
+                  <span style="font-size:12px; color:oklch(0.55 0.14 50); font-weight:500; cursor:pointer;">Forgot?</span>
+                </div>
+                <input type="password" placeholder="••••••••" style="width:100%; height:42px; padding:0 13px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; color:#18181b; outline:none;" />
+              </div>
+              <button style="height:44px; border:none; border-radius:10px; background:oklch(0.62 0.14 50); color:#fff; font-weight:600; font-size:14px; cursor:pointer; margin-top:2px;" style-hover="background:oklch(0.56 0.14 50);">Sign in</button>
+              <div style="display:flex; gap:10px; margin-top:2px;">
+                <button style="flex:1; height:40px; border:1px solid #e4e4e7; border-radius:10px; background:#fff; font-weight:500; font-size:12.5px; display:flex; align-items:center; justify-content:center; gap:7px; cursor:pointer;" style-hover="background:#fafafa;"><span style="font-weight:700; font-size:14px; color:#4285F4;">G</span> Google</button>
+                <button style="flex:1; height:40px; border:1px solid #e4e4e7; border-radius:10px; background:#fff; font-weight:500; font-size:12.5px; display:flex; align-items:center; justify-content:center; gap:7px; cursor:pointer;" style-hover="background:#fafafa;"><span style="display:grid; grid-template-columns:1fr 1fr; gap:1.5px; width:13px; height:13px;"><i style="background:#f25022;"></i><i style="background:#7fba00;"></i><i style="background:#00a4ef;"></i><i style="background:#ffb900;"></i></span> Microsoft</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- 05 · MINIMAL — LEFT ALIGNED, NO CARD -->
+    <!-- ============================================================ -->
+    <div>
+      <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:12px;">
+        <span style="font-family:'Geist Mono',monospace; font-size:12px; font-weight:600; color:#fff; background:oklch(0.62 0.14 50); border-radius:6px; padding:3px 7px;">05</span>
+        <span style="font-size:15px; font-weight:600; color:#27272a;">Minimal — left aligned</span>
+        <span style="font-size:13px; color:#a1a1aa;">— airy, modern, no card. Underline-style fields, lots of whitespace.</span>
+      </div>
+      <div style="width:1120px; height:680px; border-radius:16px; overflow:hidden; border:1px solid #e4e4e7; box-shadow:0 16px 40px -12px rgb(0 0 0/.22); background:#fff; display:flex;">
+        <div style="flex:1; padding:56px 0 56px 88px; display:flex; flex-direction:column;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:32px; height:32px; border-radius:9px; background:oklch(0.62 0.14 50); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:17px;">S</div>
+            <span style="font-size:17px; font-weight:700; letter-spacing:-0.02em;">Shelfree</span>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; justify-content:center; max-width:380px;">
+            <div style="font-family:'Geist Mono',monospace; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:#a1a1aa; margin-bottom:14px;">Welcome back</div>
+            <h2 style="margin:0 0 36px; font-size:34px; font-weight:700; letter-spacing:-0.03em; line-height:1.1;">Sign in to<br>Shelfree.</h2>
+            <div style="display:flex; flex-direction:column; gap:26px;">
+              <div>
+                <label style="display:block; font-size:12px; font-weight:500; color:#a1a1aa; margin-bottom:8px; font-family:'Geist Mono',monospace; letter-spacing:0.03em;">EMAIL</label>
+                <input type="email" placeholder="you@company.com" style="width:100%; height:36px; padding:0 2px; border:none; border-bottom:1.5px solid #d9d9de; background:transparent; font-size:16px; color:#18181b; outline:none;" />
+              </div>
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
+                  <label style="font-size:12px; font-weight:500; color:#a1a1aa; font-family:'Geist Mono',monospace; letter-spacing:0.03em;">PASSWORD</label>
+                  <span style="font-size:12px; color:oklch(0.55 0.14 50); font-weight:500; cursor:pointer;">Forgot?</span>
+                </div>
+                <input type="password" placeholder="••••••••" style="width:100%; height:36px; padding:0 2px; border:none; border-bottom:1.5px solid #d9d9de; background:transparent; font-size:16px; color:#18181b; outline:none;" />
+              </div>
+              <div style="display:flex; align-items:center; gap:18px; margin-top:8px;">
+                <button style="height:46px; padding:0 30px; border:none; border-radius:10px; background:oklch(0.62 0.14 50); color:#fff; font-weight:600; font-size:14px; cursor:pointer;" style-hover="background:oklch(0.56 0.14 50);">Sign in →</button>
+                <div style="display:flex; gap:10px;">
+                  <button title="Google" style="width:42px; height:42px; border:1px solid #e4e4e7; border-radius:10px; background:#fff; font-weight:700; font-size:16px; color:#4285F4; cursor:pointer;" style-hover="background:#fafafa;">G</button>
+                  <button title="Microsoft" style="width:42px; height:42px; border:1px solid #e4e4e7; border-radius:10px; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;" style-hover="background:#fafafa;"><span style="display:grid; grid-template-columns:1fr 1fr; gap:1.5px; width:15px; height:15px;"><i style="background:#f25022;"></i><i style="background:#7fba00;"></i><i style="background:#00a4ef;"></i><i style="background:#ffb900;"></i></span></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p style="margin:0; font-size:13px; color:#71717a;">New to Shelfree? <span style="color:oklch(0.55 0.14 50); font-weight:600; cursor:pointer;">Create an account</span></p>
+        </div>
+        <div style="width:1px; background:#f4f4f5;"></div>
+        <div style="width:130px; flex:none; display:flex; align-items:flex-end; justify-content:center; padding-bottom:40px;">
+          <span style="font-family:'Geist Mono',monospace; font-size:11px; color:#d4d4d8; writing-mode:vertical-rl; letter-spacing:0.12em;">SHELFREE · ERP</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

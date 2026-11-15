@@ -1,0 +1,59 @@
+<!-- @dsCard group="Components" viewport="700x180" subtitle="Avatar (initials + colour) and Tabs segmented control" name="Avatar & Tabs" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Geist',ui-sans-serif,sans-serif;background:var(--background);color:var(--foreground);padding:20px 24px;-webkit-font-smoothing:antialiased}
+.row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:none}
+.label{width:90px;flex:none;font-size:10.5px;font-weight:600;color:var(--muted-fg);letter-spacing:0.06em}
+.av{display:flex;align-items:center;justify-content:center;font-weight:600;border-radius:50%;flex-shrink:0;color:#fff}
+.tab-wrap{display:inline-flex;gap:2px;background:var(--muted);border-radius:9px;padding:3px}
+.tab{height:26px;padding:0 11px;border:none;border-radius:7px;font-size:12.5px;font-family:inherit;cursor:pointer;transition:background .14s,color .14s}
+</style>
+</head>
+<body>
+<div>
+  <div class="row">
+    <div class="label">SIZES</div>
+    <div class="av" style="width:24px;height:24px;font-size:10px;background:oklch(0.6 0.13 58)">AC</div>
+    <div class="av" style="width:30px;height:30px;font-size:11px;background:oklch(0.6 0.13 58)">AC</div>
+    <div class="av" style="width:40px;height:40px;font-size:14px;background:oklch(0.6 0.13 58)">AC</div>
+    <div class="av" style="width:56px;height:56px;font-size:20px;background:oklch(0.6 0.13 58)">AC</div>
+  </div>
+  <div class="row">
+    <div class="label">PALETTE</div>
+    <div class="av" style="width:32px;height:32px;font-size:12px;background:oklch(0.6 0.13 25)">ML</div>
+    <div class="av" style="width:32px;height:32px;font-size:12px;background:oklch(0.6 0.13 58)">AC</div>
+    <div class="av" style="width:32px;height:32px;font-size:12px;background:oklch(0.6 0.13 155)">PA</div>
+    <div class="av" style="width:32px;height:32px;font-size:12px;background:oklch(0.6 0.13 245)">GS</div>
+    <div class="av" style="width:32px;height:32px;font-size:12px;background:oklch(0.6 0.13 290)">DW</div>
+    <div class="av" style="width:32px;height:32px;font-size:12px;background:oklch(0.6 0.13 330)">JP</div>
+    <span style="font-size:11.5px;color:var(--muted-fg);margin-left:4px">6 auto-colours derived from name initial</span>
+  </div>
+  <div class="row">
+    <div class="label">TABS</div>
+    <div class="tab-wrap">
+      <button class="tab" style="background:var(--card);color:var(--foreground);font-weight:600;box-shadow:var(--shadow)">All <span style="opacity:.55;font-size:11px">10</span></button>
+      <button class="tab" style="background:transparent;color:var(--muted-fg);font-weight:400">Open <span style="opacity:.55;font-size:11px">6</span></button>
+      <button class="tab" style="background:transparent;color:var(--muted-fg);font-weight:400">Overdue <span style="opacity:.55;font-size:11px">2</span></button>
+      <button class="tab" style="background:transparent;color:var(--muted-fg);font-weight:400">Paid <span style="opacity:.55;font-size:11px">2</span></button>
+    </div>
+  </div>
+  <div class="row">
+    <div class="label">USER PILL</div>
+    <div style="display:flex;align-items:center;gap:13px;height:40px;padding:0 9px;border-radius:11px;cursor:pointer;transition:background .14s">
+      <div class="av" style="width:30px;height:30px;font-size:11px;background:oklch(0.6 0.13 25)">AC</div>
+      <div>
+        <div style="font-size:12.5px;font-weight:600;line-height:1.2">Avery Chen</div>
+        <div style="font-size:11px;color:var(--muted-fg);line-height:1.2">Controller</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

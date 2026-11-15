@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<!-- @template name="Customers — shadcn concept" description="Customers data table in real shadcn/ui component style — sorting, row selection, bulk actions, pagination" -->
+<helmet>
+<script src="./ds-base.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../../lib/tailwind-shadcn.js"></script>
+<script type="module" src="./customers-shadcn-data.js"></script>
+<style>@keyframes cust-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.cust-spin-a,.cust-spin-b{animation:cust-spin .5s ease}@keyframes cust-pop{from{opacity:0;transform:scale(.96) translateY(-2px)}to{opacity:1;transform:scale(1) translateY(0)}}.cust-pop{animation:cust-pop .12s ease-out}</style>
+</helmet>
+<div className="flex h-screen bg-background text-foreground" style="font-family:'Geist',system-ui,sans-serif;">
+<aside className="w-56 shrink-0 border-r border-border flex flex-col p-3 gap-0.5">
+<div className="flex items-center gap-2 px-2 pb-4">
+<div className="w-7 h-7 rounded-md bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">S</div>
+<div className="leading-tight">
+<div className="font-semibold text-[13px]">Shelfree</div>
+<div className="text-[11px] text-muted-foreground">NorthDoor Mfg.</div>
+</div>
+</div>
+<div className="text-[11px] font-semibold text-muted-foreground px-2 pt-2 pb-1">Sales</div>
+<sc-for list="{{ nav }}" as="item" hint-placeholder-count="5">
+<div className="{{ item.className }}">{{ item.label }}</div>
+</sc-for>
+</aside>
+<main className="flex-1 min-w-0 flex flex-col overflow-hidden">
+<div className="flex items-center justify-between px-6 py-3 border-b border-border">
+<div className="text-[13px] text-muted-foreground">Sales <span className="mx-1">/</span> <span className="text-foreground font-medium">Customers</span></div>
+<x-import component-from-global-scope="ShelfreeDesignSystem_0318eb.SearchInput" placeholder="Search pages..." width="220px" hint-size="220px,32px"></x-import>
+</div>
+<div className="px-6 pt-6">
+<div className="flex items-center justify-between">
+<div>
+<h1 className="text-xl font-semibold m-0">Customers</h1>
+<p className="text-sm text-muted-foreground mt-0.5 mb-0">{{ totalCustomers }} customers</p>
+</div>
+<x-import component-from-global-scope="ShelfreeDesignSystem_0318eb.Button" onClick="{{ noop }}" hint-size="150px,36px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Add customer</x-import>
+</div>
+<div className="flex items-center justify-between mt-4">
+<div className="flex items-center gap-2">
+<x-import component-from-global-scope="ShelfreeDesignSystem_0318eb.SelectField" width="170px" hint-size="170px,36px"><option value="all">All customers</option></x-import>
+<x-import component-from-global-scope="ShelfreeDesignSystem_0318eb.Button" variant="outline" size="sm" onClick="{{ noop }}" hint-size="100px,32px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Add filter</x-import>
+</div>
+<div className="flex items-center gap-2">
+<sc-if value="{{ searchOpen }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="ShelfreeDesignSystem_0318eb.SearchInput" placeholder="Search all columns..." width="200px" hint-size="200px,32px"></x-import>
+</sc-if>
+<x-import component-from-global-scope="ShelfreeDesignSystem_0318eb.IconButton" label="Find" variant="outline" onClick="{{ toggleSearch }}" hint-size="36px,36px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg></x-import>
+<x-import component-from-global-scope="ShelfreeDesignSystem_0318eb.IconButton" label="Refresh" variant="outline" className="{{ refreshClass }}" onClick="{{ refresh }}" hint-size="36px,36px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"></path><path d="M21 4v5h-5"></path></svg></x-import>
+<div className="relative">
+<x-import component-from-global-scope="ShelfreeDesignSystem_0318eb.IconButton" label="Columns" variant="outline" onClick="{{ toggleColumns }}" hint-size="36px,36px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="4" y1="21" y2="10"></line><line x1="4" x2="4" y1="6" y2="3"></line><line x1="12" x2="12" y1="21" y2="14"></line><line x1="12" x2="12" y1="10" y2="3"></line><line x1="20" x2="20" y1="21" y2="16"></line><line x1="20" x2="20" y1="12" y2="3"></line><line x1="2" x2="6" y1="10" y2="10"></line><line x1="10" x2="14" y1="14" y2="14"></line><line x1="18" x2="22" y1="16" y2="16"></line></svg></x-import>
+<sc-if value="{{ columnsOpen }}" hint-placeholder-val="{{ false }}">
+<div className="cust-pop absolute right-0 top-10 w-44 rounded-md border border-border bg-popover text-popover-foreground shadow-md p-1 z-20">
+<div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Toggle columns</div>
+<sc-for list="{{ columnToggles }}" as="c" hint-placeholder-count="7">
+<label className="flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm cursor-pointer hover:bg-accent"><input type="checkbox" checked="{{ c.on }}" onChange="{{ c.toggle }}" style="accent-color:hsl(var(--sh-primary))">{{ c.label }}</label>
+</sc-for>
+</div>
+</sc-if>
+</div>
+<div className="relative">
+<x-import component-from-global-scope="ShelfreeDesignSystem_0318eb.IconButton" label="Density" variant="outline" onClick="{{ toggleDensity }}" hint-size="36px,36px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" x2="21" y1="6" y2="6"></line><line x1="3" x2="21" y1="12" y2="12"></line><line x1="3" x2="21" y1="18" y2="18"></line></svg></x-import>
+<sc-if value="{{ densityOpen }}" hint-placeholder-val="{{ false }}">
+<div className="cust-pop absolute right-0 top-10 w-36 rounded-md border border-border bg-popover text-popover-foreground shadow-md p-1 z-20">
+<sc-for list="{{ densityItems }}" as="d" hint-placeholder-count="3">
+<div onClick="{{ d.select }}" className="{{ d.className }}">{{ d.label }}</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+<div className="relative">
+<x-import component-from-global-scope="ShelfreeDesignSystem_0318eb.Button" variant="outline" size="sm" onClick="{{ toggleActions }}" hint-size="90px,32px">Actions<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"></path></svg></x-import>
+<sc-if value="{{ actionsOpen }}" hint-placeholder-val="{{ false }}">
+<div className="cust-pop absolute right-0 top-10 w-40 rounded-md border border-border bg-popover text-popover-foreground shadow-md p-1 z-20">
+<sc-for list="{{ actionItems }}" as="a" hint-placeholder-count="4">
+<div className="{{ a.className }}">{{ a.label }}</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+<x-import component-from-global-scope="ShelfreeDesignSystem_0318eb.Button" variant="outline" size="sm" onClick="{{ noop }}" hint-size="80px,32px">Export</x-import>
+</div>
+</div>
+<sc-if value="{{ hasSelection }}" hint-placeholder-val="{{ false }}">
+<div className="cust-pop flex items-center justify-between mt-3 px-3 py-2 rounded-md border border-border bg-muted/40">
+<span className="text-sm font-medium">{{ bulkText }}</span>
+<div className="flex items-center gap-2">
+<x-import component-from-global-scope="ShelfreeDesignSystem_0318eb.Button" variant="outline" size="sm" onClick="{{ noop }}" hint-size="60px,32px">Edit</x-import>
+<x-import component-from-global-scope="ShelfreeDesignSystem_0318eb.Button" variant="outline" size="sm" onClick="{{ noop }}" hint-size="70px,32px">Export</x-import>
+<x-import component-from-global-scope="ShelfreeDesignSystem_0318eb.Button" variant="destructive" size="sm" onClick="{{ noop }}" hint-size="70px,32px">Delete</x-import>
+<x-import component-from-global-scope="ShelfreeDesignSystem_0318eb.Button" variant="ghost" size="sm" onClick="{{ clearSelection }}" hint-size="60px,32px">Clear</x-import>
+</div>
+</div>
+</sc-if>
+</div>
+<div className="flex-1 overflow-auto px-6 py-3">
+<div className="rounded-md border border-border">
+<table className="w-full text-sm border-collapse">
+<thead>
+<tr className="border-b border-border">
+<th className="w-10 px-2 py-2">
+<sc-if value="{{ allSelected }}" hint-placeholder-val="{{ false }}"><div onClick="{{ toggleSelectAll }}" className="size-4 rounded-[4px] border border-primary bg-primary text-primary-foreground flex items-center justify-center cursor-pointer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></div></sc-if>
+<sc-if value="{{ someSelected }}" hint-placeholder-val="{{ false }}"><div onClick="{{ toggleSelectAll }}" className="size-4 rounded-[4px] border border-primary bg-primary text-primary-foreground flex items-center justify-center cursor-pointer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"></path></svg></div></sc-if>
+<sc-if value="{{ noneSelected }}" hint-placeholder-val="{{ true }}"><div onClick="{{ toggleSelectAll }}" className="size-4 rounded-[4px] border border-input bg-background cursor-pointer hover:border-primary/60"></div></sc-if>
+</th>
+<sc-for list="{{ columns }}" as="col" hint-placeholder-count="7">
+<th className="text-left px-2 py-2 font-medium text-muted-foreground whitespace-nowrap select-none">
+<sc-if value="{{ col.sortable }}" hint-placeholder-val="{{ true }}">
+<div onClick="{{ col.onSort }}" className="inline-flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors">
+<span>{{ col.label }}</span>
+<sc-if value="{{ col.sortAsc }}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"></path></svg></sc-if>
+<sc-if value="{{ col.sortDesc }}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"></path></svg></sc-if>
+<sc-if value="{{ col.sortNone }}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-40"><path d="m7 15 5 5 5-5M7 9l5-5 5 5"></path></svg></sc-if>
+</div>
+</sc-if>
+<sc-if value="{{ col.notSortable }}" hint-placeholder-val="{{ false }}"><span>{{ col.label }}</span></sc-if>
+</th>
+</sc-for>
+<th className="w-10 px-2 py-2"></th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{ rows }}" as="r" hint-placeholder-count="10">
+<tr className="{{ r.trClass }}">
+<td className="px-2 {{ rowPad }}">
+<sc-if value="{{ r.checked }}" hint-placeholder-val="{{ false }}"><div onClick="{{ r.toggle }}" className="size-4 rounded-[4px] border border-primary bg-primary text-primary-foreground flex items-center justify-center cursor-pointer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></div></sc-if>
+<sc-if value="{{ r.unchecked }}" hint-placeholder-val="{{ true }}"><div onClick="{{ r.toggle }}" className="size-4 rounded-[4px] border border-input bg-background cursor-pointer hover:border-primary/60"></div></sc-if>
+</td>
+<sc-if value="{{ showCol.no }}" hint-placeholder-val="{{ true }}"><td className="px-2 {{ rowPad }} font-mono text-xs text-muted-foreground">{{ r.no }}</td></sc-if>
+<sc-if value="{{ showCol.name }}" hint-placeholder-val="{{ true }}"><td className="px-2 {{ rowPad }} font-medium">{{ r.name }}</td></sc-if>
+<sc-if value="{{ showCol.location }}" hint-placeholder-val="{{ true }}"><td className="px-2 {{ rowPad }} text-muted-foreground">{{ r.location }}</td></sc-if>
+<sc-if value="{{ showCol.phone }}" hint-placeholder-val="{{ true }}"><td className="px-2 {{ rowPad }} text-muted-foreground">{{ r.phone }}</td></sc-if>
+<sc-if value="{{ showCol.terms }}" hint-placeholder-val="{{ true }}"><td className="px-2 {{ rowPad }} text-muted-foreground">{{ r.terms }}</td></sc-if>
+<sc-if value="{{ showCol.status }}" hint-placeholder-val="{{ true }}"><td className="px-2 {{ rowPad }}"><x-import component-from-global-scope="ShelfreeDesignSystem_0318eb.Badge" variant="{{ r.badgeVariant }}" size="sm" hint-size="60px,20px">{{ r.status }}</x-import></td></sc-if>
+<sc-if value="{{ showCol.balance }}" hint-placeholder-val="{{ true }}"><td className="px-2 {{ rowPad }} text-right font-mono">{{ r.balance }}</td></sc-if>
+<td className="px-2 {{ rowPad }} text-right relative">
+<x-import component-from-global-scope="ShelfreeDesignSystem_0318eb.IconButton" label="Row actions" variant="ghost" className="{{ r.kebabClass }}" onClick="{{ r.toggleMenu }}" hint-size="36px,36px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg></x-import>
+<sc-if value="{{ r.menuOpen }}" hint-placeholder-val="{{ false }}">
+<div className="cust-pop absolute right-2 top-10 w-36 rounded-md border border-border bg-popover text-popover-foreground shadow-md p-1 z-20 text-left">
+<sc-for list="{{ r.menuItems }}" as="mi" hint-placeholder-count="4">
+<div onClick="{{ mi.onClick }}" className="{{ mi.className }}">{{ mi.label }}</div>
+</sc-for>
+</div>
+</sc-if>
+</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</div>
+<div className="flex items-center justify-between px-6 py-3 border-t border-border text-sm text-muted-foreground">
+<div>{{ selectionSummary }}</div>
+<div className="flex items-center gap-6">
+<div className="flex items-center gap-2">
+<span>Rows per page</span>
+<select value="{{ pageSize }}" onChange="{{ onPageSizeChange }}" className="h-8 rounded-md border border-input bg-transparent px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+<option value="10">10</option>
+<option value="20">20</option>
+<option value="50">50</option>
+</select>
+</div>
+<div>{{ pageLabel }}</div>
+<div className="flex items-center gap-1">
+<x-import component-from-global-scope="ShelfreeDesignSystem_0318eb.IconButton" label="Previous page" variant="outline" disabled="{{ prevDisabled }}" onClick="{{ prevPage }}" hint-size="36px,36px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"></path></svg></x-import>
+<x-import component-from-global-scope="ShelfreeDesignSystem_0318eb.IconButton" label="Next page" variant="outline" disabled="{{ nextDisabled }}" onClick="{{ nextPage }}" hint-size="36px,36px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"></path></svg></x-import>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+
+class Component extends DCLogic {
+  state = {
+    actionsOpen: false, columnsOpen: false, densityOpen: false, searchOpen: false, spinNonce: 0,
+    density: 'Comfortable',
+    showCol: { no: true, name: true, location: true, phone: true, terms: true, status: true, balance: true },
+    selected: {}, sortKey: null, sortDir: null, openRowMenu: null,
+    pageSize: 10, page: 0
+  };
+  closeAllBut(key) {
+    return { actionsOpen: key === 'actions', columnsOpen: key === 'columns', densityOpen: key === 'density', openRowMenu: null };
+  }
+  handleSort(key) {
+    this.setState(s => {
+      if (s.sortKey !== key) return { sortKey: key, sortDir: 'asc' };
+      if (s.sortDir === 'asc') return { sortDir: 'desc' };
+      return { sortKey: null, sortDir: null };
+    });
+  }
+  toggleRow(no) {
+    this.setState(s => { const sel = { ...s.selected }; if (sel[no]) delete sel[no]; else sel[no] = true; return { selected: sel }; });
+  }
+  toggleRowMenu(no) {
+    this.setState(s => ({ openRowMenu: s.openRowMenu === no ? null : no, actionsOpen: false, columnsOpen: false, densityOpen: false }));
+  }
+  renderVals() {
+    const nav = ['Catalog', 'Sales Orders', 'Sales Invoices', 'Customers', 'Sales Prices'].map(label => {
+      const active = label === 'Customers';
+      return {
+        label,
+        className: 'flex items-center gap-2 px-2 py-1.5 rounded-md text-sm cursor-pointer transition-colors ' +
+          (active ? 'bg-accent font-medium' : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground')
+      };
+    });
+    const colMeta = [
+      { key: 'no', label: 'No.', sortable: true },
+      { key: 'name', label: 'Name', sortable: true },
+      { key: 'location', label: 'Location', sortable: true },
+      { key: 'phone', label: 'Phone', sortable: false },
+      { key: 'terms', label: 'Terms', sortable: false },
+      { key: 'status', label: 'Status', sortable: true },
+      { key: 'balance', label: 'Balance', sortable: true }
+    ];
+    const columns = colMeta.filter(c => this.state.showCol[c.key]).map(c => {
+      const active = this.state.sortKey === c.key;
+      return {
+        key: c.key, label: c.label, sortable: c.sortable, notSortable: !c.sortable,
+        sortAsc: active && this.state.sortDir === 'asc',
+        sortDesc: active && this.state.sortDir === 'desc',
+        sortNone: !active,
+        onSort: c.sortable ? () => this.handleSort(c.key) : undefined
+      };
+    });
+    const densityClassBase = 'px-2.5 py-1.5 text-sm rounded-sm cursor-pointer hover:bg-accent';
+    const rowPad = { Compact: 'py-1', Comfortable: 'py-2', Spacious: 'py-3.5' }[this.state.density];
+
+    let data = (window.__customersData || []).slice(0, 16);
+    const totalCustomers = data.length;
+    if (this.state.sortKey) {
+      const k = this.state.sortKey, dir = this.state.sortDir === 'asc' ? 1 : -1;
+      data = [...data].sort((a, b) => {
+        if (k === 'balance') return (a.balance - b.balance) * dir;
+        const av = k === 'location' ? a.city : a[k], bv = k === 'location' ? b.city : b[k];
+        return String(av).localeCompare(String(bv)) * dir;
+      });
+    }
+    const pageSize = this.state.pageSize;
+    const pageCount = Math.max(1, Math.ceil(data.length / pageSize));
+    const page = Math.min(this.state.page, pageCount - 1);
+    const pageData = data.slice(page * pageSize, page * pageSize + pageSize);
+    const pageNos = pageData.map(c => c.no);
+    const selectedOnPage = pageNos.filter(no => this.state.selected[no]).length;
+    const allSelected = pageNos.length > 0 && selectedOnPage === pageNos.length;
+    const someSelected = selectedOnPage > 0 && !allSelected;
+    const selectedCount = Object.keys(this.state.selected).length;
+
+    const menuItemClass = 'px-2 py-1.5 text-[13px] rounded-sm cursor-pointer hover:bg-accent';
+    const menuItemDangerClass = menuItemClass + ' text-destructive hover:bg-destructive/10';
+    const closeMenu = () => this.setState({ openRowMenu: null });
+
+    const rows = pageData.map(c => {
+      const checked = !!this.state.selected[c.no];
+      const menuOpen = this.state.openRowMenu === c.no;
+      return {
+        no: c.no, name: c.name, location: c.city + ', ' + c.state, phone: c.phone, terms: c.terms, status: c.status,
+        badgeVariant: c.status === 'Active' ? 'ok' : c.status === 'On hold' ? 'bad' : 'info',
+        balance: '$' + c.balance.toLocaleString(undefined, { minimumFractionDigits: 2 }),
+        checked, unchecked: !checked,
+        toggle: () => this.toggleRow(c.no),
+        trClass: 'group border-b border-border last:border-0 hover:bg-muted/50 transition-colors' + (checked ? ' bg-muted/30' : ''),
+        menuOpen,
+        kebabClass: 'ml-auto transition-opacity ' + (menuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'),
+        toggleMenu: () => this.toggleRowMenu(c.no),
+        menuItems: [
+          { label: 'View', className: menuItemClass, onClick: closeMenu },
+          { label: 'Edit', className: menuItemClass, onClick: closeMenu },
+          { label: 'Duplicate', className: menuItemClass, onClick: closeMenu },
+          { label: 'Delete', className: menuItemDangerClass, onClick: closeMenu }
+        ]
+      };
+    });
+
+    return {
+      nav, columns, rows, showCol: this.state.showCol, rowPad, totalCustomers,
+      noop: () => {},
+      actionsOpen: this.state.actionsOpen,
+      toggleActions: () => this.setState(s => ({ ...this.closeAllBut(''), actionsOpen: !s.actionsOpen })),
+      actionItems: [
+        { label: 'Edit', className: menuItemClass },
+        { label: 'View', className: menuItemClass },
+        { label: 'Export', className: menuItemClass },
+        { label: 'Delete', className: menuItemDangerClass }
+      ],
+      columnsOpen: this.state.columnsOpen,
+      toggleColumns: () => this.setState(s => ({ ...this.closeAllBut(''), columnsOpen: !s.columnsOpen })),
+      columnToggles: colMeta.map(c => ({
+        label: c.label, on: this.state.showCol[c.key],
+        toggle: () => this.setState(s => ({ showCol: { ...s.showCol, [c.key]: !s.showCol[c.key] } }))
+      })),
+      densityOpen: this.state.densityOpen,
+      toggleDensity: () => this.setState(s => ({ ...this.closeAllBut(''), densityOpen: !s.densityOpen })),
+      densityItems: ['Compact', 'Comfortable', 'Spacious'].map(label => ({
+        label, className: densityClassBase + (label === this.state.density ? ' font-semibold bg-accent' : ''),
+        select: () => this.setState({ density: label, densityOpen: false })
+      })),
+      searchOpen: this.state.searchOpen,
+      toggleSearch: () => this.setState(s => ({ searchOpen: !s.searchOpen })),
+      refresh: () => this.setState(s => ({ spinNonce: s.spinNonce + 1 })),
+      refreshClass: this.state.spinNonce % 2 === 0 ? 'cust-spin-a' : 'cust-spin-b',
+      allSelected, someSelected, noneSelected: !allSelected && !someSelected,
+      toggleSelectAll: () => this.setState(s => {
+        const sel = { ...s.selected };
+        if (allSelected) pageNos.forEach(no => delete sel[no]); else pageNos.forEach(no => sel[no] = true);
+        return { selected: sel };
+      }),
+      hasSelection: selectedCount > 0,
+      bulkText: selectedCount + (selectedCount === 1 ? ' customer selected' : ' customers selected'),
+      clearSelection: () => this.setState({ selected: {} }),
+      selectionSummary: selectedCount + ' of ' + totalCustomers + ' row(s) selected.',
+      pageSize, pageLabel: 'Page ' + (page + 1) + ' of ' + pageCount,
+      onPageSizeChange: (e) => this.setState({ pageSize: Number(e.target.value), page: 0 }),
+      prevDisabled: page === 0, nextDisabled: page >= pageCount - 1,
+      prevPage: () => this.setState(s => ({ page: Math.max(0, s.page - 1) })),
+      nextPage: () => this.setState(s => ({ page: Math.min(pageCount - 1, s.page + 1) }))
+    };
+  }
+}
+
+</script>
+</body>
+</html>

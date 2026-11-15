@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+input,button,select,textarea{font-family:inherit}
+input::placeholder,textarea::placeholder{color:#a1a1aa}
+@keyframes sfNavGlide{0%,15%{transform:translateY(0)}21%,40%{transform:translateY(30px)}46%,65%{transform:translateY(60px)}71%,90%{transform:translateY(90px)}96%,100%{transform:translateY(0)}}
+@keyframes sfSweep{0%{transform:translateY(0);opacity:0}7%{opacity:1}90%{opacity:1}100%{transform:translateY(110px);opacity:0}}
+@keyframes sfPulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+@keyframes sfBreathe{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+@keyframes sfOdo{from{transform:translateY(0)}to{transform:translateY(-160px)}}
+@keyframes sfBadgeA{0%,42%{opacity:1}50%,92%{opacity:0}100%{opacity:1}}
+@keyframes sfBadgeB{0%,42%{opacity:0}50%,92%{opacity:1}100%{opacity:0}}
+@keyframes sfToast{0%,58%{opacity:0;transform:translateY(12px)}68%,88%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(12px)}}
+@keyframes sfFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes sfFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes sfPop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+@keyframes sfRing{0%{transform:scale(.6);opacity:.6}100%{transform:scale(1.8);opacity:0}}
+</style>
+</helmet>
+
+<div style="font-family:'Geist',ui-sans-serif,system-ui,sans-serif; color:#18181b; -webkit-font-smoothing:antialiased;">
+
+<!-- ============================================================= AUTH SHELL ============================================================= -->
+<sc-if value="{{ isAuth }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex; width:100%; height:100vh; overflow:hidden; background:#fff;">
+
+  <!-- FORM SIDE -->
+  <div style="flex:1; min-width:0; display:flex; flex-direction:column; padding:40px 56px;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div style="width:34px; height:34px; border-radius:9px; background:oklch(0.62 0.14 50); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:18px;">S</div>
+      <span style="font-size:18px; font-weight:700; letter-spacing:-0.02em;">Shelfree</span>
+    </div>
+
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <div style="width:100%; max-width:368px; margin:0 auto; animation:sfFade .3s ease;">
+
+        <!-- SIGN IN -->
+        <sc-if value="{{ isSignin }}" hint-placeholder-val="{{ true }}">
+          <h1 style="margin:0 0 4px; font-size:25px; font-weight:700; letter-spacing:-0.02em;">Sign in</h1>
+          <p style="margin:0 0 26px; font-size:13.5px; color:#71717a;">Welcome back to Shelfree.</p>
+          <div style="display:flex; flex-direction:column; gap:15px;">
+            <div>
+              <label style="display:block; font-size:12.5px; font-weight:500; color:#52525b; margin-bottom:6px;">Email</label>
+              <div style="position:relative;"><span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#a1a1aa; display:flex;">{{ mailIcon }}</span><input value="{{ email }}" onInput="{{ setEmail }}" type="email" placeholder="you@company.com" style="width:100%; height:43px; padding:0 13px 0 38px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; color:#18181b; outline:none;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" /></div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;"><label style="font-size:12.5px; font-weight:500; color:#52525b;">Password</label><span onClick="{{ goForgot }}" style="font-size:12px; color:oklch(0.55 0.14 50); font-weight:500; cursor:pointer;">Forgot?</span></div>
+              <div style="position:relative;"><span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#a1a1aa; display:flex;">{{ lockIcon }}</span><input type="password" placeholder="••••••••" style="width:100%; height:43px; padding:0 13px 0 38px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; color:#18181b; outline:none;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" /></div>
+            </div>
+            <button onClick="{{ openApp }}" style="height:45px; border:none; border-radius:10px; background:oklch(0.62 0.14 50); color:#fff; font-weight:600; font-size:14px; cursor:pointer; margin-top:2px;" style-hover="background:oklch(0.56 0.14 50);">Sign in</button>
+            <div style="display:flex; align-items:center; gap:10px; margin:4px 0;"><div style="flex:1; height:1px; background:#e4e4e7;"></div><span style="font-size:11.5px; color:#a1a1aa;">or continue with</span><div style="flex:1; height:1px; background:#e4e4e7;"></div></div>
+            <div style="display:flex; gap:10px;">
+              <button onClick="{{ openApp }}" style="flex:1; height:43px; border:1px solid #e4e4e7; border-radius:10px; background:#fff; font-weight:500; font-size:13px; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;" style-hover="background:#fafafa;"><span style="font-weight:700; font-size:15px; color:#4285F4;">G</span> Google</button>
+              <button onClick="{{ openApp }}" style="flex:1; height:43px; border:1px solid #e4e4e7; border-radius:10px; background:#fff; font-weight:500; font-size:13px; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;" style-hover="background:#fafafa;"><span style="display:grid; grid-template-columns:1fr 1fr; gap:1.5px; width:14px; height:14px;"><i style="background:#f25022;"></i><i style="background:#7fba00;"></i><i style="background:#00a4ef;"></i><i style="background:#ffb900;"></i></span> Microsoft</button>
+            </div>
+            <button onClick="{{ openApp }}" style="height:40px; border:1px dashed #d9d9de; border-radius:10px; background:transparent; color:#71717a; font-weight:500; font-size:12.5px; cursor:pointer;" style-hover="background:#fafafa;color:#52525b;">Single sign-on (SAML) →</button>
+          </div>
+          <p style="margin:22px 0 0; font-size:13px; color:#71717a; text-align:center;">New to Shelfree? <span onClick="{{ goSignup }}" style="color:oklch(0.55 0.14 50); font-weight:600; cursor:pointer;">Create an account</span></p>
+        </sc-if>
+
+        <!-- SIGN UP -->
+        <sc-if value="{{ isSignup }}" hint-placeholder-val="{{ false }}">
+          <h1 style="margin:0 0 4px; font-size:25px; font-weight:700; letter-spacing:-0.02em;">Create your account</h1>
+          <p style="margin:0 0 26px; font-size:13.5px; color:#71717a;">Start your Shelfree workspace in minutes.</p>
+          <div style="display:flex; flex-direction:column; gap:14px;">
+            <div style="display:flex; gap:10px;">
+              <button onClick="{{ goVerify }}" style="flex:1; height:43px; border:1px solid #e4e4e7; border-radius:10px; background:#fff; font-weight:500; font-size:13px; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;" style-hover="background:#fafafa;"><span style="font-weight:700; font-size:15px; color:#4285F4;">G</span> Google</button>
+              <button onClick="{{ goVerify }}" style="flex:1; height:43px; border:1px solid #e4e4e7; border-radius:10px; background:#fff; font-weight:500; font-size:13px; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;" style-hover="background:#fafafa;"><span style="display:grid; grid-template-columns:1fr 1fr; gap:1.5px; width:14px; height:14px;"><i style="background:#f25022;"></i><i style="background:#7fba00;"></i><i style="background:#00a4ef;"></i><i style="background:#ffb900;"></i></span> Microsoft</button>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; margin:2px 0;"><div style="flex:1; height:1px; background:#e4e4e7;"></div><span style="font-size:11.5px; color:#a1a1aa;">or</span><div style="flex:1; height:1px; background:#e4e4e7;"></div></div>
+            <div>
+              <label style="display:block; font-size:12.5px; font-weight:500; color:#52525b; margin-bottom:6px;">Full name</label>
+              <div style="position:relative;"><span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#a1a1aa; display:flex;">{{ userIcon }}</span><input placeholder="Avery Cole" style="width:100%; height:43px; padding:0 13px 0 38px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; outline:none;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" /></div>
+            </div>
+            <div>
+              <label style="display:block; font-size:12.5px; font-weight:500; color:#52525b; margin-bottom:6px;">Work email</label>
+              <div style="position:relative;"><span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#a1a1aa; display:flex;">{{ mailIcon }}</span><input value="{{ email }}" onInput="{{ setEmail }}" type="email" placeholder="you@company.com" style="width:100%; height:43px; padding:0 13px 0 38px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; outline:none;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" /></div>
+            </div>
+            <div>
+              <label style="display:block; font-size:12.5px; font-weight:500; color:#52525b; margin-bottom:6px;">Password</label>
+              <div style="position:relative;"><span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#a1a1aa; display:flex;">{{ lockIcon }}</span><input type="password" placeholder="At least 8 characters" style="width:100%; height:43px; padding:0 13px 0 38px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; outline:none;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" /></div>
+            </div>
+            <button onClick="{{ goVerify }}" style="height:45px; border:none; border-radius:10px; background:oklch(0.62 0.14 50); color:#fff; font-weight:600; font-size:14px; cursor:pointer; margin-top:2px;" style-hover="background:oklch(0.56 0.14 50);">Create account</button>
+            <p style="margin:0; font-size:11.5px; color:#a1a1aa; text-align:center; line-height:1.5;">By creating an account you agree to the Terms &amp; Privacy Policy.</p>
+          </div>
+          <p style="margin:20px 0 0; font-size:13px; color:#71717a; text-align:center;">Already have an account? <span onClick="{{ goSignin }}" style="color:oklch(0.55 0.14 50); font-weight:600; cursor:pointer;">Sign in</span></p>
+        </sc-if>
+
+        <!-- VERIFY -->
+        <sc-if value="{{ isVerify }}" hint-placeholder-val="{{ false }}">
+          <div style="width:46px; height:46px; border-radius:12px; background:oklch(0.97 0.02 60); color:oklch(0.55 0.14 50); display:flex; align-items:center; justify-content:center; margin-bottom:18px;">{{ mailIcon }}</div>
+          <h1 style="margin:0 0 4px; font-size:25px; font-weight:700; letter-spacing:-0.02em;">Check your inbox</h1>
+          <p style="margin:0 0 26px; font-size:13.5px; color:#71717a; line-height:1.55;">We sent a 6-digit code to <span style="color:#18181b; font-weight:600;">{{ emailMasked }}</span>. Enter it below to verify.</p>
+          <div style="display:flex; gap:9px; margin-bottom:22px;">
+            <input maxlength="1" inputmode="numeric" style="width:48px; height:54px; text-align:center; font-size:21px; font-weight:600; border-radius:11px; border:1px solid #d9d9de; outline:none; color:#18181b;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" />
+            <input maxlength="1" inputmode="numeric" style="width:48px; height:54px; text-align:center; font-size:21px; font-weight:600; border-radius:11px; border:1px solid #d9d9de; outline:none; color:#18181b;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" />
+            <input maxlength="1" inputmode="numeric" style="width:48px; height:54px; text-align:center; font-size:21px; font-weight:600; border-radius:11px; border:1px solid #d9d9de; outline:none; color:#18181b;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" />
+            <input maxlength="1" inputmode="numeric" style="width:48px; height:54px; text-align:center; font-size:21px; font-weight:600; border-radius:11px; border:1px solid #d9d9de; outline:none; color:#18181b;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" />
+            <input maxlength="1" inputmode="numeric" style="width:48px; height:54px; text-align:center; font-size:21px; font-weight:600; border-radius:11px; border:1px solid #d9d9de; outline:none; color:#18181b;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" />
+            <input maxlength="1" inputmode="numeric" style="width:48px; height:54px; text-align:center; font-size:21px; font-weight:600; border-radius:11px; border:1px solid #d9d9de; outline:none; color:#18181b;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" />
+          </div>
+          <button onClick="{{ goOrg }}" style="width:100%; height:45px; border:none; border-radius:10px; background:oklch(0.62 0.14 50); color:#fff; font-weight:600; font-size:14px; cursor:pointer;" style-hover="background:oklch(0.56 0.14 50);">Verify &amp; continue</button>
+          <p style="margin:18px 0 0; font-size:13px; color:#71717a; text-align:center;">Didn't get it? <span style="color:oklch(0.55 0.14 50); font-weight:600; cursor:pointer;">Resend code</span> · <span onClick="{{ goSignup }}" style="color:#71717a; font-weight:500; cursor:pointer; text-decoration:underline;">Change email</span></p>
+        </sc-if>
+
+        <!-- FORGOT -->
+        <sc-if value="{{ isForgot }}" hint-placeholder-val="{{ false }}">
+          <div style="width:46px; height:46px; border-radius:12px; background:oklch(0.97 0.02 60); color:oklch(0.55 0.14 50); display:flex; align-items:center; justify-content:center; margin-bottom:18px;">{{ lockIcon }}</div>
+          <h1 style="margin:0 0 4px; font-size:25px; font-weight:700; letter-spacing:-0.02em;">Reset your password</h1>
+          <p style="margin:0 0 26px; font-size:13.5px; color:#71717a; line-height:1.55;">Enter the email tied to your account and we'll send a reset link.</p>
+          <div style="display:flex; flex-direction:column; gap:15px;">
+            <div>
+              <label style="display:block; font-size:12.5px; font-weight:500; color:#52525b; margin-bottom:6px;">Email</label>
+              <div style="position:relative;"><span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#a1a1aa; display:flex;">{{ mailIcon }}</span><input value="{{ email }}" onInput="{{ setEmail }}" type="email" placeholder="you@company.com" style="width:100%; height:43px; padding:0 13px 0 38px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; outline:none;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" /></div>
+            </div>
+            <button onClick="{{ goReset }}" style="height:45px; border:none; border-radius:10px; background:oklch(0.62 0.14 50); color:#fff; font-weight:600; font-size:14px; cursor:pointer;" style-hover="background:oklch(0.56 0.14 50);">Send reset link</button>
+          </div>
+          <p style="margin:20px 0 0; font-size:13px; color:#71717a; text-align:center;"><span onClick="{{ goSignin }}" style="color:oklch(0.55 0.14 50); font-weight:600; cursor:pointer;">← Back to sign in</span></p>
+        </sc-if>
+
+        <!-- RESET -->
+        <sc-if value="{{ isReset }}" hint-placeholder-val="{{ false }}">
+          <div style="display:inline-flex; align-items:center; gap:7px; font-size:12px; color:oklch(0.42 0.1 155); background:oklch(0.95 0.045 155); border-radius:999px; padding:5px 11px; margin-bottom:16px; font-weight:600;">Link verified</div>
+          <h1 style="margin:0 0 4px; font-size:25px; font-weight:700; letter-spacing:-0.02em;">Set a new password</h1>
+          <p style="margin:0 0 26px; font-size:13.5px; color:#71717a;">Choose a strong password you'll remember.</p>
+          <div style="display:flex; flex-direction:column; gap:15px;">
+            <div>
+              <label style="display:block; font-size:12.5px; font-weight:500; color:#52525b; margin-bottom:6px;">New password</label>
+              <div style="position:relative;"><span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#a1a1aa; display:flex;">{{ lockIcon }}</span><input type="password" placeholder="At least 8 characters" style="width:100%; height:43px; padding:0 13px 0 38px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; outline:none;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" /></div>
+            </div>
+            <div>
+              <label style="display:block; font-size:12.5px; font-weight:500; color:#52525b; margin-bottom:6px;">Confirm password</label>
+              <div style="position:relative;"><span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#a1a1aa; display:flex;">{{ lockIcon }}</span><input type="password" placeholder="Re-enter password" style="width:100%; height:43px; padding:0 13px 0 38px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; outline:none;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" /></div>
+            </div>
+            <button onClick="{{ goSignin }}" style="height:45px; border:none; border-radius:10px; background:oklch(0.62 0.14 50); color:#fff; font-weight:600; font-size:14px; cursor:pointer;" style-hover="background:oklch(0.56 0.14 50);">Reset password</button>
+          </div>
+          <p style="margin:20px 0 0; font-size:13px; color:#71717a; text-align:center;"><span onClick="{{ goSignin }}" style="color:oklch(0.55 0.14 50); font-weight:600; cursor:pointer;">← Back to sign in</span></p>
+        </sc-if>
+
+      </div>
+    </div>
+    <div style="height:18px;"></div>
+  </div>
+
+  <!-- DARK PANEL + LIVE PREVIEW -->
+  <div style="width:46%; min-width:460px; max-width:640px; flex:none; background:#171311; padding:48px; display:flex; flex-direction:column; position:relative; overflow:hidden;">
+    <div style="font-family:'Geist Mono',monospace; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:oklch(0.74 0.13 60);">One source of truth</div>
+    <div style="margin-top:40px;">
+      <h2 style="margin:0 0 16px; font-size:30px; font-weight:700; line-height:1.18; letter-spacing:-0.02em; color:#fff; max-width:340px;">Every item, order and invoice — in one place.</h2>
+      <p style="margin:0; font-size:14px; color:rgba(255,255,255,.6); line-height:1.6; max-width:320px;">Configure the modules your business actually needs, and leave the rest off.</p>
+    </div>
+    <div style="position:absolute; bottom:-44px; right:-44px; width:472px; animation:sfFloat 6s ease-in-out infinite;">
+      <div style="width:100%; background:#fff; border:1px solid rgba(255,255,255,.1); border-radius:14px; box-shadow:0 30px 70px -18px rgb(0 0 0/.6); overflow:hidden;">
+        <div style="display:flex; align-items:center; gap:8px; padding:9px 13px; border-bottom:1px solid #efeff1; background:#fafafa;">
+          <div style="width:18px; height:18px; border-radius:5px; background:oklch(0.62 0.14 50); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:10px;">S</div>
+          <span style="font-size:11px; font-weight:600; color:#3f3f46;">Stock by Location</span><div style="flex:1;"></div>
+          <span style="display:inline-flex; align-items:center; gap:5px; font-size:10px; color:#16a34a; font-weight:600; font-family:'Geist Mono',monospace;"><span style="width:6px; height:6px; border-radius:999px; background:#16a34a; animation:sfPulse 2s ease-in-out infinite;"></span>LIVE</span>
+        </div>
+        <div style="display:flex; height:236px;">
+          <div style="width:42px; flex:none; background:#fafafa; border-right:1px solid #efeff1; padding:9px 0 0; display:flex; flex-direction:column; align-items:center; position:relative;">
+            <div style="position:absolute; left:0; top:9px; width:2.5px; height:20px; border-radius:0 3px 3px 0; background:oklch(0.62 0.14 50); animation:sfNavGlide 7s ease-in-out infinite;"></div>
+            <div style="display:flex; flex-direction:column; gap:10px; align-items:center;">
+              <div style="width:20px; height:20px; border-radius:6px; background:oklch(0.62 0.14 50);"></div>
+              <div style="width:20px; height:20px; border-radius:6px; background:#e4e4e7;"></div>
+              <div style="width:20px; height:20px; border-radius:6px; background:#e4e4e7;"></div>
+              <div style="width:20px; height:20px; border-radius:6px; background:#e4e4e7;"></div>
+            </div>
+          </div>
+          <div style="flex:1; min-width:0; padding:11px 13px; display:flex; flex-direction:column;">
+            <div style="display:flex; gap:7px; margin-bottom:11px;">
+              <div style="flex:1; border:1px solid #efeff1; border-radius:8px; padding:7px 8px;">
+                <div style="font-size:8px; color:#a1a1aa; font-family:'Geist Mono',monospace; letter-spacing:.04em;">ON HAND</div>
+                <div style="display:flex; align-items:flex-end; font-size:14px; font-weight:700; color:#18181b; line-height:16px; margin-top:1px;"><span>1,28</span><span style="height:16px; overflow:hidden; display:inline-block;"><span style="display:block; animation:sfOdo 3.2s steps(10) infinite;"><span style="display:block; height:16px;">0</span><span style="display:block; height:16px;">1</span><span style="display:block; height:16px;">2</span><span style="display:block; height:16px;">3</span><span style="display:block; height:16px;">4</span><span style="display:block; height:16px;">5</span><span style="display:block; height:16px;">6</span><span style="display:block; height:16px;">7</span><span style="display:block; height:16px;">8</span><span style="display:block; height:16px;">9</span><span style="display:block; height:16px;">0</span></span></span></div>
+              </div>
+              <div style="flex:1; border:1px solid #efeff1; border-radius:8px; padding:7px 8px;">
+                <div style="font-size:8px; color:#a1a1aa; font-family:'Geist Mono',monospace; letter-spacing:.04em;">BELOW REORDER</div>
+                <div style="display:flex; align-items:center; gap:5px; font-size:14px; font-weight:700; color:#18181b; line-height:16px; margin-top:1px;">3 <span style="width:6px; height:6px; border-radius:999px; background:oklch(0.62 0.14 50); animation:sfPulse 1.6s ease-in-out infinite;"></span></div>
+              </div>
+              <div style="flex:1; border:1px solid #efeff1; border-radius:8px; padding:7px 8px;">
+                <div style="font-size:8px; color:#a1a1aa; font-family:'Geist Mono',monospace; letter-spacing:.04em; margin-bottom:4px;">ACTIVITY</div>
+                <div style="display:flex; align-items:flex-end; gap:2.5px; height:16px;">
+                  <div style="flex:1; background:oklch(0.62 0.14 50 / .35); border-radius:1.5px; height:100%; transform-origin:bottom; animation:sfBreathe 1.8s ease-in-out infinite;"></div>
+                  <div style="flex:1; background:oklch(0.62 0.14 50 / .55); border-radius:1.5px; height:100%; transform-origin:bottom; animation:sfBreathe 1.8s ease-in-out infinite .25s;"></div>
+                  <div style="flex:1; background:oklch(0.62 0.14 50 / .8); border-radius:1.5px; height:100%; transform-origin:bottom; animation:sfBreathe 1.8s ease-in-out infinite .5s;"></div>
+                  <div style="flex:1; background:oklch(0.62 0.14 50 / .55); border-radius:1.5px; height:100%; transform-origin:bottom; animation:sfBreathe 1.8s ease-in-out infinite .75s;"></div>
+                  <div style="flex:1; background:oklch(0.62 0.14 50 / .35); border-radius:1.5px; height:100%; transform-origin:bottom; animation:sfBreathe 1.8s ease-in-out infinite 1s;"></div>
+                </div>
+              </div>
+            </div>
+            <div style="position:relative; flex:1;">
+              <div style="position:absolute; left:-4px; right:-4px; top:0; height:22px; background:oklch(0.62 0.14 50 / .07); border-radius:5px; animation:sfSweep 4.5s ease-in-out infinite; pointer-events:none;"></div>
+              <div style="display:flex; font-size:8px; color:#a1a1aa; font-family:'Geist Mono',monospace; letter-spacing:.04em; padding:0 2px 6px; border-bottom:1px solid #f4f4f5;"><span style="flex:1.6;">ITEM</span><span style="width:40px; text-align:right;">QTY</span><span style="width:78px; text-align:right;">STATUS</span></div>
+              <div style="display:flex; align-items:center; height:22px; font-size:10px;"><span style="flex:1.6; font-family:'Geist Mono',monospace; color:#3f3f46;">BD-3072-FR</span><span style="width:40px; text-align:right; color:#18181b; font-weight:500;">312</span><span style="width:78px; display:flex; justify-content:flex-end;"><span style="font-size:9px; font-weight:600; color:oklch(0.42 0.1 155); background:oklch(0.95 0.045 155); border-radius:999px; padding:1.5px 7px;">In stock</span></span></div>
+              <div style="display:flex; align-items:center; height:22px; font-size:10px;"><span style="flex:1.6; font-family:'Geist Mono',monospace; color:#3f3f46;">MR-3060-LD</span><span style="width:40px; text-align:right; color:#18181b; font-weight:500;">26</span><span style="width:78px; display:flex; justify-content:flex-end; position:relative; height:14px;"><span style="position:absolute; right:0; font-size:9px; font-weight:600; color:oklch(0.5 0.11 55); background:oklch(0.95 0.05 70); border-radius:999px; padding:1.5px 7px; animation:sfBadgeA 5s ease-in-out infinite;">Below reorder</span><span style="position:absolute; right:0; font-size:9px; font-weight:600; color:oklch(0.42 0.1 155); background:oklch(0.95 0.045 155); border-radius:999px; padding:1.5px 7px; animation:sfBadgeB 5s ease-in-out infinite;">In stock</span></span></div>
+              <div style="display:flex; align-items:center; height:22px; font-size:10px;"><span style="flex:1.6; font-family:'Geist Mono',monospace; color:#3f3f46;">HW-RAIL-72</span><span style="width:40px; text-align:right; color:#18181b; font-weight:500;">210</span><span style="width:78px; display:flex; justify-content:flex-end;"><span style="font-size:9px; font-weight:600; color:oklch(0.42 0.1 155); background:oklch(0.95 0.045 155); border-radius:999px; padding:1.5px 7px;">In stock</span></span></div>
+              <div style="display:flex; align-items:center; height:22px; font-size:10px;"><span style="flex:1.6; font-family:'Geist Mono',monospace; color:#3f3f46;">GL-FRST-2480</span><span style="width:40px; text-align:right; color:#18181b; font-weight:500;">0</span><span style="width:78px; display:flex; justify-content:flex-end;"><span style="font-size:9px; font-weight:600; color:oklch(0.5 0.15 25); background:oklch(0.95 0.04 25); border-radius:999px; padding:1.5px 7px;">Out of stock</span></span></div>
+              <div style="display:flex; align-items:center; height:22px; font-size:10px;"><span style="flex:1.6; font-family:'Geist Mono',monospace; color:#3f3f46;">PV-3280-CL</span><span style="width:40px; text-align:right; color:#18181b; font-weight:500;">9</span><span style="width:78px; display:flex; justify-content:flex-end;"><span style="font-size:9px; font-weight:600; color:oklch(0.5 0.11 55); background:oklch(0.95 0.05 70); border-radius:999px; padding:1.5px 7px;">Below reorder</span></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute; left:14px; bottom:64px; display:flex; align-items:center; gap:8px; background:#18181b; color:#fff; border-radius:9px; padding:8px 12px; box-shadow:0 10px 24px -6px rgb(0 0 0/.5); animation:sfToast 7s ease-in-out infinite;"><span style="width:7px; height:7px; border-radius:999px; background:oklch(0.74 0.13 60);"></span><span style="font-size:11px; font-weight:600;">New sales order</span><span style="font-size:11px; color:rgba(255,255,255,.55); font-family:'Geist Mono',monospace;">SO01043</span></div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============================================================= SETUP WIZARD ============================================================= -->
+<sc-if value="{{ isSetup }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100vh; background:#f7f7f8; display:flex; flex-direction:column;">
+  <!-- top bar -->
+  <div style="display:flex; align-items:center; gap:10px; padding:18px 28px; border-bottom:1px solid #ececee; background:#fff;">
+    <div style="width:30px; height:30px; border-radius:8px; background:oklch(0.62 0.14 50); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px;">S</div>
+    <span style="font-size:16px; font-weight:700; letter-spacing:-0.02em;">Shelfree</span>
+    <span style="font-size:12.5px; color:#a1a1aa; margin-left:4px;">· Set up your workspace</span>
+    <div style="flex:1;"></div>
+    <span onClick="{{ goSignin }}" style="font-size:13px; color:#71717a; font-weight:500; cursor:pointer;">Sign out</span>
+  </div>
+  <!-- stepper -->
+  <div style="display:flex; align-items:center; justify-content:center; padding:22px 28px 4px;">
+    <div style="display:flex; align-items:center; width:100%; max-width:560px;">
+      <sc-for list="{{ steps }}" as="st" hint-placeholder-count="4">
+        <div style="display:flex; align-items:center;"><div style="{{ st.dotStyle }}"><sc-if value="{{ st.tick }}" hint-placeholder-val="{{ false }}">{{ st.tick }}</sc-if><sc-if value="{{ st.num }}" hint-placeholder-val="{{ true }}">{{ st.num }}</sc-if></div><span style="{{ st.labelStyle }}; margin-left:9px; white-space:nowrap;">{{ st.name }}</span></div>
+        <div style="{{ st.lineStyle }}"></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="flex:1; display:flex; justify-content:center; padding:30px 28px 60px;">
+
+    <!-- ORG -->
+    <sc-if value="{{ isOrg }}" hint-placeholder-val="{{ true }}">
+      <div style="width:100%; max-width:560px; animation:sfFade .3s ease;">
+        <h1 style="margin:0 0 5px; font-size:24px; font-weight:700; letter-spacing:-0.02em;">Tell us about your company</h1>
+        <p style="margin:0 0 26px; font-size:13.5px; color:#71717a;">This sets up your organization. You can change any of it later in Administration.</p>
+        <div style="background:#fff; border:1px solid #ececee; border-radius:16px; padding:26px; box-shadow:0 2px 10px -4px rgb(0 0 0/.06); display:flex; flex-direction:column; gap:22px;">
+          <div style="display:flex; gap:18px; align-items:center;">
+            <div onClick="{{ toggleLogo }}" style="width:72px; height:72px; flex:none; border-radius:14px; border:1.5px dashed #d9d9de; display:flex; align-items:center; justify-content:center; cursor:pointer; background:#fafafa; color:#a1a1aa; overflow:hidden;" style-hover="border-color:oklch(0.62 0.14 50);color:oklch(0.55 0.14 50);">
+              <sc-if value="{{ logoOn }}" hint-placeholder-val="{{ false }}"><div style="width:100%; height:100%; background:oklch(0.62 0.14 50); color:#fff; display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:700;">{{ logoInitial }}</div></sc-if>
+              <sc-if value="{{ noLogo }}" hint-placeholder-val="{{ true }}">{{ uploadIcon }}</sc-if>
+            </div>
+            <div><div style="font-size:13.5px; font-weight:600; margin-bottom:3px;">Company logo</div><div style="font-size:12.5px; color:#71717a; line-height:1.5;">Click to upload a square PNG or SVG. <br>Shows on documents and the app sidebar.</div></div>
+          </div>
+          <div>
+            <label style="display:block; font-size:12.5px; font-weight:500; color:#52525b; margin-bottom:6px;">Company name</label>
+            <div style="position:relative;"><span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#a1a1aa; display:flex;">{{ buildingIcon }}</span><input value="{{ company }}" onInput="{{ setCompany }}" placeholder="e.g. Northwind Doors &amp; Hardware" style="width:100%; height:44px; padding:0 13px 0 38px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; outline:none;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" /></div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+            <div><label style="display:block; font-size:12.5px; font-weight:500; color:#52525b; margin-bottom:6px;">Country</label><div style="position:relative;"><select style="appearance:none; width:100%; height:44px; padding:0 32px 0 13px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; color:#18181b; outline:none; cursor:pointer;"><option>United States</option><option>Canada</option><option>United Kingdom</option><option>Australia</option><option>India</option><option>Germany</option></select><span style="position:absolute; right:12px; top:50%; transform:translateY(-50%); color:#a1a1aa; pointer-events:none;">▾</span></div></div>
+            <div><label style="display:block; font-size:12.5px; font-weight:500; color:#52525b; margin-bottom:6px;">Currency</label><div style="position:relative;"><select style="appearance:none; width:100%; height:44px; padding:0 32px 0 13px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; color:#18181b; outline:none; cursor:pointer;"><option>USD — US Dollar</option><option>CAD — Canadian Dollar</option><option>GBP — British Pound</option><option>EUR — Euro</option><option>INR — Indian Rupee</option></select><span style="position:absolute; right:12px; top:50%; transform:translateY(-50%); color:#a1a1aa; pointer-events:none;">▾</span></div></div>
+          </div>
+          <div style="height:1px; background:#f0f0f1;"></div>
+          <div>
+            <div style="display:flex; align-items:center; gap:7px; font-size:13.5px; font-weight:600; margin-bottom:12px;"><span style="color:oklch(0.55 0.14 50); display:flex;">{{ pinIcon }}</span> Business address</div>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <input placeholder="Street address" style="width:100%; height:42px; padding:0 13px; border-radius:10px; border:1px solid #d9d9de; background:#fff; font-size:13.5px; outline:none;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" />
+              <div style="display:grid; grid-template-columns:1.4fr 1fr 0.8fr; gap:12px;">
+                <input placeholder="City" style="width:100%; min-width:0; height:42px; padding:0 13px; border-radius:10px; border:1px solid #d9d9de; font-size:13.5px; outline:none;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" />
+                <input placeholder="State / Region" style="width:100%; min-width:0; height:42px; padding:0 13px; border-radius:10px; border:1px solid #d9d9de; font-size:13.5px; outline:none;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" />
+                <input placeholder="ZIP" style="width:100%; min-width:0; height:42px; padding:0 13px; border-radius:10px; border:1px solid #d9d9de; font-size:13.5px; outline:none;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" />
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:10px; padding:13px 14px; border-radius:11px; background:#fafafa; border:1px solid #ececee;">
+            <span style="color:oklch(0.55 0.14 50); display:flex; flex:none; margin-top:1px;">{{ pinIcon }}</span>
+            <span style="font-size:12.5px; color:#71717a; line-height:1.55;">Ship from more than one place? Add each store, warehouse or distribution center — with its own address and stock — under <span style="color:#3f3f46; font-weight:600;">Locations</span> once your workspace is ready.</span>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; margin-top:24px;">
+          <div style="flex:1;"></div>
+          <button onClick="{{ goBiz }}" style="height:45px; padding:0 22px; border:none; border-radius:10px; background:oklch(0.62 0.14 50); color:#fff; font-weight:600; font-size:14px; cursor:pointer; display:inline-flex; align-items:center; gap:8px;" style-hover="background:oklch(0.56 0.14 50);">Continue {{ arrowRight }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- BUSINESS TYPE -->
+    <sc-if value="{{ isBiztype }}" hint-placeholder-val="{{ false }}">
+      <div style="width:100%; max-width:760px; animation:sfFade .3s ease;">
+        <h1 style="margin:0 0 5px; font-size:24px; font-weight:700; letter-spacing:-0.02em;">What kind of business do you run?</h1>
+        <p style="margin:0 0 24px; font-size:13.5px; color:#71717a;">Shelfree switches on the modules your model needs and recommends a plan. You can change this anytime.</p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <sc-for list="{{ bizCards }}" as="b" hint-placeholder-count="8">
+            <button onClick="{{ b.select }}" style="{{ b.cardStyle }}">
+              <span style="{{ b.iconWrap }}">{{ b.icon }}</span>
+              <span style="display:flex; flex-direction:column; gap:2px; min-width:0;"><span style="font-size:14px; font-weight:600; color:#18181b;">{{ b.name }}</span><span style="font-size:12px; color:#71717a;">{{ b.tag }}</span></span>
+              <span style="{{ b.tickStyle }}">{{ b.tick }}</span>
+            </button>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ hasBiz }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:20px; background:#fff; border:1px solid #ececee; border-radius:15px; padding:22px; box-shadow:0 2px 10px -4px rgb(0 0 0/.06); animation:sfFade .25s ease;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;"><span style="color:oklch(0.55 0.14 50); display:flex;">{{ layersIcon }}</span><span style="font-size:14px; font-weight:600;">Modules for {{ bizName }}</span></div>
+            <div style="font-size:11px; font-weight:600; color:#a1a1aa; font-family:'Geist Mono',monospace; letter-spacing:.04em; margin-bottom:9px;">INCLUDED IN EVERY WORKSPACE</div>
+            <div style="display:flex; flex-wrap:wrap; gap:7px; margin-bottom:18px;">
+              <sc-for list="{{ baseChips }}" as="c" hint-placeholder-count="8"><span style="font-size:12.5px; color:#52525b; background:#f4f4f5; border:1px solid #ececee; border-radius:999px; padding:5px 12px;">{{ c }}</span></sc-for>
+            </div>
+            <div style="font-size:11px; font-weight:600; color:oklch(0.55 0.14 50); font-family:'Geist Mono',monospace; letter-spacing:.04em; margin-bottom:9px;">SWITCHED ON FOR {{ bizName }}</div>
+            <div style="display:flex; flex-wrap:wrap; gap:7px;">
+              <sc-for list="{{ domChips }}" as="c" hint-placeholder-count="4"><span style="display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:500; color:oklch(0.42 0.13 50); background:oklch(0.97 0.025 60); border:1px solid oklch(0.62 0.14 50 / .3); border-radius:999px; padding:5px 12px;"><span style="width:5px; height:5px; border-radius:999px; background:oklch(0.62 0.14 50);"></span>{{ c }}</span></sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <div style="display:flex; align-items:center; gap:12px; margin-top:24px;">
+          <button onClick="{{ goOrg }}" style="height:45px; padding:0 18px; border:1px solid #d9d9de; border-radius:10px; background:#fff; color:#3f3f46; font-weight:600; font-size:14px; cursor:pointer; display:inline-flex; align-items:center; gap:7px;" style-hover="background:#fafafa;">{{ backIcon }} Back</button>
+          <div style="flex:1;"></div>
+          <button onClick="{{ guardBiz }}" style="{{ continueBizStyle }}">Continue {{ arrowRight }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- PLAN / TIERS -->
+    <sc-if value="{{ isTiers }}" hint-placeholder-val="{{ false }}">
+      <div style="width:100%; max-width:980px; animation:sfFade .3s ease;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:5px;"><h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-0.02em;">Choose your plan</h1><span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:oklch(0.42 0.13 50); background:oklch(0.97 0.025 60); border:1px solid oklch(0.62 0.14 50 / .3); border-radius:999px; padding:4px 11px;">{{ bizIcon }} {{ bizName }}</span></div>
+        <p style="margin:0 0 26px; font-size:13.5px; color:#71717a; max-width:640px;">Core is the shared base every business gets. Each step up unlocks more of your industry's tools — and Enterprise lets you blend modules across industries for hybrid operations.</p>
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; align-items:start;">
+          <sc-for list="{{ tierCards }}" as="t" hint-placeholder-count="4">
+            <div onClick="{{ t.select }}" style="{{ t.cardStyle }}">
+              <span style="{{ t.badgeStyle }}">Most popular</span>
+              <span style="{{ t.selDot }}">{{ t.selTick }}</span>
+              <div style="font-size:15px; font-weight:700; letter-spacing:-0.01em; margin-bottom:6px; padding-right:24px;">{{ t.name }}</div>
+              <div style="display:flex; align-items:baseline; gap:3px; margin-bottom:8px;"><span style="font-size:26px; font-weight:700; letter-spacing:-0.02em; color:{{ t.priceColor }};">{{ t.price }}</span><span style="font-size:12px; color:#a1a1aa;">{{ t.unit }}</span></div>
+              <div style="font-size:12.5px; color:#71717a; line-height:1.5; min-height:38px; margin-bottom:14px;">{{ t.tagline }}</div>
+              <div style="display:flex; flex-direction:column; gap:9px; border-top:1px solid #f0f0f1; padding-top:14px;">
+                <sc-for list="{{ t.feats }}" as="f" hint-placeholder-count="5">
+                  <div style="display:flex; align-items:flex-start; gap:8px; font-size:12.5px; color:#3f3f46; line-height:1.4;"><span style="color:oklch(0.55 0.14 50); display:flex; flex:none; margin-top:1px;">{{ f.icon }}</span>{{ f.label }}</div>
+                </sc-for>
+              </div>
+              <button style="{{ t.ctaStyle }}">{{ t.cta }}</button>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; margin-top:26px;">
+          <button onClick="{{ goBiz }}" style="height:45px; padding:0 18px; border:1px solid #d9d9de; border-radius:10px; background:#fff; color:#3f3f46; font-weight:600; font-size:14px; cursor:pointer; display:inline-flex; align-items:center; gap:7px;" style-hover="background:#fafafa;">{{ backIcon }} Back</button>
+          <div style="flex:1;"></div>
+          <button onClick="{{ goInvite }}" style="height:45px; padding:0 22px; border:none; border-radius:10px; background:oklch(0.62 0.14 50); color:#fff; font-weight:600; font-size:14px; cursor:pointer; display:inline-flex; align-items:center; gap:8px;" style-hover="background:oklch(0.56 0.14 50);">Continue with {{ tierName }} {{ arrowRight }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- INVITE -->
+    <sc-if value="{{ isInvite }}" hint-placeholder-val="{{ false }}">
+      <div style="width:100%; max-width:560px; animation:sfFade .3s ease;">
+        <h1 style="margin:0 0 5px; font-size:24px; font-weight:700; letter-spacing:-0.02em;">Invite your team</h1>
+        <p style="margin:0 0 24px; font-size:13.5px; color:#71717a;">Bring in colleagues to share the workspace. You can always add more later — this step is optional.</p>
+        <div style="background:#fff; border:1px solid #ececee; border-radius:16px; padding:24px; box-shadow:0 2px 10px -4px rgb(0 0 0/.06);">
+          <div style="display:flex; gap:10px; margin-bottom:18px;">
+            <div style="position:relative; flex:1;"><span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#a1a1aa; display:flex;">{{ mailIcon }}</span><input value="{{ inviteEmail }}" onInput="{{ setInviteEmail }}" placeholder="colleague@company.com" style="width:100%; height:44px; padding:0 13px 0 38px; border-radius:10px; border:1px solid #d9d9de; font-size:13.5px; outline:none;" style-focus="border-color:oklch(0.62 0.14 50);box-shadow:0 0 0 3px oklch(0.62 0.14 50 / .12);" /></div>
+            <button onClick="{{ addInvite }}" style="height:44px; padding:0 18px; border:none; border-radius:10px; background:#18181b; color:#fff; font-weight:600; font-size:13.5px; cursor:pointer; display:inline-flex; align-items:center; gap:7px; flex:none;" style-hover="background:#000;">{{ plusIcon }} Add</button>
+          </div>
+          <sc-if value="{{ hasInvites }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <sc-for list="{{ invitesList }}" as="iv" hint-placeholder-count="2">
+                <div style="display:flex; align-items:center; gap:11px; padding:10px 12px; border:1px solid #ececee; border-radius:11px; background:#fafafa;">
+                  <span style="width:32px; height:32px; flex:none; border-radius:999px; background:oklch(0.62 0.14 50); color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600;">{{ iv.initial }}</span>
+                  <span style="flex:1; min-width:0; font-size:13.5px; font-weight:500; color:#18181b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ iv.email }}</span>
+                  <span style="font-size:11.5px; color:#71717a; background:#f0f0f1; border-radius:999px; padding:3px 10px;">{{ iv.role }}</span>
+                  <button onClick="{{ iv.remove }}" style="width:28px; height:28px; flex:none; border:none; background:transparent; color:#a1a1aa; border-radius:7px; cursor:pointer; display:flex; align-items:center; justify-content:center;" style-hover="background:#f0f0f1;color:#52525b;">{{ iv.rmIcon }}</button>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noInvites }}" hint-placeholder-val="{{ true }}">
+            <div style="text-align:center; padding:20px 0 8px; color:#a1a1aa; font-size:12.5px;">No invites yet — add teammates above, or skip for now.</div>
+          </sc-if>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; margin-top:24px;">
+          <button onClick="{{ goTiers }}" style="height:45px; padding:0 18px; border:1px solid #d9d9de; border-radius:10px; background:#fff; color:#3f3f46; font-weight:600; font-size:14px; cursor:pointer; display:inline-flex; align-items:center; gap:7px;" style-hover="background:#fafafa;">{{ backIcon }} Back</button>
+          <div style="flex:1;"></div>
+          <button onClick="{{ goLaunch }}" style="height:45px; padding:0 16px; border:none; border-radius:10px; background:transparent; color:#71717a; font-weight:600; font-size:14px; cursor:pointer;" style-hover="color:#18181b;">Skip for now</button>
+          <button onClick="{{ goLaunch }}" style="height:45px; padding:0 22px; border:none; border-radius:10px; background:oklch(0.62 0.14 50); color:#fff; font-weight:600; font-size:14px; cursor:pointer; display:inline-flex; align-items:center; gap:8px;" style-hover="background:oklch(0.56 0.14 50);">Finish setup {{ arrowRight }}</button>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</sc-if>
+
+<!-- ============================================================= LAUNCH ============================================================= -->
+<sc-if value="{{ isLaunch }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100vh; background:#f7f7f8; display:flex; align-items:center; justify-content:center; padding:40px 28px;">
+  <div style="width:100%; max-width:480px; text-align:center; animation:sfFade .35s ease;">
+    <div style="position:relative; width:78px; height:78px; margin:0 auto 24px;">
+      <div style="position:absolute; inset:0; border-radius:999px; background:oklch(0.62 0.14 50 / .25); animation:sfRing 1.8s ease-out infinite;"></div>
+      <div style="position:relative; width:78px; height:78px; border-radius:999px; background:oklch(0.62 0.14 50); color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 14px 30px -10px oklch(0.62 0.14 50 / .7); animation:sfPop .4s ease;">{{ checkBig }}</div>
+    </div>
+    <h1 style="margin:0 0 6px; font-size:27px; font-weight:700; letter-spacing:-0.02em;">Your workspace is ready</h1>
+    <p style="margin:0 0 26px; font-size:14px; color:#71717a; line-height:1.55;">{{ companyOut }} is set up and your modules are switched on. Jump in whenever you're ready.</p>
+
+    <div style="background:#fff; border:1px solid #ececee; border-radius:16px; padding:6px 6px; box-shadow:0 2px 12px -5px rgb(0 0 0/.08); text-align:left; margin-bottom:22px;">
+      <div style="display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid #f4f4f5;">
+        <span style="width:38px; height:38px; flex:none; border-radius:10px; background:oklch(0.97 0.025 60); color:oklch(0.55 0.14 50); display:flex; align-items:center; justify-content:center;">{{ bizIcon }}</span>
+        <span style="flex:1;"><span style="display:block; font-size:11px; color:#a1a1aa; font-family:'Geist Mono',monospace; letter-spacing:.04em;">BUSINESS TYPE</span><span style="font-size:14px; font-weight:600;">{{ bizName }}</span></span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid #f4f4f5;">
+        <span style="width:38px; height:38px; flex:none; border-radius:10px; background:oklch(0.97 0.025 60); color:oklch(0.55 0.14 50); display:flex; align-items:center; justify-content:center;">{{ shieldIcon }}</span>
+        <span style="flex:1;"><span style="display:block; font-size:11px; color:#a1a1aa; font-family:'Geist Mono',monospace; letter-spacing:.04em;">PLAN</span><span style="font-size:14px; font-weight:600;">{{ tierName }}</span></span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px; padding:14px 16px;">
+        <span style="width:38px; height:38px; flex:none; border-radius:10px; background:oklch(0.97 0.025 60); color:oklch(0.55 0.14 50); display:flex; align-items:center; justify-content:center;">{{ layersIcon }}</span>
+        <span style="flex:1;"><span style="display:block; font-size:11px; color:#a1a1aa; font-family:'Geist Mono',monospace; letter-spacing:.04em;">MODULES ENABLED</span><span style="font-size:14px; font-weight:600;">{{ modCount }} modules active</span></span>
+      </div>
+    </div>
+
+    <button onClick="{{ openApp }}" style="width:100%; height:50px; border:none; border-radius:11px; background:oklch(0.62 0.14 50); color:#fff; font-weight:600; font-size:15px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:9px;" style-hover="background:oklch(0.56 0.14 50);">Open Shelfree {{ arrowRight }}</button>
+    <p style="margin:16px 0 0; font-size:12.5px; color:#a1a1aa; line-height:1.5;">You can fine-tune modules anytime in <span style="color:#71717a; font-weight:500;">Administration → Modules</span>.</p>
+  </div>
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { view: 'signin', email: '', company: '', logo: false, biz: null, tier: 2, invites: [], inviteEmail: '' };
+
+  go(v) { this.setState({ view: v }); try { window.scrollTo(0, 0); } catch (e) {} }
+
+  bizTypes() {
+    return [
+      { key: 'retail', icon: 'retail', name: 'Retail', tag: 'Buy stock, sell to shoppers', mods: ['Point of Sale', 'Promotions & Discounts', 'Loyalty Program', 'Catalog & Channels'] },
+      { key: 'wholesale', icon: 'wholesale', name: 'Wholesale / Distribution', tag: 'Bulk buying and B2B selling', mods: ['Tiered Price Lists', 'Multi-location Transfers', 'Drop-shipping', 'Backorder Management'] },
+      { key: 'manufacturing', icon: 'manufacturing', name: 'Manufacturing', tag: 'Build products from components', mods: ['Production BOMs', 'Routings & Work Centers', 'Released Prod. Orders', 'Capacity Planning'] },
+      { key: '3pl', icon: 'logistics', name: '3PL / Warehouse', tag: 'Store & move goods for clients', mods: ['Bin & Zone Management', 'Wave Picking', 'Client Billing', 'Inbound / Outbound Docks'] },
+      { key: 'ecom', icon: 'ecommerce', name: 'E-commerce / Omnichannel', tag: 'Sell online across channels', mods: ['Online Catalog Sync', 'Channel Connectors', 'Returns & RMA', 'Fulfillment Routing'] },
+      { key: 'fnb', icon: 'fnb', name: 'Food & Beverage', tag: 'Perishables and recipes', mods: ['Lot / Batch Tracking', 'Expiry & FEFO', 'Recipe Management', 'Compliance Logs'] },
+      { key: 'pharma', icon: 'pharma', name: 'Pharma / Healthcare', tag: 'Regulated medical inventory', mods: ['Serialization', 'Cold-chain Monitoring', 'GxP / Regulatory', 'Recall Management'] },
+      { key: 'construction', icon: 'construction', name: 'Construction / Trade', tag: 'Project-based materials & jobs', mods: ['Projects & Jobs', 'Job Costing', 'Equipment Tracking', 'Service Orders'] },
+    ];
+  }
+
+  baseMods() { return ['Dashboard', 'Items & Inventory', 'Sales Orders', 'Purchasing', 'Customers & Vendors', 'Stock by Location', 'Basic Financials', 'Reports']; }
+
+  tiersFor(bt) {
+    const dn = bt ? bt.name.split(' ')[0].replace('/', '') : 'Industry';
+    const dm = bt ? bt.mods : ['Domain module A', 'Domain module B', 'Domain module C', 'Domain module D'];
+    return [
+      { name: 'Core', price: 'Free', unit: 'forever', tagline: 'The shared foundation every business runs on.', feats: this.baseMods(), cta: 'Start with Core', accent: false },
+      { name: dn + ' Essentials', price: '$79', unit: '/user · mo', tagline: 'Adds ' + dn + ' tools, with starter limits.', feats: ['Everything in Core', dm[0] + ' — up to 100 / mo', dm[1], 'Single location', 'Email support'], cta: 'Choose Essentials', accent: false },
+      { name: dn + ' Pro', price: '$129', unit: '/user · mo', tagline: 'The complete ' + dn + ' toolkit — no limits.', feats: ['Everything in Essentials', dm[2], dm[3], 'Unlimited locations', 'Automation & open API', 'Priority support'], cta: 'Choose Pro', accent: true },
+      { name: 'Enterprise / Hybrid', price: 'Custom', unit: '', tagline: 'Run more than one model — add modules from any industry.', feats: ['Everything in Pro', 'Cross-industry modules', 'Dedicated environment', 'SSO / SAML & audit logs', 'Solution engineer'], cta: 'Contact sales', accent: false },
+    ];
+  }
+
+  pBtn(enabled) {
+    return { height: '45px', padding: '0 22px', border: 'none', borderRadius: '10px', background: enabled ? 'oklch(0.62 0.14 50)' : '#e4e4e7', color: enabled ? '#fff' : '#a1a1aa', fontWeight: 600, fontSize: '14px', cursor: enabled ? 'pointer' : 'not-allowed', display: 'inline-flex', alignItems: 'center', gap: '8px' };
+  }
+
+  icon(name, size) {
+    const E = React.createElement;
+    const P = (d, i) => E('path', { d, key: i });
+    const C = (cx, cy, r, i) => E('circle', { cx, cy, r, key: i });
+    const R = (x, y, w, h, rx, i) => E('rect', { x, y, width: w, height: h, rx, key: i });
+    const map = {
+      retail: [P('M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z', 1), P('M3 6h18', 2), P('M16 10a4 4 0 0 1-8 0', 3)],
+      wholesale: [P('M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z', 1), P('m3.3 7 8.7 5 8.7-5', 2), P('M12 22V12', 3)],
+      manufacturing: [P('M3 21V9.5l5.5 3.5V9.5l5.5 3.5V4H21v17Z', 1), P('M3 21h18', 2)],
+      logistics: [P('M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35a2 2 0 0 1 1.26-1.85l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z', 1), P('M6 18h12M6 14h12M6 10h12', 2)],
+      ecommerce: [C(9, 20, 1.5, 1), C(17, 20, 1.5, 2), P('M3 3h2l2.4 12.2a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.8L20.5 7H6', 3)],
+      fnb: [P('M17 8h1a4 4 0 0 1 0 8h-1', 1), P('M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z', 2), P('M6 1v3M10 1v3M14 1v3', 3)],
+      pharma: [P('m10.5 20.5 10-10a5 5 0 0 0-7-7l-10 10a5 5 0 0 0 7 7Z', 1), P('m8.5 8.5 7 7', 2)],
+      construction: [P('m15 12-8.5 8.5a2.12 2.12 0 0 1-3-3L12 9', 1), P('M17.6 6.4 14 10l-4-4 3.6-3.6a2 2 0 0 1 2.8 0l1.2 1.2a2 2 0 0 1 0 2.8Z', 2)],
+      mail: [R(2, 4, 20, 16, 2, 1), P('m2 7 10 6 10-6', 2)],
+      lock: [R(5, 11, 14, 10, 2, 1), P('M8 11V7a4 4 0 0 1 8 0v4', 2)],
+      user: [C(12, 8, 4, 1), P('M4 21a8 8 0 0 1 16 0', 2)],
+      building: [R(4, 2, 16, 20, 2, 1), P('M9 22v-4h6v4', 2), P('M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01', 3)],
+      upload: [P('M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2', 1), P('M12 3v12', 2), P('m7 8 5-5 5 5', 3)],
+      arrowRight: [P('M5 12h14', 1), P('m13 6 6 6-6 6', 2)],
+      arrowLeft: [P('m12 19-7-7 7-7', 1), P('M5 12h14', 2)],
+      plus: [P('M12 5v14', 1), P('M5 12h14', 2)],
+      x: [P('M6 6l12 12', 1), P('M18 6 6 18', 2)],
+      check: [P('m4 12 5 5L20 7', 1)],
+      mapPin: [P('M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z', 1), C(12, 10, 3, 2)],
+      users: [C(9, 8, 3.5, 1), P('M2.5 20a6.5 6.5 0 0 1 13 0', 2), P('M16 4.8a3.5 3.5 0 0 1 0 6.4', 3), P('M17.8 14.6a6.5 6.5 0 0 1 3.7 5.4', 4)],
+      layers: [P('M12 2 2 7l10 5 10-5Z', 1), P('m2 12 10 5 10-5', 2), P('m2 17 10 5 10-5', 3)],
+      shield: [P('M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z', 1)],
+      spark: [P('m12 3 1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 11.6 10.1 8.6Z', 1)],
+    };
+    return E('svg', { width: size || 18, height: size || 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }, map[name] || []);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const v = s.view;
+    const primary = 'oklch(0.62 0.14 50)';
+    const isAuth = ['signin', 'signup', 'verify', 'forgot', 'reset'].includes(v);
+    const BT = this.bizTypes();
+    const sel = BT.find(b => b.key === s.biz) || null;
+
+    const bizCards = BT.map(b => {
+      const on = s.biz === b.key;
+      return {
+        name: b.name, tag: b.tag, icon: this.icon(b.icon, 22),
+        select: () => this.setState({ biz: b.key }),
+        cardStyle: { display: 'flex', gap: '13px', alignItems: 'center', textAlign: 'left', padding: '15px 16px', borderRadius: '13px', background: on ? 'oklch(0.975 0.018 60)' : '#fff', border: on ? ('1.5px solid ' + primary) : '1px solid #e7e7ea', boxShadow: on ? '0 10px 26px -12px oklch(0.62 0.14 50 / .5)' : '0 1px 2px rgb(0 0 0/.04)', cursor: 'pointer', transition: 'all .12s', width: '100%' },
+        iconWrap: { width: '42px', height: '42px', flex: 'none', borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: on ? primary : '#f4f4f5', color: on ? '#fff' : '#52525b' },
+        tickStyle: { marginLeft: 'auto', width: '22px', height: '22px', borderRadius: '999px', flex: 'none', display: on ? 'flex' : 'none', alignItems: 'center', justifyContent: 'center', background: primary, color: '#fff' },
+        tick: this.icon('check', 13),
+      };
+    });
+
+    const tiers = this.tiersFor(sel);
+    const tierCards = tiers.map((t, i) => {
+      const on = s.tier === i;
+      return {
+        name: t.name, price: t.price, unit: t.unit, tagline: t.tagline, cta: t.cta, accent: t.accent,
+        feats: t.feats.map(f => ({ label: f, icon: this.icon('check', 13) })),
+        select: () => this.setState({ tier: i }),
+        cardStyle: { display: 'flex', flexDirection: 'column', padding: '24px 20px', borderRadius: '15px', background: '#fff', border: on ? ('1.5px solid ' + primary) : (t.accent ? '1.5px solid oklch(0.62 0.14 50 / .35)' : '1px solid #e7e7ea'), boxShadow: on ? '0 16px 38px -14px oklch(0.62 0.14 50 / .55)' : '0 2px 12px -5px rgb(0 0 0/.08)', cursor: 'pointer', position: 'relative', transition: 'all .12s' },
+        badgeStyle: { display: t.accent ? 'inline-block' : 'none', position: 'absolute', top: '-10px', left: '20px', fontSize: '10px', fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: '#fff', background: primary, borderRadius: '999px', padding: '3px 9px' },
+        selDot: { display: on ? 'flex' : 'none', position: 'absolute', top: '18px', right: '18px', width: '22px', height: '22px', borderRadius: '999px', background: primary, color: '#fff', alignItems: 'center', justifyContent: 'center' },
+        selTick: this.icon('check', 13),
+        priceColor: t.accent ? primary : '#18181b',
+        ctaStyle: { marginTop: '18px', height: '40px', borderRadius: '9px', border: on ? 'none' : '1px solid #e4e4e7', background: on ? primary : '#fff', color: on ? '#fff' : '#3f3f46', fontWeight: 600, fontSize: '13px', cursor: 'pointer', width: '100%' },
+      };
+    });
+
+    const invitesList = (s.invites || []).map((iv, i) => ({
+      email: iv.email, role: iv.role, initial: iv.email.charAt(0).toUpperCase(),
+      remove: () => this.setState(st => ({ invites: st.invites.filter((_, j) => j !== i) })), rmIcon: this.icon('x', 13),
+    }));
+
+    const order = ['org', 'biztype', 'tiers', 'invite'];
+    const cur = order.indexOf(v);
+    const steps = ['Organization', 'Business type', 'Plan', 'Invite'].map((nm, i) => {
+      const done = (cur > i) || v === 'launch';
+      const active = cur === i;
+      return {
+        name: nm, num: done ? '' : String(i + 1), tick: done ? this.icon('check', 13) : null,
+        dotStyle: { width: '26px', height: '26px', borderRadius: '999px', flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 600, background: (done || active) ? primary : '#e4e4e7', color: (done || active) ? '#fff' : '#a1a1aa' },
+        labelStyle: { fontSize: '13px', fontWeight: active ? 600 : 500, color: active ? '#18181b' : (done ? '#52525b' : '#a1a1aa') },
+        lineStyle: { display: i < 3 ? 'block' : 'none', flex: 1, height: '1.5px', background: (cur > i || v === 'launch') ? primary : '#e4e4e7', margin: '0 10px' },
+      };
+    });
+
+    return {
+      isSignin: v === 'signin', isSignup: v === 'signup', isVerify: v === 'verify', isForgot: v === 'forgot', isReset: v === 'reset',
+      isAuth, isSetup: ['org', 'biztype', 'tiers', 'invite'].includes(v), isOrg: v === 'org', isBiztype: v === 'biztype', isTiers: v === 'tiers', isInvite: v === 'invite', isLaunch: v === 'launch',
+      email: s.email || '', emailMasked: s.email || 'you@company.com', setEmail: (e) => this.setState({ email: e.target.value }),
+      company: s.company || '', setCompany: (e) => this.setState({ company: e.target.value }), companyOut: s.company || 'Your company',
+      logoOn: !!s.logo, noLogo: !s.logo, toggleLogo: () => this.setState(st => ({ logo: !st.logo })), logoInitial: ((s.company || 'S').trim().charAt(0) || 'S').toUpperCase(),
+      goSignin: () => this.go('signin'), goSignup: () => this.go('signup'), goVerify: () => this.go('verify'), goForgot: () => this.go('forgot'), goReset: () => this.go('reset'),
+      goOrg: () => this.go('org'), goBiz: () => this.go('biztype'), goTiers: () => this.go('tiers'), goInvite: () => this.go('invite'), goLaunch: () => this.go('launch'),
+      openApp: () => { window.location.href = 'Shelfree%20ERP.dc.html'; },
+      bizCards, baseChips: this.baseMods(), domChips: sel ? sel.mods : [], hasBiz: !!sel, noBiz: !sel, bizName: sel ? sel.name : '', bizIcon: sel ? this.icon(sel.icon, 18) : null,
+      continueBizStyle: this.pBtn(!!sel), guardBiz: () => { if (this.state.biz) this.go('tiers'); },
+      tierCards, tierName: tiers[s.tier] ? tiers[s.tier].name : '',
+      invitesList, hasInvites: (s.invites || []).length > 0, noInvites: (s.invites || []).length === 0,
+      inviteEmail: s.inviteEmail || '', setInviteEmail: (e) => this.setState({ inviteEmail: e.target.value }),
+      addInvite: () => { const em = (this.state.inviteEmail || '').trim(); if (!em) return; this.setState(st => ({ invites: [...st.invites, { email: em, role: 'Member' }], inviteEmail: '' })); },
+      modCount: this.baseMods().length + (sel ? sel.mods.length : 0),
+      mailIcon: this.icon('mail', 16), lockIcon: this.icon('lock', 16), userIcon: this.icon('user', 16), buildingIcon: this.icon('building', 16),
+      uploadIcon: this.icon('upload', 22), arrowRight: this.icon('arrowRight', 15), backIcon: this.icon('arrowLeft', 15), plusIcon: this.icon('plus', 16),
+      pinIcon: this.icon('mapPin', 15), usersIcon: this.icon('users', 18), sparkIcon: this.icon('spark', 16), layersIcon: this.icon('layers', 18), shieldIcon: this.icon('shield', 16), checkBig: this.icon('check', 32),
+      steps,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+/* Shelfree Design System — CSS entry point
+ * Consumers: @import this one file to get all tokens.
+ * Load Geist + Geist Mono via the <link> tag documented in tokens/typography.css.
+ *
+ * UI baseline is shadcn/ui: components are styled with Tailwind classes. Any page
+ * that mounts a component must also load Tailwind + lib/tailwind-shadcn.js (see
+ * CLAUDE.md → "UI baseline: shadcn/ui"). tokens/shadcn.css holds the shadcn theme.
+ */
+@import './tokens/colors.css';
+@import './tokens/typography.css';
+@import './tokens/spacing.css';
+@import './tokens/shadcn.css';

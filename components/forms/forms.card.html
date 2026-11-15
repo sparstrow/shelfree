@@ -1,0 +1,68 @@
+<!-- @dsCard group="Components" viewport="720x300" subtitle="shadcn Input, SearchInput, SelectField — default, prefix, focus, error, disabled" name="Form Inputs" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../../lib/tailwind-shadcn.js"></script>
+<link rel="stylesheet" href="../../styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Geist',ui-sans-serif,sans-serif;background:var(--background);color:var(--foreground);padding:20px 24px;-webkit-font-smoothing:antialiased}
+.row{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:none}
+.label{width:92px;flex:none;font-size:10.5px;font-weight:600;color:var(--muted-fg);letter-spacing:0.06em;padding-top:9px}
+input,select{font-family:inherit}
+</style>
+</head>
+<body>
+<div>
+  <div class="row">
+    <div class="label">DEFAULT</div>
+    <div class="flex flex-col gap-1.5" style="flex:1">
+      <label class="text-sm font-medium text-muted-foreground">Work email</label>
+      <div class="relative flex items-center">
+        <span class="absolute left-3 flex text-muted-foreground pointer-events-none"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg></span>
+        <input placeholder="you@company.com" class="flex h-9 w-full rounded-md border border-input bg-transparent pl-9 pr-3 py-1 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+      </div>
+    </div>
+    <div class="flex flex-col gap-1.5" style="flex:1">
+      <label class="text-sm font-medium text-muted-foreground">Item no.</label>
+      <input value="BD-3684-KO" class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm">
+    </div>
+  </div>
+  <div class="row">
+    <div class="label">FOCUS</div>
+    <div style="flex:1">
+      <input value="SO00014" class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm ring-1 ring-ring outline-none">
+    </div>
+    <div class="text-xs text-muted-foreground" style="flex:1;padding-top:9px">focus-visible: 1px ring at --ring</div>
+  </div>
+  <div class="row">
+    <div class="label">ERROR</div>
+    <div class="flex flex-col gap-1.5" style="flex:1">
+      <input value="−5" class="flex h-9 w-full rounded-md border border-destructive bg-transparent px-3 py-1 text-sm text-foreground shadow-sm ring-1 ring-destructive outline-none">
+      <p class="text-xs text-destructive m-0">Must be greater than 0</p>
+    </div>
+    <div class="flex flex-col gap-1.5" style="flex:1">
+      <input placeholder="Disabled" disabled class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground shadow-sm placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50">
+      <p class="text-xs text-muted-foreground m-0">disabled state</p>
+    </div>
+  </div>
+  <div class="row">
+    <div class="label">TOOLBAR</div>
+    <div class="relative inline-flex" style="width:280px">
+      <span class="absolute left-2.5 top-1/2 -translate-y-1/2 flex text-muted-foreground pointer-events-none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg></span>
+      <input placeholder="Search no., description, vendor…" class="h-8 w-full rounded-md border border-input bg-transparent pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+    </div>
+    <div class="relative inline-flex">
+      <select class="h-9 appearance-none rounded-md border border-input bg-transparent pl-3 pr-8 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+        <option>All categories</option><option>Barn Door</option><option>Bypass Door</option><option>Hardware</option>
+      </select>
+      <span class="absolute right-2.5 top-1/2 -translate-y-1/2 flex text-muted-foreground pointer-events-none"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

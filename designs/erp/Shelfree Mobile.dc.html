@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+:root{
+  --desk:#0a0a0c;
+  --sidebar:#08080a; --background:#0c0c0e; --panel:#161618; --card:#161618;
+  --foreground:#f4f4f5; --muted:#1e1e22; --muted-fg:#8a8a93; --border:#26262b; --input:#34343b;
+  --primary:oklch(0.72 0.13 58); --primary-hover:oklch(0.66 0.13 58); --primary-fg:#2a1a08;
+  --ring:oklch(0.72 0.13 58); --row-hover:#161618;
+  --ok-bg:color-mix(in oklab, oklch(0.72 0.16 155) 16%, transparent); --ok-fg:oklch(0.82 0.13 155);
+  --info-bg:color-mix(in oklab, oklch(0.7 0.13 245) 16%, transparent); --info-fg:oklch(0.82 0.1 245);
+  --warn-bg:color-mix(in oklab, oklch(0.78 0.14 70) 16%, transparent); --warn-fg:oklch(0.84 0.12 75);
+  --bad-bg:color-mix(in oklab, oklch(0.7 0.18 25) 18%, transparent); --bad-fg:oklch(0.82 0.13 25);
+  --neutral-bg:#26262b; --neutral-fg:#a1a1aa;
+  --shadow:0 1px 2px rgb(0 0 0 / .4); --shadow-lg:0 18px 44px -14px rgb(0 0 0 / .65);
+  --lift:0 7px 18px -6px rgb(0 0 0 / .7);
+}
+[data-theme="dark"]{ color-scheme:dark; }
+[data-theme="light"]{
+  color-scheme:light;
+  --desk:#e9e9ed;
+  --sidebar:#fafafa; --background:#f6f6f8; --panel:#fafafa; --card:#ffffff;
+  --foreground:#18181b; --muted:#f0f0f2; --muted-fg:#71717a; --border:#e4e4e7; --input:#d9d9de;
+  --primary:oklch(0.62 0.14 50); --primary-hover:oklch(0.56 0.14 50); --primary-fg:#ffffff;
+  --ring:oklch(0.62 0.14 50); --row-hover:#fafafa;
+  --ok-bg:oklch(0.95 0.045 155); --ok-fg:oklch(0.42 0.1 155);
+  --info-bg:oklch(0.95 0.035 245); --info-fg:oklch(0.45 0.1 245);
+  --warn-bg:oklch(0.95 0.05 70); --warn-fg:oklch(0.5 0.11 55);
+  --bad-bg:oklch(0.95 0.04 25); --bad-fg:oklch(0.5 0.15 25);
+  --neutral-bg:#f0f0f2; --neutral-fg:#71717a;
+  --shadow:0 1px 2px rgb(0 0 0 / .05); --shadow-lg:0 12px 32px -8px rgb(0 0 0 / .18);
+  --lift:0 4px 12px -3px rgb(0 0 0 / .16);
+}
+[data-brand="#3b82f6"]{ --primary:#3b82f6; --primary-hover:#2f6fd6; --primary-fg:#ffffff; --ring:#3b82f6; }
+[data-brand="#22a06b"]{ --primary:#22a06b; --primary-hover:#1c8a5b; --primary-fg:#ffffff; --ring:#22a06b; }
+[data-screen-label] *{scrollbar-width:none}
+[data-screen-label] *::-webkit-scrollbar{display:none}
+@keyframes sfFade{from{opacity:0}to{opacity:1}}
+@keyframes sfUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+@keyframes sfPush{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+@keyframes sfToast{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+
+<div data-theme="{{ vm.theme }}" data-brand="{{ vm.brand }}" style="min-height:100vh; width:100%; display:flex; align-items:center; justify-content:center; padding:36px 20px; background:var(--desk); font-family:'Geist',ui-sans-serif,system-ui,sans-serif; -webkit-font-smoothing:antialiased;">
+
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ vm.isDark }}" hint-size="402px,874px">
+<div data-screen-label="Shelfree Mobile" style="height:100%; display:flex; flex-direction:column; background:var(--background); color:var(--foreground); font-family:'Geist',ui-sans-serif,system-ui,sans-serif; position:relative; overflow:hidden;">
+
+  <!-- ═══════════ LOADING ═══════════ -->
+  <sc-if value="{{ vm.loading }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;">
+      <div style="width:52px; height:52px; border-radius:14px; background:var(--primary); color:var(--primary-fg); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:26px;">S</div>
+      <div style="font-size:13px; color:var(--muted-fg);">Loading Shelfree…</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ vm.ready }}" hint-placeholder-val="{{ false }}">
+
+  <!-- ═══════════ HOME TAB ═══════════ -->
+  <sc-if value="{{ vm.tabHome }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Home" style="flex:1; min-height:0; display:flex; flex-direction:column;">
+      <div style="flex:none; padding:64px 18px 12px; display:flex; align-items:center; gap:11px;">
+        <div style="width:36px; height:36px; flex:none; border-radius:10px; background:var(--primary); color:var(--primary-fg); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:18px;">S</div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:17px; font-weight:700; letter-spacing:-0.02em; line-height:1.15;">Shelfree</div>
+          <div style="font-size:11.5px; color:var(--muted-fg);">NorthDoor Mfg. · Inventory</div>
+        </div>
+        <button onClick="{{ vm.toggleTheme }}" title="Toggle theme" style="width:38px; height:38px; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); border-radius:11px; background:var(--card); color:var(--muted-fg); cursor:pointer; transition:background .14s ease, color .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:var(--muted); color:var(--foreground); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.94);">
+          <sc-if value="{{ vm.isDark }}" hint-placeholder-val="{{ true }}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></sc-if>
+          <sc-if value="{{ vm.isLight }}" hint-placeholder-val="{{ false }}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg></sc-if>
+        </button>
+      </div>
+      <div style="flex:1; min-height:0; overflow:auto; padding:4px 18px 14px; display:flex; flex-direction:column; gap:16px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <sc-for list="{{ vm.kpis }}" as="k" hint-placeholder-count="4">
+            <button onClick="{{ k.go }}" style="display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:13px 14px; border:1px solid var(--border); border-radius:14px; background:var(--card); color:var(--foreground); font-family:inherit; cursor:pointer; text-align:left; transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:var(--row-hover); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.97);">
+              <span style="font-size:11px; font-weight:600; letter-spacing:0.04em; color:var(--muted-fg); text-transform:uppercase;">{{ k.label }}</span>
+              <span style="font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-0.02em; color:{{ k.color }};">{{ k.value }}</span>
+              <span style="font-size:11.5px; color:var(--muted-fg);">{{ k.sub }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+          <button onClick="{{ vm.qaNewOrder }}" style="display:flex; flex-direction:column; align-items:center; gap:7px; padding:13px 6px; border:none; border-radius:14px; background:var(--primary); color:var(--primary-fg); font-family:inherit; font-size:11.5px; font-weight:600; cursor:pointer; box-shadow:var(--shadow); transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:var(--primary-hover); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.96);">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.6 2.6a2 2 0 0 0-1.4-.6H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.4 8.4a2 2 0 0 0 2.8 0l6.4-6.4a2 2 0 0 0 0-2.8z"></path><circle cx="7.3" cy="7.3" r="1.2"></circle></svg>
+            New order
+          </button>
+          <button onClick="{{ vm.qaNewItem }}" style="display:flex; flex-direction:column; align-items:center; gap:7px; padding:13px 6px; border:1px solid var(--border); border-radius:14px; background:var(--card); color:var(--foreground); font-family:inherit; font-size:11.5px; font-weight:600; cursor:pointer; transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:var(--row-hover); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.96);">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m21 8-9-5-9 5v8l9 5 9-5z"></path><path d="m3 8 9 5 9-5"></path><path d="M12 13v8"></path></svg>
+            New item
+          </button>
+          <button onClick="{{ vm.qaAdjust }}" style="display:flex; flex-direction:column; align-items:center; gap:7px; padding:13px 6px; border:1px solid var(--border); border-radius:14px; background:var(--card); color:var(--foreground); font-family:inherit; font-size:11.5px; font-weight:600; cursor:pointer; transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:var(--row-hover); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.96);">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>
+            Adjust stock
+          </button>
+        </div>
+        <sc-if value="{{ vm.hasAttn }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="font-size:11px; font-weight:600; letter-spacing:0.07em; color:var(--muted-fg); text-transform:uppercase; padding:0 2px 8px;">Needs attention</div>
+            <div style="border:1px solid var(--border); border-radius:14px; background:var(--card); overflow:hidden;">
+              <sc-for list="{{ vm.attn }}" as="a" hint-placeholder-count="4">
+                <button onClick="{{ a.open }}" style="display:flex; align-items:center; gap:11px; width:100%; min-height:56px; padding:9px 13px; border:none; border-bottom:1px solid var(--border); background:transparent; color:var(--foreground); font-family:inherit; cursor:pointer; text-align:left; transition:background .14s ease;" style-hover="background:var(--row-hover);" style-active="background:var(--muted);">
+                  <span style="{{ a.iconSt }}">
+                    <sc-if value="{{ a.isInv }}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg></sc-if>
+                    <sc-if value="{{ a.isItem }}" hint-placeholder-val="{{ true }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg></sc-if>
+                  </span>
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ a.title }}</span>
+                    <span style="display:block; font-size:11.5px; color:var(--muted-fg); margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ a.sub }}</span>
+                  </span>
+                  <span style="{{ a.badgeSt }}">{{ a.badge }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <div>
+          <div style="display:flex; align-items:center; padding:0 2px 8px;">
+            <span style="flex:1; font-size:11px; font-weight:600; letter-spacing:0.07em; color:var(--muted-fg); text-transform:uppercase;">Recent orders</span>
+            <button onClick="{{ vm.goSales }}" style="border:none; background:transparent; color:var(--primary); font-family:inherit; font-size:12px; font-weight:600; cursor:pointer; padding:2px 2px; transition:opacity .14s ease;" style-hover="opacity:.75;">See all</button>
+          </div>
+          <div style="border:1px solid var(--border); border-radius:14px; background:var(--card); overflow:hidden;">
+            <sc-for list="{{ vm.recentOrders }}" as="r" hint-placeholder-count="4">
+              <button onClick="{{ r.open }}" style="display:flex; align-items:center; gap:11px; width:100%; min-height:58px; padding:9px 13px; border:none; border-bottom:1px solid var(--border); background:transparent; color:var(--foreground); font-family:inherit; cursor:pointer; text-align:left; transition:background .14s ease;" style-hover="background:var(--row-hover);" style-active="background:var(--muted);">
+                <span style="flex:1; min-width:0;">
+                  <span style="display:flex; align-items:center; gap:7px;">
+                    <span style="font-family:'Geist Mono',monospace; font-size:12.5px; font-weight:600;">{{ r.no }}</span>
+                    <span style="{{ r.statusSt }}">{{ r.statusLabel }}</span>
+                  </span>
+                  <span style="display:block; font-size:12px; color:var(--muted-fg); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ r.customer }} · {{ r.meta }}</span>
+                </span>
+                <span style="font-size:13.5px; font-weight:600; font-variant-numeric:tabular-nums;">{{ r.totalLabel }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ═══════════ SALES TAB ═══════════ -->
+  <sc-if value="{{ vm.tabSales }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Sales" style="flex:1; min-height:0; display:flex; flex-direction:column;">
+      <div style="flex:none; padding:64px 18px 10px; display:flex; align-items:center; gap:10px;">
+        <div style="flex:1; font-size:24px; font-weight:700; letter-spacing:-0.03em;">Sales</div>
+        <button onClick="{{ vm.qaNewOrder }}" style="display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 14px; border:none; border-radius:11px; background:var(--primary); color:var(--primary-fg); font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; box-shadow:var(--shadow); transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:var(--primary-hover); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.95);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+          Order
+        </button>
+      </div>
+      <div style="flex:none; padding:0 18px 12px;">
+        <div style="display:flex; gap:3px; padding:3px; border:1px solid var(--border); border-radius:11px; background:var(--card);">
+          <sc-for list="{{ vm.segs }}" as="s" hint-placeholder-count="3">
+            <button onClick="{{ s.go }}" style="{{ s.st }}" style-hover="color:var(--foreground);" style-active="transform:scale(.97);">{{ s.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex:1; min-height:0; overflow:auto; padding:0 18px 14px;">
+        <sc-if value="{{ vm.segOrders }}" hint-placeholder-val="{{ true }}">
+          <div style="border:1px solid var(--border); border-radius:14px; background:var(--card); overflow:hidden;">
+            <sc-for list="{{ vm.orderRows }}" as="r" hint-placeholder-count="8">
+              <button onClick="{{ r.open }}" style="display:flex; align-items:center; gap:11px; width:100%; min-height:60px; padding:10px 13px; border:none; border-bottom:1px solid var(--border); background:transparent; color:var(--foreground); font-family:inherit; cursor:pointer; text-align:left; transition:background .14s ease;" style-hover="background:var(--row-hover);" style-active="background:var(--muted);">
+                <span style="flex:1; min-width:0;">
+                  <span style="display:flex; align-items:center; gap:7px;">
+                    <span style="font-family:'Geist Mono',monospace; font-size:12.5px; font-weight:600;">{{ r.no }}</span>
+                    <span style="{{ r.statusSt }}">{{ r.statusLabel }}</span>
+                  </span>
+                  <span style="display:block; font-size:12px; color:var(--muted-fg); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ r.customer }} · {{ r.meta }}</span>
+                </span>
+                <span style="font-size:13.5px; font-weight:600; font-variant-numeric:tabular-nums;">{{ r.totalLabel }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ vm.segInvoices }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1px solid var(--border); border-radius:14px; background:var(--card); overflow:hidden;">
+            <sc-for list="{{ vm.invRows }}" as="r" hint-placeholder-count="8">
+              <button onClick="{{ r.open }}" style="display:flex; align-items:center; gap:11px; width:100%; min-height:60px; padding:10px 13px; border:none; border-bottom:1px solid var(--border); background:transparent; color:var(--foreground); font-family:inherit; cursor:pointer; text-align:left; transition:background .14s ease;" style-hover="background:var(--row-hover);" style-active="background:var(--muted);">
+                <span style="flex:1; min-width:0;">
+                  <span style="display:flex; align-items:center; gap:7px;">
+                    <span style="font-family:'Geist Mono',monospace; font-size:12.5px; font-weight:600;">{{ r.no }}</span>
+                    <span style="{{ r.statusSt }}">{{ r.statusLabel }}</span>
+                  </span>
+                  <span style="display:block; font-size:12px; color:var(--muted-fg); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ r.customer }} · {{ r.meta }}</span>
+                </span>
+                <span style="font-size:13.5px; font-weight:600; font-variant-numeric:tabular-nums;">{{ r.amountLabel }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ vm.segCustomers }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1px solid var(--border); border-radius:14px; background:var(--card); overflow:hidden;">
+            <sc-for list="{{ vm.custRows }}" as="r" hint-placeholder-count="8">
+              <button onClick="{{ r.open }}" style="display:flex; align-items:center; gap:11px; width:100%; min-height:58px; padding:9px 13px; border:none; border-bottom:1px solid var(--border); background:transparent; color:var(--foreground); font-family:inherit; cursor:pointer; text-align:left; transition:background .14s ease;" style-hover="background:var(--row-hover);" style-active="background:var(--muted);">
+                <span style="width:34px; height:34px; flex:none; border-radius:50%; background:var(--neutral-bg); color:var(--neutral-fg); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600;">{{ r.initials }}</span>
+                <span style="flex:1; min-width:0;">
+                  <span style="display:block; font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ r.name }}</span>
+                  <span style="display:block; font-size:11.5px; color:var(--muted-fg); margin-top:1px;">{{ r.meta }}</span>
+                </span>
+                <span style="text-align:right;">
+                  <span style="display:block; font-size:13px; font-weight:600; font-variant-numeric:tabular-nums;">{{ r.arLabel }}</span>
+                  <span style="display:block; font-size:10.5px; color:var(--muted-fg); margin-top:1px;">open AR</span>
+                </span>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ═══════════ ITEMS TAB ═══════════ -->
+  <sc-if value="{{ vm.tabItems }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Items" style="flex:1; min-height:0; display:flex; flex-direction:column;">
+      <div style="flex:none; padding:64px 18px 10px; display:flex; align-items:center; gap:10px;">
+        <div style="flex:1; font-size:24px; font-weight:700; letter-spacing:-0.03em;">Items</div>
+        <button onClick="{{ vm.qaNewItem }}" style="display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 14px; border:none; border-radius:11px; background:var(--primary); color:var(--primary-fg); font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; box-shadow:var(--shadow); transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:var(--primary-hover); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.95);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+          Item
+        </button>
+      </div>
+      <div style="flex:none; padding:0 18px 8px;">
+        <span style="position:relative; display:block;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="position:absolute; left:12px; top:13px; color:var(--muted-fg); pointer-events:none;"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+          <input value="{{ vm.itemsQ }}" onChange="{{ vm.setItemsQ }}" placeholder="Search items…" style="width:100%; height:42px; padding:0 12px 0 36px; font-size:14px; font-family:inherit; border-radius:12px; border:1px solid var(--border); background:var(--card); color:var(--foreground); outline:none; transition:border-color .14s ease, box-shadow .14s ease;" style-focus="border-color:var(--ring); box-shadow:0 0 0 3px color-mix(in oklab, var(--primary) 20%, transparent);">
+        </span>
+      </div>
+      <div style="flex:none; padding:2px 18px 10px; display:flex; gap:7px;">
+        <sc-for list="{{ vm.itemChips }}" as="c" hint-placeholder-count="3">
+          <button onClick="{{ c.go }}" style="{{ c.st }}" style-hover="border-color:var(--ring);" style-active="transform:scale(.96);">{{ c.label }}<span style="{{ c.countSt }}">{{ c.count }}</span></button>
+        </sc-for>
+      </div>
+      <div style="flex:1; min-height:0; overflow:auto; padding:0 18px 14px;">
+        <div style="border:1px solid var(--border); border-radius:14px; background:var(--card); overflow:hidden;">
+          <sc-for list="{{ vm.itemRows }}" as="r" hint-placeholder-count="10">
+            <button onClick="{{ r.open }}" style="display:flex; align-items:center; gap:11px; width:100%; min-height:62px; padding:10px 13px; border:none; border-bottom:1px solid var(--border); background:transparent; color:var(--foreground); font-family:inherit; cursor:pointer; text-align:left; transition:background .14s ease;" style-hover="background:var(--row-hover);" style-active="background:var(--muted);">
+              <span style="flex:1; min-width:0;">
+                <span style="display:flex; align-items:center; gap:7px;">
+                  <span style="{{ r.catDot }}"></span>
+                  <span style="font-family:'Geist Mono',monospace; font-size:12px; font-weight:600;">{{ r.no }}</span>
+                  <sc-if value="{{ r.low }}" hint-placeholder-val="{{ false }}"><span title="Below reorder point" style="width:6px; height:6px; border-radius:50%; background:var(--warn-fg); flex:none;"></span></sc-if>
+                </span>
+                <span style="display:block; font-size:12.5px; color:var(--muted-fg); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ r.desc }}</span>
+              </span>
+              <span style="text-align:right; flex:none;">
+                <span style="display:block; font-size:14px; font-weight:600; font-variant-numeric:tabular-nums; color:{{ r.availColor }};">{{ r.availLabel }}</span>
+                <span style="display:block; font-size:10.5px; color:var(--muted-fg); margin-top:1px;">available</span>
+              </span>
+            </button>
+          </sc-for>
+          <sc-if value="{{ vm.itemsEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:40px 20px; text-align:center; color:var(--muted-fg); font-size:13px;">No items match.</div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ═══════════ TAB BAR ═══════════ -->
+  <div style="flex:none; display:flex; align-items:flex-start; padding:9px 8px 26px; border-top:1px solid var(--border); background:var(--panel);">
+    <button onClick="{{ vm.tbHome }}" style="{{ vm.tb.home }}" style-active="transform:scale(.92);">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7"></path><path d="M5 9v11h5v-6h4v6h5V9"></path></svg>
+      Home
+    </button>
+    <button onClick="{{ vm.tbSales }}" style="{{ vm.tb.sales }}" style-active="transform:scale(.92);">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12.6 2.6a2 2 0 0 0-1.4-.6H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.4 8.4a2 2 0 0 0 2.8 0l6.4-6.4a2 2 0 0 0 0-2.8z"></path><circle cx="7.3" cy="7.3" r="1.2"></circle></svg>
+      Sales
+    </button>
+    <button onClick="{{ vm.tbItems }}" style="{{ vm.tb.items }}" style-active="transform:scale(.92);">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m21 8-9-5-9 5v8l9 5 9-5z"></path><path d="m3 8 9 5 9-5"></path><path d="M12 13v8"></path></svg>
+      Items
+    </button>
+    <button onClick="{{ vm.tbMore }}" style="{{ vm.tb.more }}" style-active="transform:scale(.92);">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg>
+      More
+    </button>
+  </div>
+
+  <!-- ═══════════ PUSHED SCREEN ═══════════ -->
+  <sc-if value="{{ vm.pushOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; inset:0; z-index:5; background:var(--background); display:flex; flex-direction:column; animation:sfPush .2s ease-out;">
+      <div style="flex:none; padding:60px 14px 10px; display:flex; align-items:center; gap:9px; border-bottom:1px solid var(--border);">
+        <button onClick="{{ vm.pop }}" style="width:38px; height:38px; flex:none; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); border-radius:11px; background:var(--card); color:var(--foreground); cursor:pointer; transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:var(--muted); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.92);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+        </button>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:16px; font-weight:700; letter-spacing:-0.01em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ vm.pushTitle }}</div>
+          <sc-if value="{{ vm.pushSub }}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px; color:var(--muted-fg); margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ vm.pushSub }}</div></sc-if>
+        </div>
+        <sc-if value="{{ vm.pushBadge }}" hint-placeholder-val="{{ false }}"><span style="{{ vm.pushBadgeSt }}">{{ vm.pushBadge }}</span></sc-if>
+      </div>
+
+      <!-- ── Item detail ── -->
+      <sc-if value="{{ vm.pushItem }}" hint-placeholder-val="{{ true }}">
+        <div data-screen-label="Item detail" style="flex:1; min-height:0; overflow:auto; padding:14px 18px 16px; display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; border:1px solid var(--border); border-radius:14px; background:var(--card); padding:13px 6px;">
+            <div style="flex:1; text-align:center;">
+              <div style="font-size:19px; font-weight:700; font-variant-numeric:tabular-nums;">{{ vm.pi.onHand }}</div>
+              <div style="font-size:11px; color:var(--muted-fg); margin-top:2px;">On hand</div>
+            </div>
+            <div style="flex:1; text-align:center; border-left:1px solid var(--border);">
+              <div style="font-size:19px; font-weight:700; font-variant-numeric:tabular-nums;">{{ vm.pi.committed }}</div>
+              <div style="font-size:11px; color:var(--muted-fg); margin-top:2px;">Committed</div>
+            </div>
+            <div style="flex:1; text-align:center; border-left:1px solid var(--border);">
+              <div style="font-size:19px; font-weight:700; font-variant-numeric:tabular-nums; color:{{ vm.pi.availColor }};">{{ vm.pi.available }}</div>
+              <div style="font-size:11px; color:var(--muted-fg); margin-top:2px;">Available</div>
+            </div>
+          </div>
+          <sc-if value="{{ vm.pi.low }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; align-items:center; gap:9px; padding:10px 12px; border-radius:12px; background:var(--warn-bg); color:var(--warn-fg); font-size:12.5px; font-weight:500;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
+              {{ vm.pi.lowLabel }}
+            </div>
+          </sc-if>
+          <div style="border:1px solid var(--border); border-radius:14px; background:var(--card); padding:13px 14px;">
+            <div style="font-size:11px; font-weight:600; letter-spacing:0.06em; color:var(--muted-fg); text-transform:uppercase; margin-bottom:11px;">Stock by location</div>
+            <sc-for list="{{ vm.pi.locs }}" as="L" hint-placeholder-count="4">
+              <div style="display:flex; align-items:center; gap:10px; margin-bottom:9px;">
+                <span style="width:76px; flex:none; font-size:12px; color:var(--muted-fg);">{{ L.label }}</span>
+                <span style="flex:1; height:7px; border-radius:4px; background:var(--muted); overflow:hidden;"><span style="{{ L.barSt }}"></span></span>
+                <span style="width:42px; flex:none; text-align:right; font-size:12.5px; font-variant-numeric:tabular-nums;">{{ L.qty }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="border:1px solid var(--border); border-radius:14px; background:var(--card); padding:6px 14px;">
+            <sc-for list="{{ vm.pi.facts }}" as="f" hint-placeholder-count="7">
+              <div style="display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px dashed var(--border); font-size:13px;">
+                <span style="color:var(--muted-fg);">{{ f.k }}</span>
+                <span style="font-weight:500; font-variant-numeric:tabular-nums; text-align:right;">{{ f.v }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="flex:none; display:flex; gap:9px; padding:11px 18px 14px; border-top:1px solid var(--border); background:var(--panel);">
+          <button onClick="{{ vm.pi.edit }}" style="flex:1; height:46px; border-radius:13px; border:1px solid var(--border); background:var(--card); color:var(--foreground); font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:var(--muted); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.97);">Edit item</button>
+          <button onClick="{{ vm.pi.adjust }}" style="flex:1; height:46px; border-radius:13px; border:none; background:var(--primary); color:var(--primary-fg); font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; box-shadow:var(--shadow); transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:var(--primary-hover); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.97);">Adjust stock</button>
+        </div>
+      </sc-if>
+
+      <!-- ── Order detail ── -->
+      <sc-if value="{{ vm.pushOrder }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Order detail" style="flex:1; min-height:0; overflow:auto; padding:14px 18px 16px; display:flex; flex-direction:column; gap:14px;">
+          <div style="border:1px solid var(--border); border-radius:14px; background:var(--card); padding:6px 14px;">
+            <div style="display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px dashed var(--border); font-size:13px;"><span style="color:var(--muted-fg);">Customer</span><span style="font-weight:500; text-align:right;">{{ vm.po.customer }}</span></div>
+            <div style="display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px dashed var(--border); font-size:13px;"><span style="color:var(--muted-fg);">Order date</span><span style="font-weight:500;">{{ vm.po.orderDate }}</span></div>
+            <div style="display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px dashed var(--border); font-size:13px;"><span style="color:var(--muted-fg);">Ship date</span><span style="font-weight:500;">{{ vm.po.shipDate }}</span></div>
+            <div style="display:flex; justify-content:space-between; gap:10px; padding:9px 0; font-size:13px;"><span style="color:var(--muted-fg);">Location</span><span style="font-weight:500; font-family:'Geist Mono',monospace; font-size:12.5px;">{{ vm.po.location }}</span></div>
+          </div>
+          <div style="border:1px solid var(--border); border-radius:14px; background:var(--card); overflow:hidden;">
+            <div style="font-size:11px; font-weight:600; letter-spacing:0.06em; color:var(--muted-fg); text-transform:uppercase; padding:12px 14px 4px;">Lines</div>
+            <sc-for list="{{ vm.po.lines }}" as="L" hint-placeholder-count="3">
+              <div style="display:flex; align-items:center; gap:11px; min-height:54px; padding:8px 14px; border-bottom:1px solid var(--border);">
+                <span style="flex:1; min-width:0;">
+                  <span style="display:block; font-family:'Geist Mono',monospace; font-size:12px; font-weight:600;">{{ L.no }}</span>
+                  <span style="display:block; font-size:12px; color:var(--muted-fg); margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ L.desc }}</span>
+                </span>
+                <span style="font-size:12px; color:var(--muted-fg); font-variant-numeric:tabular-nums; flex:none;">{{ L.qtyLabel }}</span>
+                <span style="width:70px; flex:none; text-align:right; font-size:13px; font-weight:600; font-variant-numeric:tabular-nums;">{{ L.amtLabel }}</span>
+              </div>
+            </sc-for>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--panel);">
+              <span style="font-size:13px; font-weight:600; color:var(--muted-fg);">Total</span>
+              <span style="font-size:16px; font-weight:700; font-variant-numeric:tabular-nums;">{{ vm.po.totalLabel }}</span>
+            </div>
+          </div>
+        </div>
+        <sc-if value="{{ vm.po.hasAction }}" hint-placeholder-val="{{ false }}">
+          <div style="flex:none; padding:11px 18px 14px; border-top:1px solid var(--border); background:var(--panel);">
+            <button onClick="{{ vm.po.act }}" style="width:100%; height:46px; border-radius:13px; border:none; background:var(--primary); color:var(--primary-fg); font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; box-shadow:var(--shadow); transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:var(--primary-hover); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.97);">{{ vm.po.actionLabel }}</button>
+          </div>
+        </sc-if>
+      </sc-if>
+
+      <!-- ── Customer detail ── -->
+      <sc-if value="{{ vm.pushCust }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Customer detail" style="flex:1; min-height:0; overflow:auto; padding:14px 18px 16px; display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; border:1px solid var(--border); border-radius:14px; background:var(--card); padding:13px 6px;">
+            <div style="flex:1; text-align:center;">
+              <div style="font-size:19px; font-weight:700; font-variant-numeric:tabular-nums;">{{ vm.pc.openCount }}</div>
+              <div style="font-size:11px; color:var(--muted-fg); margin-top:2px;">Open orders</div>
+            </div>
+            <div style="flex:1; text-align:center; border-left:1px solid var(--border);">
+              <div style="font-size:19px; font-weight:700; font-variant-numeric:tabular-nums;">{{ vm.pc.arLabel }}</div>
+              <div style="font-size:11px; color:var(--muted-fg); margin-top:2px;">Open AR</div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px; font-weight:600; letter-spacing:0.07em; color:var(--muted-fg); text-transform:uppercase; padding:0 2px 8px;">Orders</div>
+            <div style="border:1px solid var(--border); border-radius:14px; background:var(--card); overflow:hidden;">
+              <sc-for list="{{ vm.pc.orders }}" as="r" hint-placeholder-count="3">
+                <button onClick="{{ r.open }}" style="display:flex; align-items:center; gap:11px; width:100%; min-height:56px; padding:9px 13px; border:none; border-bottom:1px solid var(--border); background:transparent; color:var(--foreground); font-family:inherit; cursor:pointer; text-align:left; transition:background .14s ease;" style-hover="background:var(--row-hover);" style-active="background:var(--muted);">
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:flex; align-items:center; gap:7px;">
+                      <span style="font-family:'Geist Mono',monospace; font-size:12.5px; font-weight:600;">{{ r.no }}</span>
+                      <span style="{{ r.statusSt }}">{{ r.statusLabel }}</span>
+                    </span>
+                    <span style="display:block; font-size:12px; color:var(--muted-fg); margin-top:2px;">{{ r.meta }}</span>
+                  </span>
+                  <span style="font-size:13.5px; font-weight:600; font-variant-numeric:tabular-nums;">{{ r.totalLabel }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+          <sc-if value="{{ vm.pc.hasInvoices }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <div style="font-size:11px; font-weight:600; letter-spacing:0.07em; color:var(--muted-fg); text-transform:uppercase; padding:0 2px 8px;">Invoices</div>
+              <div style="border:1px solid var(--border); border-radius:14px; background:var(--card); overflow:hidden;">
+                <sc-for list="{{ vm.pc.invoices }}" as="r" hint-placeholder-count="2">
+                  <button onClick="{{ r.open }}" style="display:flex; align-items:center; gap:11px; width:100%; min-height:56px; padding:9px 13px; border:none; border-bottom:1px solid var(--border); background:transparent; color:var(--foreground); font-family:inherit; cursor:pointer; text-align:left; transition:background .14s ease;" style-hover="background:var(--row-hover);" style-active="background:var(--muted);">
+                    <span style="flex:1; min-width:0;">
+                      <span style="display:flex; align-items:center; gap:7px;">
+                        <span style="font-family:'Geist Mono',monospace; font-size:12.5px; font-weight:600;">{{ r.no }}</span>
+                        <span style="{{ r.statusSt }}">{{ r.statusLabel }}</span>
+                      </span>
+                      <span style="display:block; font-size:12px; color:var(--muted-fg); margin-top:2px;">{{ r.meta }}</span>
+                    </span>
+                    <span style="font-size:13.5px; font-weight:600; font-variant-numeric:tabular-nums;">{{ r.amountLabel }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- ── Vendors list ── -->
+      <sc-if value="{{ vm.pushVendors }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Vendors" style="flex:1; min-height:0; display:flex; flex-direction:column;">
+          <div style="flex:none; padding:12px 18px 10px;">
+            <span style="position:relative; display:block;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="position:absolute; left:12px; top:13px; color:var(--muted-fg); pointer-events:none;"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+              <input value="{{ vm.vendQ }}" onChange="{{ vm.setVendQ }}" placeholder="Search vendors…" style="width:100%; height:42px; padding:0 12px 0 36px; font-size:14px; font-family:inherit; border-radius:12px; border:1px solid var(--border); background:var(--card); color:var(--foreground); outline:none; transition:border-color .14s ease, box-shadow .14s ease;" style-focus="border-color:var(--ring); box-shadow:0 0 0 3px color-mix(in oklab, var(--primary) 20%, transparent);">
+            </span>
+          </div>
+          <div style="flex:1; min-height:0; overflow:auto; padding:0 18px 16px;">
+            <div style="border:1px solid var(--border); border-radius:14px; background:var(--card); overflow:hidden;">
+              <sc-for list="{{ vm.vendRows }}" as="r" hint-placeholder-count="8">
+                <button onClick="{{ r.open }}" style="display:flex; align-items:center; gap:11px; width:100%; min-height:60px; padding:10px 13px; border:none; border-bottom:1px solid var(--border); background:transparent; color:var(--foreground); font-family:inherit; cursor:pointer; text-align:left; transition:background .14s ease;" style-hover="background:var(--row-hover);" style-active="background:var(--muted);">
+                  <span style="flex:1; min-width:0;">
+                    <span style="display:flex; align-items:center; gap:7px;">
+                      <span style="font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ r.name }}</span>
+                    </span>
+                    <span style="display:block; font-size:11.5px; color:var(--muted-fg); margin-top:2px;">{{ r.meta }}</span>
+                  </span>
+                  <span style="text-align:right; flex:none;">
+                    <span style="display:block; font-size:13px; font-weight:600; font-variant-numeric:tabular-nums;">{{ r.balLabel }}</span>
+                    <span style="display:block; font-size:10.5px; color:var(--muted-fg); margin-top:1px;">balance</span>
+                  </span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ── Vendor detail ── -->
+      <sc-if value="{{ vm.pushVendor }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Vendor detail" style="flex:1; min-height:0; overflow:auto; padding:14px 18px 16px; display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; gap:9px;">
+            <a href="tel:0" style="flex:1; display:flex; align-items:center; justify-content:center; gap:7px; height:44px; border:1px solid var(--border); border-radius:13px; background:var(--card); color:var(--foreground); font-size:13px; font-weight:600; text-decoration:none; transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:var(--muted); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.97);">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              Call
+            </a>
+            <a href="mailto:0" style="flex:1; display:flex; align-items:center; justify-content:center; gap:7px; height:44px; border:1px solid var(--border); border-radius:13px; background:var(--card); color:var(--foreground); font-size:13px; font-weight:600; text-decoration:none; transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:var(--muted); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.97);">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-10 5L2 7"></path></svg>
+              Email
+            </a>
+          </div>
+          <div style="border:1px solid var(--border); border-radius:14px; background:var(--card); padding:6px 14px;">
+            <sc-for list="{{ vm.pv.facts }}" as="f" hint-placeholder-count="6">
+              <div style="display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px dashed var(--border); font-size:13px;">
+                <span style="color:var(--muted-fg); flex:none;">{{ f.k }}</span>
+                <span style="font-weight:500; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ f.v }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex; border:1px solid var(--border); border-radius:14px; background:var(--card); padding:13px 6px;">
+            <div style="flex:1; text-align:center;">
+              <div style="font-size:17px; font-weight:700; font-variant-numeric:tabular-nums;">{{ vm.pv.balLabel }}</div>
+              <div style="font-size:11px; color:var(--muted-fg); margin-top:2px;">Balance</div>
+            </div>
+            <div style="flex:1; text-align:center; border-left:1px solid var(--border);">
+              <div style="font-size:17px; font-weight:700; font-variant-numeric:tabular-nums;">{{ vm.pv.dueLabel }}</div>
+              <div style="font-size:11px; color:var(--muted-fg); margin-top:2px;">Due</div>
+            </div>
+            <div style="flex:1; text-align:center; border-left:1px solid var(--border);">
+              <div style="font-size:17px; font-weight:700; font-variant-numeric:tabular-nums; color:{{ vm.pv.overdueColor }};">{{ vm.pv.overdueLabel }}</div>
+              <div style="font-size:11px; color:var(--muted-fg); margin-top:2px;">Overdue</div>
+            </div>
+          </div>
+        </div>
+        <div style="flex:none; padding:11px 18px 14px; border-top:1px solid var(--border); background:var(--panel);">
+          <button onClick="{{ vm.pv.edit }}" style="width:100%; height:46px; border-radius:13px; border:1px solid var(--border); background:var(--card); color:var(--foreground); font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:var(--muted); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.97);">Edit vendor</button>
+        </div>
+      </sc-if>
+
+    </div>
+  </sc-if>
+
+  <!-- ═══════════ SHEETS ═══════════ -->
+  <sc-if value="{{ vm.sheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ vm.closeSheet }}" style="position:absolute; inset:0; z-index:40; background:rgb(0 0 0 / .5); animation:sfFade .16s ease-out;"></div>
+    <div style="position:absolute; left:0; right:0; bottom:0; z-index:41; max-height:84%; display:flex; flex-direction:column; background:var(--background); border:1px solid var(--border); border-bottom:none; border-top-left-radius:22px; border-top-right-radius:22px; box-shadow:var(--shadow-lg); animation:sfUp .22s ease-out;">
+      <div style="flex:none; display:flex; justify-content:center; padding:9px 0 2px;"><span style="width:38px; height:4.5px; border-radius:3px; background:var(--input);"></span></div>
+      <div style="flex:none; display:flex; align-items:center; gap:10px; padding:8px 18px 12px;">
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:17px; font-weight:700; letter-spacing:-0.01em;">{{ vm.sheetTitle }}</div>
+          <sc-if value="{{ vm.sheetSub }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px; color:var(--muted-fg); margin-top:1px;">{{ vm.sheetSub }}</div></sc-if>
+        </div>
+        <button onClick="{{ vm.closeSheet }}" style="width:32px; height:32px; flex:none; display:flex; align-items:center; justify-content:center; border:none; border-radius:9px; background:var(--muted); color:var(--muted-fg); cursor:pointer; transition:background .14s ease, color .14s ease, transform .14s ease;" style-hover="background:var(--neutral-bg); color:var(--foreground);" style-active="transform:scale(.9);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div style="flex:1; min-height:0; overflow:auto; padding:0 18px 14px;">
+
+        <!-- ── More sheet ── -->
+        <sc-if value="{{ vm.sheetMore }}" hint-placeholder-val="{{ true }}">
+          <div data-screen-label="More" style="display:flex; flex-direction:column; gap:14px;">
+            <div style="border:1px solid var(--border); border-radius:14px; background:var(--card); overflow:hidden;">
+              <button onClick="{{ vm.goVendors }}" style="display:flex; align-items:center; gap:12px; width:100%; min-height:54px; padding:9px 14px; border:none; border-bottom:1px solid var(--border); background:transparent; color:var(--foreground); font-family:inherit; font-size:14px; font-weight:500; cursor:pointer; text-align:left; transition:background .14s ease;" style-hover="background:var(--row-hover);" style-active="background:var(--muted);">
+                <span style="width:32px; height:32px; flex:none; display:flex; align-items:center; justify-content:center; border-radius:9px; background:var(--info-bg); color:var(--info-fg);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.3"></circle><circle cx="18" cy="20" r="1.3"></circle><path d="M2 3h3l2.2 12.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21 7H6"></path></svg></span>
+                <span style="flex:1;">Purchasing · Vendors</span>
+                <svg width="8" height="14" viewBox="0 0 8 14" style="flex:none; color:var(--muted-fg); opacity:.5;"><path d="M1 1l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              </button>
+              <button onClick="{{ vm.goInvoices }}" style="display:flex; align-items:center; gap:12px; width:100%; min-height:54px; padding:9px 14px; border:none; background:transparent; color:var(--foreground); font-family:inherit; font-size:14px; font-weight:500; cursor:pointer; text-align:left; transition:background .14s ease;" style-hover="background:var(--row-hover);" style-active="background:var(--muted);">
+                <span style="width:32px; height:32px; flex:none; display:flex; align-items:center; justify-content:center; border-radius:9px; background:var(--ok-bg); color:var(--ok-fg);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg></span>
+                <span style="flex:1;">Finance · Invoices</span>
+                <svg width="8" height="14" viewBox="0 0 8 14" style="flex:none; color:var(--muted-fg); opacity:.5;"><path d="M1 1l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              </button>
+            </div>
+            <div style="border:1px solid var(--border); border-radius:14px; background:var(--card); overflow:hidden;">
+              <div style="display:flex; align-items:center; gap:12px; min-height:54px; padding:9px 14px; border-bottom:1px solid var(--border); font-size:14px; color:var(--muted-fg);">
+                <span style="width:32px; height:32px; flex:none; display:flex; align-items:center; justify-content:center; border-radius:9px; background:var(--neutral-bg); color:var(--neutral-fg);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"></circle><path d="M3.5 20a5.5 5.5 0 0 1 11 0"></path><path d="M16 5.3a3 3 0 0 1 0 5.4"></path><path d="M19.5 20a5.5 5.5 0 0 0-3-4.9"></path></svg></span>
+                <span style="flex:1;">People &amp; time sheets</span>
+                <span style="font-size:10.5px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; padding:2px 8px; border-radius:999px; background:var(--neutral-bg); color:var(--neutral-fg);">Desktop</span>
+              </div>
+              <button onClick="{{ vm.toggleTheme }}" style="display:flex; align-items:center; gap:12px; width:100%; min-height:54px; padding:9px 14px; border:none; background:transparent; color:var(--foreground); font-family:inherit; font-size:14px; font-weight:500; cursor:pointer; text-align:left; transition:background .14s ease;" style-hover="background:var(--row-hover);" style-active="background:var(--muted);">
+                <span style="width:32px; height:32px; flex:none; display:flex; align-items:center; justify-content:center; border-radius:9px; background:var(--warn-bg); color:var(--warn-fg);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg></span>
+                <span style="flex:1;">Appearance</span>
+                <span style="font-size:12.5px; color:var(--muted-fg); text-transform:capitalize;">{{ vm.theme }}</span>
+              </button>
+            </div>
+            <div style="display:flex; align-items:center; gap:11px; padding:12px 14px; border-radius:14px; background:var(--warn-bg); border:1px solid color-mix(in oklab, var(--warn-fg) 26%, transparent);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--warn-fg)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:12.5px; font-weight:600; color:var(--warn-fg);">Growth plan · Trial ends in 9 days</div>
+                <div style="font-size:11.5px; color:var(--muted-fg); margin-top:1px;">Upgrade for advanced reporting and multi-warehouse.</div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:11px; padding:2px 4px 6px;">
+              <div style="width:34px; height:34px; flex:none; border-radius:50%; background:oklch(0.6 0.13 25); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600;">AC</div>
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:13px; font-weight:600;">Avery Chen</div>
+                <div style="font-size:11.5px; color:var(--muted-fg);">Controller · NorthDoor Mfg.</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ── New order sheet ── -->
+        <sc-if value="{{ vm.sheetNewOrder }}" hint-placeholder-val="{{ false }}">
+          <div data-screen-label="New order" style="display:flex; flex-direction:column; gap:13px;">
+            <div>
+              <label style="display:block; font-size:12px; font-weight:500; color:var(--muted-fg); margin-bottom:6px;">Customer</label>
+              <button onClick="{{ vm.no.toggleCust }}" style="display:flex; align-items:center; gap:9px; width:100%; height:44px; padding:0 13px; border:1px solid var(--input); border-radius:12px; background:var(--card); color:var(--foreground); font-family:inherit; font-size:14px; cursor:pointer; transition:border-color .14s ease;" style-hover="border-color:var(--ring);">
+                <span style="flex:1; text-align:left; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ vm.no.custLabel }}</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none; color:var(--muted-fg);"><path d="m6 9 6 6 6-6"></path></svg>
+              </button>
+              <sc-if value="{{ vm.no.custOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:6px; border:1px solid var(--border); border-radius:12px; background:var(--card); overflow:hidden; max-height:200px; overflow-y:auto; animation:sfFade .14s ease-out;">
+                  <sc-for list="{{ vm.no.custRows }}" as="c" hint-placeholder-count="5">
+                    <button onClick="{{ c.pick }}" style="display:flex; align-items:center; gap:9px; width:100%; min-height:44px; padding:8px 13px; border:none; border-bottom:1px solid var(--border); background:transparent; color:var(--foreground); font-family:inherit; font-size:13.5px; cursor:pointer; text-align:left; transition:background .14s ease;" style-hover="background:var(--row-hover);">
+                      <span style="flex:1;">{{ c.name }}</span>
+                      <sc-if value="{{ c.selected }}" hint-placeholder-val="{{ false }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></sc-if>
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:500; color:var(--muted-fg); margin-bottom:6px;">Add items</label>
+              <span style="position:relative; display:block;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="position:absolute; left:12px; top:15px; color:var(--muted-fg); pointer-events:none;"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+                <input value="{{ vm.no.q }}" onChange="{{ vm.no.setQ }}" placeholder="Search sellable items…" style="width:100%; height:44px; padding:0 12px 0 35px; font-size:14px; font-family:inherit; border-radius:12px; border:1px solid var(--input); background:var(--card); color:var(--foreground); outline:none; transition:border-color .14s ease, box-shadow .14s ease;" style-focus="border-color:var(--ring); box-shadow:0 0 0 3px color-mix(in oklab, var(--primary) 20%, transparent);">
+              </span>
+              <sc-if value="{{ vm.no.hasResults }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:6px; border:1px solid var(--border); border-radius:12px; background:var(--card); overflow:hidden; max-height:210px; overflow-y:auto; animation:sfFade .14s ease-out;">
+                  <sc-for list="{{ vm.no.results }}" as="i" hint-placeholder-count="4">
+                    <button onClick="{{ i.add }}" style="display:flex; align-items:center; gap:10px; width:100%; min-height:50px; padding:8px 13px; border:none; border-bottom:1px solid var(--border); background:transparent; color:var(--foreground); font-family:inherit; cursor:pointer; text-align:left; transition:background .14s ease;" style-hover="background:var(--row-hover);">
+                      <span style="flex:1; min-width:0;">
+                        <span style="display:block; font-family:'Geist Mono',monospace; font-size:11.5px; font-weight:600;">{{ i.no }}</span>
+                        <span style="display:block; font-size:12px; color:var(--muted-fg); margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ i.desc }}</span>
+                      </span>
+                      <span style="font-size:12.5px; font-weight:600; font-variant-numeric:tabular-nums; flex:none;">{{ i.priceLabel }}</span>
+                      <span style="width:28px; height:28px; flex:none; display:flex; align-items:center; justify-content:center; border-radius:8px; background:var(--primary); color:var(--primary-fg);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></span>
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+            <sc-if value="{{ vm.no.hasLines }}" hint-placeholder-val="{{ false }}">
+              <div style="border:1px solid var(--border); border-radius:14px; background:var(--card); overflow:hidden;">
+                <sc-for list="{{ vm.no.lines }}" as="L" hint-placeholder-count="2">
+                  <div style="display:flex; align-items:center; gap:10px; min-height:56px; padding:8px 13px; border-bottom:1px solid var(--border);">
+                    <span style="flex:1; min-width:0;">
+                      <span style="display:block; font-family:'Geist Mono',monospace; font-size:11.5px; font-weight:600;">{{ L.no }}</span>
+                      <span style="display:block; font-size:11.5px; color:var(--muted-fg); margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ L.desc }}</span>
+                    </span>
+                    <span style="display:inline-flex; align-items:center; gap:2px; border:1px solid var(--border); border-radius:10px; background:var(--panel);">
+                      <button onClick="{{ L.dec }}" style="width:32px; height:32px; display:flex; align-items:center; justify-content:center; border:none; background:transparent; color:var(--foreground); cursor:pointer; border-radius:9px; transition:background .14s ease;" style-hover="background:var(--muted);" style-active="transform:scale(.88);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14"></path></svg></button>
+                      <span style="min-width:24px; text-align:center; font-size:13.5px; font-weight:600; font-variant-numeric:tabular-nums;">{{ L.qty }}</span>
+                      <button onClick="{{ L.inc }}" style="width:32px; height:32px; display:flex; align-items:center; justify-content:center; border:none; background:transparent; color:var(--foreground); cursor:pointer; border-radius:9px; transition:background .14s ease;" style-hover="background:var(--muted);" style-active="transform:scale(.88);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+                    </span>
+                    <span style="width:64px; flex:none; text-align:right; font-size:13px; font-weight:600; font-variant-numeric:tabular-nums;">{{ L.amtLabel }}</span>
+                  </div>
+                </sc-for>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 14px; background:var(--panel);">
+                  <span style="font-size:13px; font-weight:600; color:var(--muted-fg);">Total</span>
+                  <span style="font-size:15px; font-weight:700; font-variant-numeric:tabular-nums;">{{ vm.no.totalLabel }}</span>
+                </div>
+              </div>
+            </sc-if>
+            <button onClick="{{ vm.no.create }}" disabled="{{ vm.no.cantCreate }}" style="{{ vm.no.createSt }}" style-hover="background:var(--primary-hover); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.97);">Create order</button>
+          </div>
+        </sc-if>
+
+        <!-- ── New item sheet ── -->
+        <sc-if value="{{ vm.sheetNewItem }}" hint-placeholder-val="{{ false }}">
+          <div data-screen-label="New item" style="display:flex; flex-direction:column; gap:13px;">
+            <div style="display:grid; grid-template-columns:140px 1fr; gap:11px;">
+              <div>
+                <label style="display:block; font-size:12px; font-weight:500; color:var(--muted-fg); margin-bottom:6px;">Item no.</label>
+                <input value="{{ vm.ni.no }}" onChange="{{ vm.ni.setNo }}" placeholder="BD-0000-XX" style="width:100%; height:44px; padding:0 12px; font-size:13.5px; font-family:'Geist Mono',monospace; border-radius:12px; border:1px solid var(--input); background:var(--card); color:var(--foreground); outline:none; transition:border-color .14s ease;" style-focus="border-color:var(--ring);">
+              </div>
+              <div>
+                <label style="display:block; font-size:12px; font-weight:500; color:var(--muted-fg); margin-bottom:6px;">Description</label>
+                <input value="{{ vm.ni.desc }}" onChange="{{ vm.ni.setDesc }}" placeholder="e.g. Barn Door 36x84…" style="width:100%; height:44px; padding:0 12px; font-size:14px; font-family:inherit; border-radius:12px; border:1px solid var(--input); background:var(--card); color:var(--foreground); outline:none; transition:border-color .14s ease;" style-focus="border-color:var(--ring);">
+              </div>
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:500; color:var(--muted-fg); margin-bottom:6px;">Category</label>
+              <span style="position:relative; display:flex;">
+                <select value="{{ vm.ni.cat }}" onChange="{{ vm.ni.setCat }}" style="appearance:none; width:100%; height:44px; padding:0 30px 0 12px; font-size:14px; font-family:inherit; border-radius:12px; border:1px solid var(--input); background:var(--card); color:var(--foreground); cursor:pointer; outline:none;">
+                  <sc-for list="{{ vm.ni.catOpts }}" as="c" hint-placeholder-count="6"><option value="{{ c.name }}" style="background:var(--card); color:var(--foreground);">{{ c.name }}</option></sc-for>
+                </select>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; right:12px; top:16px; color:var(--muted-fg); pointer-events:none;"><path d="m6 9 6 6 6-6"></path></svg>
+              </span>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:11px;">
+              <div>
+                <label style="display:block; font-size:12px; font-weight:500; color:var(--muted-fg); margin-bottom:6px;">Unit price</label>
+                <input type="number" value="{{ vm.ni.price }}" onChange="{{ vm.ni.setPrice }}" placeholder="0.00" style="width:100%; height:44px; padding:0 12px; font-size:14px; font-family:inherit; border-radius:12px; border:1px solid var(--input); background:var(--card); color:var(--foreground); outline:none; transition:border-color .14s ease;" style-focus="border-color:var(--ring);">
+              </div>
+              <div>
+                <label style="display:block; font-size:12px; font-weight:500; color:var(--muted-fg); margin-bottom:6px;">Unit cost</label>
+                <input type="number" value="{{ vm.ni.cost }}" onChange="{{ vm.ni.setCost }}" placeholder="0.00" style="width:100%; height:44px; padding:0 12px; font-size:14px; font-family:inherit; border-radius:12px; border:1px solid var(--input); background:var(--card); color:var(--foreground); outline:none; transition:border-color .14s ease;" style-focus="border-color:var(--ring);">
+              </div>
+            </div>
+            <div style="font-size:12px; color:var(--muted-fg); line-height:1.5;">Stock and units of measure can be set after the item is created.</div>
+            <button onClick="{{ vm.ni.create }}" disabled="{{ vm.ni.cantCreate }}" style="{{ vm.ni.createSt }}" style-hover="background:var(--primary-hover); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.97);">Create item</button>
+          </div>
+        </sc-if>
+
+        <!-- ── Adjust stock sheet ── -->
+        <sc-if value="{{ vm.sheetAdjust }}" hint-placeholder-val="{{ false }}">
+          <div data-screen-label="Adjust stock" style="display:flex; flex-direction:column; gap:13px;">
+            <div>
+              <label style="display:block; font-size:12px; font-weight:500; color:var(--muted-fg); margin-bottom:6px;">Item</label>
+              <button onClick="{{ vm.adj.togglePicker }}" style="display:flex; align-items:center; gap:9px; width:100%; height:44px; padding:0 13px; border:1px solid var(--input); border-radius:12px; background:var(--card); color:var(--foreground); font-family:inherit; font-size:13.5px; cursor:pointer; transition:border-color .14s ease;" style-hover="border-color:var(--ring);">
+                <span style="flex:1; text-align:left; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ vm.adj.itemLabel }}</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none; color:var(--muted-fg);"><path d="m6 9 6 6 6-6"></path></svg>
+              </button>
+              <sc-if value="{{ vm.adj.pickerOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:6px; border:1px solid var(--border); border-radius:12px; background:var(--card); max-height:200px; overflow-y:auto; animation:sfFade .14s ease-out;">
+                  <sc-for list="{{ vm.adj.itemRows }}" as="i" hint-placeholder-count="5">
+                    <button onClick="{{ i.pick }}" style="display:flex; align-items:center; gap:9px; width:100%; min-height:44px; padding:7px 13px; border:none; border-bottom:1px solid var(--border); background:transparent; color:var(--foreground); font-family:inherit; cursor:pointer; text-align:left; transition:background .14s ease;" style-hover="background:var(--row-hover);">
+                      <span style="font-family:'Geist Mono',monospace; font-size:11.5px; font-weight:600; flex:none;">{{ i.no }}</span>
+                      <span style="flex:1; min-width:0; font-size:12px; color:var(--muted-fg); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ i.desc }}</span>
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:11px;">
+              <div>
+                <label style="display:block; font-size:12px; font-weight:500; color:var(--muted-fg); margin-bottom:6px;">Location</label>
+                <span style="position:relative; display:flex;">
+                  <select value="{{ vm.adj.loc }}" onChange="{{ vm.adj.setLoc }}" style="appearance:none; width:100%; height:44px; padding:0 30px 0 12px; font-size:14px; font-family:inherit; border-radius:12px; border:1px solid var(--input); background:var(--card); color:var(--foreground); cursor:pointer; outline:none;">
+                    <option value="main" style="background:var(--card);">Main WH</option>
+                    <option value="assembly" style="background:var(--card);">Assembly</option>
+                    <option value="east" style="background:var(--card);">East DC</option>
+                    <option value="returns" style="background:var(--card);">Returns</option>
+                  </select>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; right:12px; top:16px; color:var(--muted-fg); pointer-events:none;"><path d="m6 9 6 6 6-6"></path></svg>
+                </span>
+              </div>
+              <div>
+                <label style="display:block; font-size:12px; font-weight:500; color:var(--muted-fg); margin-bottom:6px;">Reason</label>
+                <span style="position:relative; display:flex;">
+                  <select value="{{ vm.adj.reason }}" onChange="{{ vm.adj.setReason }}" style="appearance:none; width:100%; height:44px; padding:0 30px 0 12px; font-size:14px; font-family:inherit; border-radius:12px; border:1px solid var(--input); background:var(--card); color:var(--foreground); cursor:pointer; outline:none;">
+                    <option value="Count correction" style="background:var(--card);">Count correction</option>
+                    <option value="Damage" style="background:var(--card);">Damage</option>
+                    <option value="Found stock" style="background:var(--card);">Found stock</option>
+                    <option value="Shrinkage" style="background:var(--card);">Shrinkage</option>
+                  </select>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; right:12px; top:16px; color:var(--muted-fg); pointer-events:none;"><path d="m6 9 6 6 6-6"></path></svg>
+                </span>
+              </div>
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:500; color:var(--muted-fg); margin-bottom:6px;">Quantity change</label>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <button onClick="{{ vm.adj.dec }}" style="width:52px; height:52px; flex:none; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); border-radius:14px; background:var(--card); color:var(--foreground); cursor:pointer; transition:background .14s ease, transform .14s ease;" style-hover="background:var(--muted);" style-active="transform:scale(.9);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14"></path></svg></button>
+                <div style="flex:1; text-align:center;">
+                  <div style="font-size:30px; font-weight:700; font-variant-numeric:tabular-nums; color:{{ vm.adj.deltaColor }};">{{ vm.adj.deltaLabel }}</div>
+                  <div style="font-size:11px; color:var(--muted-fg); margin-top:1px;">{{ vm.adj.curLabel }}</div>
+                </div>
+                <button onClick="{{ vm.adj.inc }}" style="width:52px; height:52px; flex:none; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); border-radius:14px; background:var(--card); color:var(--foreground); cursor:pointer; transition:background .14s ease, transform .14s ease;" style-hover="background:var(--muted);" style-active="transform:scale(.9);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+              </div>
+            </div>
+            <button onClick="{{ vm.adj.post }}" disabled="{{ vm.adj.cantPost }}" style="{{ vm.adj.postSt }}" style-hover="background:var(--primary-hover); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.97);">Post adjustment</button>
+          </div>
+        </sc-if>
+
+        <!-- ── Edit item sheet ── -->
+        <sc-if value="{{ vm.sheetEditItem }}" hint-placeholder-val="{{ false }}">
+          <div data-screen-label="Edit item" style="display:flex; flex-direction:column; gap:13px;">
+            <div>
+              <label style="display:block; font-size:12px; font-weight:500; color:var(--muted-fg); margin-bottom:6px;">Description</label>
+              <input value="{{ vm.ei.desc }}" onChange="{{ vm.ei.setDesc }}" style="width:100%; height:44px; padding:0 12px; font-size:14px; font-family:inherit; border-radius:12px; border:1px solid var(--input); background:var(--card); color:var(--foreground); outline:none; transition:border-color .14s ease;" style-focus="border-color:var(--ring);">
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:11px;">
+              <div>
+                <label style="display:block; font-size:12px; font-weight:500; color:var(--muted-fg); margin-bottom:6px;">Unit price</label>
+                <input type="number" value="{{ vm.ei.price }}" onChange="{{ vm.ei.setPrice }}" style="width:100%; height:44px; padding:0 12px; font-size:14px; font-family:inherit; border-radius:12px; border:1px solid var(--input); background:var(--card); color:var(--foreground); outline:none; transition:border-color .14s ease;" style-focus="border-color:var(--ring);">
+              </div>
+              <div>
+                <label style="display:block; font-size:12px; font-weight:500; color:var(--muted-fg); margin-bottom:6px;">Unit cost</label>
+                <input type="number" value="{{ vm.ei.cost }}" onChange="{{ vm.ei.setCost }}" style="width:100%; height:44px; padding:0 12px; font-size:14px; font-family:inherit; border-radius:12px; border:1px solid var(--input); background:var(--card); color:var(--foreground); outline:none; transition:border-color .14s ease;" style-focus="border-color:var(--ring);">
+              </div>
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:500; color:var(--muted-fg); margin-bottom:6px;">Reorder point</label>
+              <input type="number" value="{{ vm.ei.rp }}" onChange="{{ vm.ei.setRp }}" style="width:100%; height:44px; padding:0 12px; font-size:14px; font-family:inherit; border-radius:12px; border:1px solid var(--input); background:var(--card); color:var(--foreground); outline:none; transition:border-color .14s ease;" style-focus="border-color:var(--ring);">
+            </div>
+            <button onClick="{{ vm.ei.save }}" style="width:100%; height:48px; border-radius:13px; border:none; background:var(--primary); color:var(--primary-fg); font-family:inherit; font-size:14.5px; font-weight:600; cursor:pointer; box-shadow:var(--shadow); transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:var(--primary-hover); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.97);">Save changes</button>
+          </div>
+        </sc-if>
+
+        <!-- ── Edit vendor sheet ── -->
+        <sc-if value="{{ vm.sheetEditVendor }}" hint-placeholder-val="{{ false }}">
+          <div data-screen-label="Edit vendor" style="display:flex; flex-direction:column; gap:13px;">
+            <div>
+              <label style="display:block; font-size:12px; font-weight:500; color:var(--muted-fg); margin-bottom:6px;">Contact</label>
+              <input value="{{ vm.ve.contact }}" onChange="{{ vm.ve.setContact }}" style="width:100%; height:44px; padding:0 12px; font-size:14px; font-family:inherit; border-radius:12px; border:1px solid var(--input); background:var(--card); color:var(--foreground); outline:none; transition:border-color .14s ease;" style-focus="border-color:var(--ring);">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:500; color:var(--muted-fg); margin-bottom:6px;">Email</label>
+              <input value="{{ vm.ve.email }}" onChange="{{ vm.ve.setEmail }}" style="width:100%; height:44px; padding:0 12px; font-size:14px; font-family:inherit; border-radius:12px; border:1px solid var(--input); background:var(--card); color:var(--foreground); outline:none; transition:border-color .14s ease;" style-focus="border-color:var(--ring);">
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:11px;">
+              <div>
+                <label style="display:block; font-size:12px; font-weight:500; color:var(--muted-fg); margin-bottom:6px;">Phone</label>
+                <input value="{{ vm.ve.phone }}" onChange="{{ vm.ve.setPhone }}" style="width:100%; height:44px; padding:0 12px; font-size:14px; font-family:inherit; border-radius:12px; border:1px solid var(--input); background:var(--card); color:var(--foreground); outline:none; transition:border-color .14s ease;" style-focus="border-color:var(--ring);">
+              </div>
+              <div>
+                <label style="display:block; font-size:12px; font-weight:500; color:var(--muted-fg); margin-bottom:6px;">Payment terms</label>
+                <span style="position:relative; display:flex;">
+                  <select value="{{ vm.ve.terms }}" onChange="{{ vm.ve.setTerms }}" style="appearance:none; width:100%; height:44px; padding:0 30px 0 12px; font-size:14px; font-family:inherit; border-radius:12px; border:1px solid var(--input); background:var(--card); color:var(--foreground); cursor:pointer; outline:none;">
+                    <option value="NET 15" style="background:var(--card);">NET 15</option>
+                    <option value="NET 30" style="background:var(--card);">NET 30</option>
+                    <option value="NET 45" style="background:var(--card);">NET 45</option>
+                    <option value="2/10 NET 30" style="background:var(--card);">2/10 NET 30</option>
+                  </select>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; right:12px; top:16px; color:var(--muted-fg); pointer-events:none;"><path d="m6 9 6 6 6-6"></path></svg>
+                </span>
+              </div>
+            </div>
+            <button onClick="{{ vm.ve.save }}" style="width:100%; height:48px; border-radius:13px; border:none; background:var(--primary); color:var(--primary-fg); font-family:inherit; font-size:14.5px; font-weight:600; cursor:pointer; box-shadow:var(--shadow); transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:var(--primary-hover); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.97);">Save changes</button>
+          </div>
+        </sc-if>
+
+        <!-- ── Invoice sheet ── -->
+        <sc-if value="{{ vm.sheetInvoice }}" hint-placeholder-val="{{ false }}">
+          <div data-screen-label="Invoice detail" style="display:flex; flex-direction:column; gap:13px;">
+            <div style="text-align:center; padding:6px 0 2px;">
+              <div style="font-size:30px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-0.02em;">{{ vm.iv.amountLabel }}</div>
+              <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-top:7px;">
+                <span style="{{ vm.iv.statusSt }}">{{ vm.iv.statusLabel }}</span>
+              </div>
+            </div>
+            <div style="border:1px solid var(--border); border-radius:14px; background:var(--card); padding:6px 14px;">
+              <div style="display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px dashed var(--border); font-size:13px;"><span style="color:var(--muted-fg);">Customer</span><span style="font-weight:500; text-align:right;">{{ vm.iv.customer }}</span></div>
+              <div style="display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px dashed var(--border); font-size:13px;"><span style="color:var(--muted-fg);">Invoice date</span><span style="font-weight:500;">{{ vm.iv.invDate }}</span></div>
+              <div style="display:flex; justify-content:space-between; gap:10px; padding:9px 0; font-size:13px;"><span style="color:var(--muted-fg);">Due date</span><span style="font-weight:500; color:{{ vm.iv.dueColor }};">{{ vm.iv.dueDate }}</span></div>
+            </div>
+            <sc-if value="{{ vm.iv.canPay }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ vm.iv.pay }}" style="width:100%; height:48px; border-radius:13px; border:none; background:var(--primary); color:var(--primary-fg); font-family:inherit; font-size:14.5px; font-weight:600; cursor:pointer; box-shadow:var(--shadow); transition:background .14s ease, transform .14s ease, box-shadow .14s ease;" style-hover="background:var(--primary-hover); transform:translateY(-1px); box-shadow:var(--lift);" style-active="transform:scale(.97);">Register payment</button>
+            </sc-if>
+          </div>
+        </sc-if>
+
+      </div>
+      <div style="flex:none; height:22px;"></div>
+    </div>
+  </sc-if>
+
+  <!-- ═══════════ TOASTS ═══════════ -->
+  <div style="position:absolute; left:16px; right:16px; bottom:100px; z-index:70; display:flex; flex-direction:column; gap:8px; pointer-events:none;">
+    <sc-for list="{{ vm.toasts }}" as="t" hint-placeholder-count="0">
+      <div style="background:var(--card); border:1px solid var(--border); border-radius:13px; box-shadow:var(--shadow-lg); padding:11px 14px; animation:sfToast .2s ease-out;">
+        <div style="font-size:13px; font-weight:600;">{{ t.title }}</div>
+        <sc-if value="{{ t.desc }}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px; color:var(--muted-fg); margin-top:2px;">{{ t.desc }}</div></sc-if>
+      </div>
+    </sc-for>
+  </div>
+
+  </sc-if>
+
+</div>
+</x-import>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: {&quot;width&quot;: 560, &quot;height&quot;: 980},
+  &quot;theme&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;dark&quot;, &quot;light&quot;], &quot;default&quot;: &quot;dark&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Appearance&quot;},
+  &quot;brand&quot;: {&quot;editor&quot;: &quot;color&quot;, &quot;options&quot;: [&quot;#c98a1a&quot;, &quot;#3b82f6&quot;, &quot;#22a06b&quot;], &quot;default&quot;: &quot;#c98a1a&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Appearance&quot;},
+  &quot;startTab&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;home&quot;, &quot;sales&quot;, &quot;items&quot;], &quot;default&quot;: &quot;home&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Behavior&quot;}
+}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      data: null,
+      themeOverride: null,
+      tab: props.startTab || 'home',
+      stack: [],
+      sheet: null,
+      salesSeg: 'orders',
+      itemsQ: '', itemsFilter: 'all',
+      vendQ: '',
+      toasts: [],
+      // new order
+      noCust: '', noCustOpen: false, noQ: '', noLines: {},
+      // new item
+      niNo: '', niDesc: '', niCat: '', niPrice: '', niCost: '',
+      // adjust
+      adjNo: '', adjPickerOpen: false, adjLoc: 'main', adjDelta: 0, adjReason: 'Count correction',
+      // edit item
+      eiNo: '', eiDesc: '', eiPrice: '', eiCost: '', eiRp: '',
+      // edit vendor
+      veNo: '', veContact: '', veEmail: '', vePhone: '', veTerms: 'NET 30',
+    };
+  }
+
+  get theme() { return this.state.themeOverride || this.props.theme || 'dark'; }
+  get brand() { return this.props.brand || '#c98a1a'; }
+
+  componentDidMount() {
+    import(new URL('../../lib/shelfree-data.js', document.baseURI).href)
+      .then(m => this.setState({ data: m.seedAll() }))
+      .catch(e => console.error('Shelfree Mobile: failed to load data', e));
+    this.keyFn = (e) => {
+      if (e.key === 'Escape') {
+        if (this.state.sheet) return this.setState({ sheet: null });
+        if (this.state.stack.length) return this.pop();
+      }
+    };
+    document.addEventListener('keydown', this.keyFn);
+  }
+  componentWillUnmount() { document.removeEventListener('keydown', this.keyFn); }
+
+  // ---------- helpers ----------
+  money(n) { return '$' + Math.round(n || 0).toLocaleString('en-US'); }
+  fmtD(s) { if (!s) return ''; const d = new Date(s + 'T00:00:00'); return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
+  pillSt(kind) {
+    const map = {
+      ok: 'background:var(--ok-bg); color:var(--ok-fg);',
+      info: 'background:var(--info-bg); color:var(--info-fg);',
+      warn: 'background:var(--warn-bg); color:var(--warn-fg);',
+      bad: 'background:var(--bad-bg); color:var(--bad-fg);',
+      neutral: 'background:var(--neutral-bg); color:var(--neutral-fg);',
+    };
+    return 'display:inline-flex; align-items:center; height:20px; padding:0 8px; border-radius:999px; font-size:10.5px; font-weight:600; flex:none; white-space:nowrap; ' + (map[kind] || map.neutral);
+  }
+  statusKind(s) {
+    return ({ Shipped: 'ok', Paid: 'ok', Finished: 'ok', Released: 'info', 'In Progress': 'info', Invoiced: 'info', Open: 'neutral', Draft: 'warn', Overdue: 'bad' })[s] || 'neutral';
+  }
+  statusPill(s) { return this.pillSt(this.statusKind(s)); }
+  onHand(it) { const l = it.locs; return l.main + l.assembly + l.east + l.returns; }
+  avail(it) { return this.onHand(it) - it.qtySO; }
+  isLow(it) { return this.avail(it) < it.rp; }
+  itemBy(no) { return (this.state.data.items || []).find(i => i.no === no); }
+  orderTotal(o) { return o.lines.reduce((s, L) => { const it = this.itemBy(L[0]); return s + (it ? it.price * L[1] : 0); }, 0); }
+  catColor(name) {
+    const map = { 'Barn Door': '#c98a1a', 'Bypass Door': '#b45309', 'Bifold Door': '#a16207', 'Pivot Door': '#7c5c10', Mirror: '#3b82f6', Hardware: '#64748b', Glass: '#0ea5e9', Component: '#8b5cf6', Packaging: '#22a06b' };
+    return map[name] || '#64748b';
+  }
+  customers() {
+    const d = this.state.data;
+    const map = {};
+    d.orders.forEach(o => {
+      if (!map[o.customer]) map[o.customer] = { name: o.customer, openCount: 0, ar: 0, orders: [], invoices: [] };
+      map[o.customer].orders.push(o);
+      if (o.status === 'Open' || o.status === 'Released') map[o.customer].openCount++;
+    });
+    d.invoices.forEach(v => {
+      if (!map[v.customer]) map[v.customer] = { name: v.customer, openCount: 0, ar: 0, orders: [], invoices: [] };
+      map[v.customer].invoices.push(v);
+      if (v.status === 'Open' || v.status === 'Overdue') map[v.customer].ar += v.amount;
+    });
+    return Object.values(map).sort((a, b) => b.ar - a.ar);
+  }
+  initials(name) { return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase(); }
+
+  addToast(title, desc) {
+    const id = Date.now() + Math.random();
+    this.setState(s => ({ toasts: [...s.toasts, { id, title, desc }] }));
+    setTimeout(() => this.setState(s => ({ toasts: s.toasts.filter(t => t.id !== id) })), 2800);
+  }
+
+  // ---------- nav ----------
+  push(screen) { this.setState(s => ({ stack: [...s.stack, screen] })); }
+  pop() { this.setState(s => ({ stack: s.stack.slice(0, -1) })); }
+  patchData(patch) { this.setState(s => ({ data: { ...s.data, ...patch } })); }
+
+  // ---------- mutations ----------
+  advanceOrder(no) {
+    const d = this.state.data;
+    const next = { Open: 'Released', Released: 'Shipped', Shipped: 'Invoiced' };
+    const orders = d.orders.map(o => o.no === no ? { ...o, status: next[o.status] || o.status } : o);
+    const o = d.orders.find(x => x.no === no);
+    let invoices = d.invoices;
+    if (o && o.status === 'Shipped') {
+      const maxInv = Math.max(...d.invoices.map(v => parseInt(String(v.no).replace(/\D/g, ''), 10) || 0));
+      const today = new Date(), due = new Date(Date.now() + 30 * 864e5);
+      const iso = dt => dt.toISOString().slice(0, 10);
+      invoices = [{ no: 'INV' + String(maxInv + 1).padStart(5, '0'), customer: o.customer, invDate: iso(today), dueDate: iso(due), amount: this.orderTotal(o), status: 'Open' }, ...d.invoices];
+      this.addToast('Invoice posted', 'INV' + String(maxInv + 1).padStart(5, '0') + ' · ' + o.customer);
+    } else if (o) {
+      this.addToast('Order ' + (next[o.status] === 'Released' ? 'released' : 'shipped'), no + ' · ' + o.customer);
+    }
+    this.patchData({ orders, invoices });
+  }
+  markPaid(no) {
+    const d = this.state.data;
+    this.patchData({ invoices: d.invoices.map(v => v.no === no ? { ...v, status: 'Paid' } : v) });
+    this.addToast('Payment registered', no);
+    this.setState({ sheet: null });
+  }
+  createOrder() {
+    const s = this.state, d = s.data;
+    const lines = Object.entries(s.noLines).filter(L => L[1] > 0).map(L => [L[0], L[1]]);
+    if (!s.noCust || !lines.length) return;
+    const maxNo = Math.max(...d.orders.map(o => parseInt(String(o.no).replace(/\D/g, ''), 10) || 0));
+    const iso = dt => dt.toISOString().slice(0, 10);
+    const o = { no: 'SO' + String(maxNo + 1).padStart(5, '0'), customer: s.noCust, orderDate: iso(new Date()), shipDate: iso(new Date(Date.now() + 14 * 864e5)), location: 'MAIN', status: 'Open', lines };
+    this.patchData({ orders: [o, ...d.orders] });
+    this.setState({ sheet: null, tab: 'sales', salesSeg: 'orders', noCust: '', noQ: '', noLines: {}, noCustOpen: false });
+    this.addToast('Order created', o.no + ' · ' + o.customer);
+  }
+  createItem() {
+    const s = this.state, d = s.data;
+    if (!s.niNo.trim() || !s.niDesc.trim()) return;
+    const it = {
+      no: s.niNo.trim().toUpperCase(), desc: s.niDesc.trim(), category: s.niCat || 'Hardware', type: 'Inventory',
+      uom: 'NOS', vendor: '', cost: parseFloat(s.niCost) || 0, price: parseFloat(s.niPrice) || 0,
+      lead: 0, rp: 0, rq: 0, ss: 0, costing: 'FIFO', locs: { main: 0, assembly: 0, east: 0, returns: 0 },
+      qtySO: 0, qtySupply: 0, attrs: {}, blocked: false, sellable: true,
+    };
+    this.patchData({ items: [it, ...d.items] });
+    this.setState({ sheet: null, tab: 'items', niNo: '', niDesc: '', niPrice: '', niCost: '' });
+    this.addToast('Item created', it.no + ' · ' + it.desc);
+  }
+  postAdjust() {
+    const s = this.state, d = s.data;
+    if (!s.adjNo || !s.adjDelta) return;
+    const items = d.items.map(i => {
+      if (i.no !== s.adjNo) return i;
+      const cur = i.locs[s.adjLoc] || 0;
+      return { ...i, locs: { ...i.locs, [s.adjLoc]: Math.max(0, cur + s.adjDelta) } };
+    });
+    this.patchData({ items });
+    this.addToast('Adjustment posted', (s.adjDelta > 0 ? '+' : '') + s.adjDelta + ' · ' + s.adjNo + ' · ' + s.adjReason);
+    this.setState({ sheet: null, adjDelta: 0 });
+  }
+  saveItem() {
+    const s = this.state, d = s.data;
+    const items = d.items.map(i => i.no === s.eiNo ? { ...i, desc: s.eiDesc, price: parseFloat(s.eiPrice) || i.price, cost: parseFloat(s.eiCost) || i.cost, rp: parseInt(s.eiRp, 10) || 0 } : i);
+    this.patchData({ items });
+    this.addToast('Item updated', s.eiNo);
+    this.setState({ sheet: null });
+  }
+  saveVendor() {
+    const s = this.state, d = s.data;
+    const vendors = d.vendors.map(v => v.no === s.veNo ? { ...v, contact: s.veContact, email: s.veEmail, phone: s.vePhone, paymentTerms: s.veTerms } : v);
+    this.patchData({ vendors });
+    this.addToast('Vendor updated', s.veContact);
+    this.setState({ sheet: null });
+  }
+
+  // ---------- sheet openers ----------
+  openAdjust(no) { this.setState({ sheet: 'adjust', adjNo: no || '', adjDelta: 0, adjPickerOpen: !no }); }
+  openEditItem(no) {
+    const it = this.itemBy(no);
+    this.setState({ sheet: 'editItem', eiNo: no, eiDesc: it.desc, eiPrice: String(it.price), eiCost: String(it.cost), eiRp: String(it.rp) });
+  }
+  openEditVendor(no) {
+    const v = this.state.data.vendors.find(x => x.no === no);
+    this.setState({ sheet: 'editVendor', veNo: no, veContact: v.contact, veEmail: v.email, vePhone: v.phone, veTerms: v.paymentTerms });
+  }
+
+  // ---------- row builders ----------
+  orderRow(o) {
+    return {
+      no: o.no, customer: o.customer,
+      meta: this.fmtD(o.orderDate) + ' · ' + o.lines.length + (o.lines.length === 1 ? ' line' : ' lines'),
+      statusLabel: o.status, statusSt: this.statusPill(o.status),
+      totalLabel: this.money(this.orderTotal(o)),
+      open: () => this.push({ type: 'order', id: o.no }),
+    };
+  }
+  invRow(v) {
+    return {
+      no: v.no, customer: v.customer,
+      meta: 'Due ' + this.fmtD(v.dueDate),
+      statusLabel: v.status, statusSt: this.statusPill(v.status),
+      amountLabel: this.money(v.amount),
+      open: () => this.setState({ sheet: 'invoice', ivNo: v.no }),
+    };
+  }
+
+  renderVals() {
+    const s = this.state, d = s.data;
+    const theme = this.theme;
+    const vm = {
+      theme, isDark: theme === 'dark', isLight: theme === 'light', brand: this.brand,
+      loading: !d, ready: !!d,
+      toggleTheme: () => this.setState({ themeOverride: theme === 'dark' ? 'light' : 'dark' }),
+      toasts: s.toasts.map(t => ({ title: t.title, desc: t.desc })),
+    };
+    if (!d) return { vm };
+
+    const noSheet = !s.sheet, noPush = !s.stack.length;
+    // tabs
+    vm.tabHome = s.tab === 'home'; vm.tabSales = s.tab === 'sales'; vm.tabItems = s.tab === 'items';
+    const tabBtn = (act) => 'flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 2px; min-height:48px; border:none; background:transparent; font-family:inherit; font-size:10px; font-weight:600; letter-spacing:0.02em; cursor:pointer; border-radius:10px; transition:color .14s ease, transform .12s ease; color:' + (act ? 'var(--primary)' : 'var(--muted-fg)') + ';';
+    vm.tb = { home: tabBtn(vm.tabHome), sales: tabBtn(vm.tabSales), items: tabBtn(vm.tabItems), more: tabBtn(s.sheet === 'more') };
+    const goTab = (t) => this.setState({ tab: t, stack: [], sheet: null });
+    vm.tbHome = () => goTab('home'); vm.tbSales = () => goTab('sales'); vm.tbItems = () => goTab('items');
+    vm.tbMore = () => this.setState({ sheet: 'more' });
+
+    // quick actions
+    vm.qaNewOrder = () => this.setState({ sheet: 'newOrder', noCust: '', noQ: '', noLines: {}, noCustOpen: true });
+    vm.qaNewItem = () => this.setState({ sheet: 'newItem', niNo: '', niDesc: '', niCat: d.items[0] ? d.items[0].category : '', niPrice: '', niCost: '' });
+    vm.qaAdjust = () => this.openAdjust(null);
+    vm.goSales = () => this.setState({ tab: 'sales', salesSeg: 'orders' });
+
+    // ---- HOME ----
+    const lowItems = d.items.filter(i => this.isLow(i));
+    const openOrders = d.orders.filter(o => o.status === 'Open' || o.status === 'Released');
+    const overdue = d.invoices.filter(v => v.status === 'Overdue');
+    vm.kpis = [
+      { label: 'Open orders', value: String(openOrders.length), sub: this.money(openOrders.reduce((x, o) => x + this.orderTotal(o), 0)) + ' pipeline', color: 'var(--foreground)', go: () => this.setState({ tab: 'sales', salesSeg: 'orders' }) },
+      { label: 'AR overdue', value: this.money(overdue.reduce((x, v) => x + v.amount, 0)), sub: overdue.length + ' invoices', color: overdue.length ? 'var(--bad-fg)' : 'var(--foreground)', go: () => this.setState({ tab: 'sales', salesSeg: 'invoices' }) },
+      { label: 'Low stock', value: String(lowItems.length), sub: 'below reorder point', color: lowItems.length ? 'var(--warn-fg)' : 'var(--foreground)', go: () => this.setState({ tab: 'items', itemsFilter: 'low' }) },
+      { label: 'Stock value', value: this.money(d.items.reduce((x, i) => x + this.onHand(i) * i.cost, 0)), sub: 'on hand at cost', color: 'var(--foreground)', go: () => this.setState({ tab: 'items' }) },
+    ];
+    const attn = [];
+    overdue.forEach(v => attn.push({
+      isInv: true, isItem: false,
+      iconSt: 'width:32px; height:32px; flex:none; display:flex; align-items:center; justify-content:center; border-radius:9px; background:var(--bad-bg); color:var(--bad-fg);',
+      title: v.customer, sub: v.no + ' · was due ' + this.fmtD(v.dueDate),
+      badge: this.money(v.amount), badgeSt: this.pillSt('bad'),
+      open: () => this.setState({ sheet: 'invoice', ivNo: v.no }),
+    }));
+    lowItems.slice(0, 4).forEach(i => attn.push({
+      isInv: false, isItem: true,
+      iconSt: 'width:32px; height:32px; flex:none; display:flex; align-items:center; justify-content:center; border-radius:9px; background:var(--warn-bg); color:var(--warn-fg);',
+      title: i.desc, sub: i.no + ' · ' + this.avail(i) + ' available, reorder at ' + i.rp,
+      badge: 'Low', badgeSt: this.pillSt('warn'),
+      open: () => this.push({ type: 'item', id: i.no }),
+    }));
+    vm.attn = attn.slice(0, 6);
+    vm.hasAttn = vm.attn.length > 0;
+    vm.recentOrders = d.orders.slice(0, 4).map(o => this.orderRow(o));
+
+    // ---- SALES ----
+    const segBtn = (act) => 'flex:1; height:34px; border:none; border-radius:9px; font-family:inherit; font-size:12.5px; font-weight:600; cursor:pointer; transition:background .14s ease, color .14s ease, transform .12s ease; ' + (act ? 'background:var(--primary); color:var(--primary-fg); box-shadow:var(--shadow);' : 'background:transparent; color:var(--muted-fg);');
+    vm.segs = [
+      { label: 'Orders', st: segBtn(s.salesSeg === 'orders'), go: () => this.setState({ salesSeg: 'orders' }) },
+      { label: 'Invoices', st: segBtn(s.salesSeg === 'invoices'), go: () => this.setState({ salesSeg: 'invoices' }) },
+      { label: 'Customers', st: segBtn(s.salesSeg === 'customers'), go: () => this.setState({ salesSeg: 'customers' }) },
+    ];
+    vm.segOrders = s.salesSeg === 'orders'; vm.segInvoices = s.salesSeg === 'invoices'; vm.segCustomers = s.salesSeg === 'customers';
+    vm.orderRows = d.orders.map(o => this.orderRow(o));
+    vm.invRows = d.invoices.map(v => this.invRow(v));
+    vm.custRows = this.customers().map(c => ({
+      name: c.name, initials: this.initials(c.name),
+      meta: c.openCount + ' open ' + (c.openCount === 1 ? 'order' : 'orders') + ' · ' + c.orders.length + ' total',
+      arLabel: this.money(c.ar),
+      open: () => this.push({ type: 'customer', id: c.name }),
+    }));
+
+    // ---- ITEMS ----
+    vm.itemsQ = s.itemsQ;
+    vm.setItemsQ = (e) => this.setState({ itemsQ: e.target.value });
+    const q = s.itemsQ.trim().toLowerCase();
+    let list = d.items;
+    if (q) list = list.filter(i => (i.no + ' ' + i.desc + ' ' + i.category).toLowerCase().includes(q));
+    const counts = { all: list.length, low: list.filter(i => this.isLow(i)).length, sellable: list.filter(i => i.sellable).length };
+    if (s.itemsFilter === 'low') list = list.filter(i => this.isLow(i));
+    if (s.itemsFilter === 'sellable') list = list.filter(i => i.sellable);
+    const chipSt = (act) => 'display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:999px; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer; transition:background .14s ease, color .14s ease, border-color .14s ease, transform .12s ease; ' + (act ? 'border:1px solid var(--primary); background:color-mix(in oklab, var(--primary) 16%, transparent); color:var(--foreground);' : 'border:1px solid var(--border); background:var(--card); color:var(--muted-fg);');
+    const chipCount = (act) => 'font-size:10.5px; font-weight:700; padding:1px 6px; border-radius:999px; ' + (act ? 'background:var(--primary); color:var(--primary-fg);' : 'background:var(--neutral-bg); color:var(--neutral-fg);');
+    vm.itemChips = [
+      { label: 'All', count: String(counts.all), st: chipSt(s.itemsFilter === 'all'), countSt: chipCount(s.itemsFilter === 'all'), go: () => this.setState({ itemsFilter: 'all' }) },
+      { label: 'Low stock', count: String(counts.low), st: chipSt(s.itemsFilter === 'low'), countSt: chipCount(s.itemsFilter === 'low'), go: () => this.setState({ itemsFilter: 'low' }) },
+      { label: 'Sellable', count: String(counts.sellable), st: chipSt(s.itemsFilter === 'sellable'), countSt: chipCount(s.itemsFilter === 'sellable'), go: () => this.setState({ itemsFilter: 'sellable' }) },
+    ];
+    vm.itemRows = list.map(i => {
+      const av = this.avail(i), low = this.isLow(i);
+      return {
+        no: i.no, desc: i.desc, low,
+        catDot: 'width:8px; height:8px; border-radius:50%; flex:none; background:' + this.catColor(i.category) + ';',
+        availLabel: String(av), availColor: low ? 'var(--warn-fg)' : 'var(--foreground)',
+        open: () => this.push({ type: 'item', id: i.no }),
+      };
+    });
+    vm.itemsEmpty = list.length === 0;
+
+    // ---- PUSHED SCREEN ----
+    const top = s.stack[s.stack.length - 1];
+    vm.pushOpen = !!top;
+    vm.pop = () => this.pop();
+    vm.pushItem = false; vm.pushOrder = false; vm.pushCust = false; vm.pushVendors = false; vm.pushVendor = false;
+    vm.pushTitle = ''; vm.pushSub = ''; vm.pushBadge = ''; vm.pushBadgeSt = '';
+    if (top) {
+      if (top.type === 'item') {
+        const it = this.itemBy(top.id);
+        if (it) {
+          vm.pushItem = true;
+          vm.pushTitle = it.no; vm.pushSub = it.desc;
+          vm.pushBadge = it.category; vm.pushBadgeSt = this.pillSt('neutral');
+          const oh = this.onHand(it), av = this.avail(it);
+          const locDefs = [['main', 'Main WH'], ['assembly', 'Assembly'], ['east', 'East DC'], ['returns', 'Returns']];
+          const maxLoc = Math.max(1, ...locDefs.map(L => it.locs[L[0]]));
+          const facts = [
+            ['Base unit', it.uom],
+            it.vendor ? ['Vendor', it.vendor] : null,
+            ['Unit cost', '$' + it.cost.toFixed(2)], ['Unit price', '$' + it.price.toFixed(2)],
+            ['Lead time', it.lead + ' days'], ['Reorder point', String(it.rp)], ['Reorder qty', String(it.rq)],
+            ['Costing method', it.costing],
+          ].filter(Boolean).map(f => ({ k: f[0], v: f[1] }));
+          Object.entries(it.attrs || {}).forEach(a => facts.push({ k: a[0], v: a[1] }));
+          vm.pi = {
+            onHand: String(oh), committed: String(it.qtySO), available: String(av),
+            availColor: av < it.rp ? 'var(--warn-fg)' : 'var(--ok-fg)',
+            low: this.isLow(it), lowLabel: 'Below reorder point (' + it.rp + ')',
+            locs: locDefs.map(L => ({
+              label: L[1], qty: String(it.locs[L[0]]),
+              barSt: 'display:block; height:100%; width:' + Math.round(it.locs[L[0]] / maxLoc * 100) + '%; border-radius:4px; background:var(--primary);',
+            })),
+            facts,
+            adjust: () => this.openAdjust(it.no),
+            edit: () => this.openEditItem(it.no),
+          };
+        }
+      } else if (top.type === 'order') {
+        const o = d.orders.find(x => x.no === top.id);
+        if (o) {
+          vm.pushOrder = true;
+          vm.pushTitle = o.no; vm.pushSub = 'Sales order';
+          vm.pushBadge = o.status; vm.pushBadgeSt = this.statusPill(o.status);
+          const actions = { Open: 'Release order', Released: 'Post shipment', Shipped: 'Post invoice' };
+          vm.po = {
+            customer: o.customer, orderDate: this.fmtD(o.orderDate), shipDate: this.fmtD(o.shipDate), location: o.location,
+            lines: o.lines.map(L => {
+              const it = this.itemBy(L[0]);
+              return { no: L[0], desc: it ? it.desc : '', qtyLabel: L[1] + ' × ' + (it ? '$' + it.price.toFixed(0) : ''), amtLabel: this.money(it ? it.price * L[1] : 0) };
+            }),
+            totalLabel: this.money(this.orderTotal(o)),
+            hasAction: !!actions[o.status], actionLabel: actions[o.status] || '',
+            act: () => this.advanceOrder(o.no),
+          };
+        }
+      } else if (top.type === 'customer') {
+        const c = this.customers().find(x => x.name === top.id);
+        if (c) {
+          vm.pushCust = true;
+          vm.pushTitle = c.name; vm.pushSub = 'Customer';
+          vm.pc = {
+            openCount: String(c.openCount), arLabel: this.money(c.ar),
+            orders: c.orders.map(o => this.orderRow(o)),
+            invoices: c.invoices.map(v => this.invRow(v)),
+            hasInvoices: c.invoices.length > 0,
+          };
+        }
+      } else if (top.type === 'vendors') {
+        vm.pushVendors = true;
+        vm.pushTitle = 'Vendors'; vm.pushSub = 'Purchasing';
+      } else if (top.type === 'vendor') {
+        const v = d.vendors.find(x => x.no === top.id);
+        if (v) {
+          vm.pushVendor = true;
+          vm.pushTitle = v.name; vm.pushSub = v.no + ' · ' + v.category;
+          if (v.blocked) { vm.pushBadge = 'Blocked: ' + v.blocked; vm.pushBadgeSt = this.pillSt('bad'); }
+          vm.pv = {
+            facts: [
+              { k: 'Contact', v: v.contact }, { k: 'Email', v: v.email }, { k: 'Phone', v: v.phone },
+              { k: 'Address', v: v.addr1 + ', ' + v.city + ' ' + v.state }, { k: 'Payment terms', v: v.paymentTerms },
+              { k: 'Payment method', v: v.paymentMethod }, { k: 'Vendor since', v: this.fmtD(v.vendorSince) + ', ' + v.vendorSince.slice(0, 4) },
+            ],
+            balLabel: this.money(v.balance), dueLabel: this.money(v.balanceDue),
+            overdueLabel: this.money(v.overdue), overdueColor: v.overdue ? 'var(--bad-fg)' : 'var(--foreground)',
+            edit: () => this.openEditVendor(v.no),
+          };
+        }
+      }
+    }
+
+    // vendors list (rendered inside push)
+    vm.vendQ = s.vendQ;
+    vm.setVendQ = (e) => this.setState({ vendQ: e.target.value });
+    const vq = s.vendQ.trim().toLowerCase();
+    vm.vendRows = d.vendors
+      .filter(v => !vq || (v.name + ' ' + v.category + ' ' + v.contact).toLowerCase().includes(vq))
+      .map(v => ({
+        name: v.name,
+        meta: v.category + ' · ' + v.contact,
+        balLabel: this.money(v.balance),
+        open: () => this.push({ type: 'vendor', id: v.no }),
+      }));
+
+    // ---- SHEETS ----
+    vm.sheetOpen = !!s.sheet;
+    vm.closeSheet = () => this.setState({ sheet: null });
+    vm.sheetMore = s.sheet === 'more';
+    vm.sheetNewOrder = s.sheet === 'newOrder';
+    vm.sheetNewItem = s.sheet === 'newItem';
+    vm.sheetAdjust = s.sheet === 'adjust';
+    vm.sheetEditItem = s.sheet === 'editItem';
+    vm.sheetEditVendor = s.sheet === 'editVendor';
+    vm.sheetInvoice = s.sheet === 'invoice';
+    vm.sheetTitle = ({ more: 'More', newOrder: 'New sales order', newItem: 'New item', adjust: 'Adjust inventory', editItem: 'Edit ' + s.eiNo, editVendor: 'Edit vendor', invoice: s.ivNo || 'Invoice' })[s.sheet] || '';
+    vm.sheetSub = ({ newOrder: 'Ships from MAIN in 14 days', adjust: 'Posts an item journal line', invoice: 'Sales invoice' })[s.sheet] || '';
+    vm.goVendors = () => this.setState({ sheet: null, stack: [{ type: 'vendors' }] });
+    vm.goInvoices = () => this.setState({ sheet: null, tab: 'sales', salesSeg: 'invoices', stack: [] });
+
+    // new order vm
+    const noLines = Object.entries(s.noLines).filter(L => L[1] > 0);
+    const noTotal = noLines.reduce((x, L) => { const it = this.itemBy(L[0]); return x + (it ? it.price * L[1] : 0); }, 0);
+    const canCreate = !!s.noCust && noLines.length > 0;
+    const bigBtn = (en) => 'width:100%; height:48px; border-radius:13px; border:none; font-family:inherit; font-size:14.5px; font-weight:600; transition:background .14s ease, transform .14s ease, box-shadow .14s ease; ' + (en ? 'background:var(--primary); color:var(--primary-fg); cursor:pointer; box-shadow:var(--shadow);' : 'background:var(--muted); color:var(--muted-fg); cursor:not-allowed;');
+    const nq = s.noQ.trim().toLowerCase();
+    vm.no = {
+      custLabel: s.noCust || 'Select customer…',
+      custOpen: s.noCustOpen,
+      toggleCust: () => this.setState({ noCustOpen: !s.noCustOpen }),
+      custRows: this.customers().map(c => ({ name: c.name, selected: c.name === s.noCust, pick: () => this.setState({ noCust: c.name, noCustOpen: false }) })),
+      q: s.noQ, setQ: (e) => this.setState({ noQ: e.target.value }),
+      hasResults: nq.length > 0,
+      results: nq ? d.items.filter(i => i.sellable && !s.noLines[i.no] && (i.no + ' ' + i.desc).toLowerCase().includes(nq)).slice(0, 6).map(i => ({
+        no: i.no, desc: i.desc, priceLabel: this.money(i.price),
+        add: () => this.setState(st => ({ noLines: { ...st.noLines, [i.no]: 1 }, noQ: '' })),
+      })) : [],
+      hasLines: noLines.length > 0,
+      lines: noLines.map(L => {
+        const it = this.itemBy(L[0]);
+        return {
+          no: L[0], desc: it ? it.desc : '', qty: String(L[1]),
+          amtLabel: this.money(it ? it.price * L[1] : 0),
+          inc: () => this.setState(st => ({ noLines: { ...st.noLines, [L[0]]: st.noLines[L[0]] + 1 } })),
+          dec: () => this.setState(st => {
+            const n = st.noLines[L[0]] - 1;
+            const next = { ...st.noLines };
+            if (n <= 0) delete next[L[0]]; else next[L[0]] = n;
+            return { noLines: next };
+          }),
+        };
+      }),
+      totalLabel: this.money(noTotal),
+      cantCreate: !canCreate, createSt: bigBtn(canCreate),
+      create: () => this.createOrder(),
+    };
+
+    // new item vm
+    const cats = [...new Set(d.items.map(i => i.category))];
+    const niOk = !!s.niNo.trim() && !!s.niDesc.trim();
+    vm.ni = {
+      no: s.niNo, setNo: (e) => this.setState({ niNo: e.target.value }),
+      desc: s.niDesc, setDesc: (e) => this.setState({ niDesc: e.target.value }),
+      cat: s.niCat, setCat: (e) => this.setState({ niCat: e.target.value }),
+      catOpts: cats.map(c => ({ name: c })),
+      price: s.niPrice, setPrice: (e) => this.setState({ niPrice: e.target.value }),
+      cost: s.niCost, setCost: (e) => this.setState({ niCost: e.target.value }),
+      cantCreate: !niOk, createSt: bigBtn(niOk),
+      create: () => this.createItem(),
+    };
+
+    // adjust vm
+    const adjIt = s.adjNo ? this.itemBy(s.adjNo) : null;
+    const adjOk = !!adjIt && s.adjDelta !== 0;
+    vm.adj = {
+      itemLabel: adjIt ? adjIt.no + ' — ' + adjIt.desc : 'Select item…',
+      pickerOpen: s.adjPickerOpen,
+      togglePicker: () => this.setState({ adjPickerOpen: !s.adjPickerOpen }),
+      itemRows: d.items.map(i => ({ no: i.no, desc: i.desc, pick: () => this.setState({ adjNo: i.no, adjPickerOpen: false }) })),
+      loc: s.adjLoc, setLoc: (e) => this.setState({ adjLoc: e.target.value }),
+      reason: s.adjReason, setReason: (e) => this.setState({ adjReason: e.target.value }),
+      deltaLabel: (s.adjDelta > 0 ? '+' : '') + s.adjDelta,
+      deltaColor: s.adjDelta > 0 ? 'var(--ok-fg)' : s.adjDelta < 0 ? 'var(--bad-fg)' : 'var(--muted-fg)',
+      curLabel: adjIt ? 'currently ' + (adjIt.locs[s.adjLoc] || 0) + ' at this location' : 'pick an item first',
+      inc: () => this.setState(st => ({ adjDelta: st.adjDelta + 1 })),
+      dec: () => this.setState(st => ({ adjDelta: adjIt ? Math.max(-(adjIt.locs[s.adjLoc] || 0), st.adjDelta - 1) : st.adjDelta - 1 })),
+      cantPost: !adjOk, postSt: bigBtn(adjOk),
+      post: () => this.postAdjust(),
+    };
+
+    // edit item vm
+    vm.ei = {
+      desc: s.eiDesc, setDesc: (e) => this.setState({ eiDesc: e.target.value }),
+      price: s.eiPrice, setPrice: (e) => this.setState({ eiPrice: e.target.value }),
+      cost: s.eiCost, setCost: (e) => this.setState({ eiCost: e.target.value }),
+      rp: s.eiRp, setRp: (e) => this.setState({ eiRp: e.target.value }),
+      save: () => this.saveItem(),
+    };
+
+    // edit vendor vm
+    vm.ve = {
+      contact: s.veContact, setContact: (e) => this.setState({ veContact: e.target.value }),
+      email: s.veEmail, setEmail: (e) => this.setState({ veEmail: e.target.value }),
+      phone: s.vePhone, setPhone: (e) => this.setState({ vePhone: e.target.value }),
+      terms: s.veTerms, setTerms: (e) => this.setState({ veTerms: e.target.value }),
+      save: () => this.saveVendor(),
+    };
+
+    // invoice vm
+    const iv = d.invoices.find(v => v.no === s.ivNo);
+    if (iv) {
+      vm.iv = {
+        customer: iv.customer, amountLabel: '$' + iv.amount.toLocaleString('en-US', { minimumFractionDigits: 2 }),
+        invDate: this.fmtD(iv.invDate), dueDate: this.fmtD(iv.dueDate),
+        dueColor: iv.status === 'Overdue' ? 'var(--bad-fg)' : 'var(--foreground)',
+        statusLabel: iv.status, statusSt: this.statusPill(iv.status),
+        canPay: iv.status === 'Open' || iv.status === 'Overdue',
+        pay: () => this.markPaid(iv.no),
+      };
+    } else {
+      vm.iv = { customer: '', amountLabel: '', invDate: '', dueDate: '', dueColor: '', statusLabel: '', statusSt: '', canPay: false, pay: () => {} };
+    }
+
+    return { vm };
+  }
+}
+</script>
+</body>
+</html>

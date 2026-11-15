@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  
+  <rect width="200" height="200" rx="44" fill="oklch(0.72 0.13 58)"></rect>
+  <text x="100" y="148" font-family="&#39;Geist&#39;, &#39;ui-sans-serif&#39;, system-ui, sans-serif" font-size="120" font-weight="700" text-anchor="middle" fill="#2a1a08" letter-spacing="-4">S</text>
+</svg>

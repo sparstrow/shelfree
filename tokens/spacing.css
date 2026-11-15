@@ -1,0 +1,45 @@
+/* Shelfree Design System — Spacing, Radius, Shadow & Motion Tokens */
+
+:root {
+  /* ── Spacing scale (4px base) ──────────────────────────────── */
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   20px;
+  --space-6:   24px;
+  --space-8:   32px;
+  --space-10:  40px;
+  --space-12:  48px;
+
+  /* ── Border radius ──────────────────────────────────────────── */
+  --radius-xs:   6px;    /* small badges, tiny chips              */
+  --radius-sm:   8px;    /* inputs, toolbar buttons, icon buttons */
+  --radius-md:   10px;   /* cards, panels, dropdowns, tables      */
+  --radius-logo: 10px;   /* brand logo mark                       */
+  --radius-lg:   16px;   /* modals, auth cards                    */
+  --radius-full: 999px;  /* pill badges, count chips, avatars     */
+
+  /* ── Shadows (dark mode) ────────────────────────────────────── */
+  --shadow:       0 1px 2px rgb(0 0 0 / .4);
+  --shadow-hover: 0 4px 12px -3px rgb(0 0 0 / .28);
+  --shadow-lg:    0 18px 44px -14px rgb(0 0 0 / .65);
+
+  /* ── Motion ────────────────────────────────────────────────── */
+  --transition-base: background .14s ease, color .14s ease, transform .14s ease, box-shadow .14s ease; /* @kind other */
+  --duration-fast:   150ms; /* @kind other */
+  --duration-base:   200ms; /* @kind other */
+  --ease-base:       ease; /* @kind other */
+
+  /* ── App shell dimensions ───────────────────────────────────── */
+  --topbar-h:     56px;
+  --sidebar-w:    244px;
+  --rail-w-min:   56px;   /* collapsed rail */
+  --rail-w-max:   220px;  /* expanded rail  */
+}
+
+[data-theme="light"] {
+  --shadow:       0 1px 2px rgb(0 0 0 / .05);
+  --shadow-hover: 0 4px 12px -3px rgb(0 0 0 / .14);
+  --shadow-lg:    0 12px 32px -8px rgb(0 0 0 / .18);
+}

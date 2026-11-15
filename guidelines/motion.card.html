@@ -1,0 +1,37 @@
+<!-- @dsCard group="Spacing" viewport="700x120" subtitle="Animation keyframes — sfFade, sfPop, sfToast · 150-200ms ease" name="Motion" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Geist',ui-sans-serif,sans-serif;background:#0c0c0e;color:#f4f4f5;padding:20px 24px;-webkit-font-smoothing:antialiased;overflow:hidden}
+@keyframes sfFade{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:none}}
+@keyframes sfPop{0%{opacity:0;transform:scale(.97) translateY(5px)}100%{opacity:1;transform:none}}
+@keyframes sfToast{0%,100%{opacity:0;transform:translateY(10px)}30%,70%{opacity:1;transform:none}}
+.demo{flex:1;background:#161618;border:1px solid #26262b;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.pill{height:28px;border-radius:8px;background:#26262b;display:flex;align-items:center;padding:0 12px;font-size:12.5px;font-weight:500}
+</style>
+</head>
+<body>
+<div style="display:flex;gap:12px">
+  <div class="demo" style="animation:sfFade .5s ease infinite alternate">
+    <div style="font-size:11px;font-weight:600;color:#8a8a93;letter-spacing:0.06em">SFFADE</div>
+    <div class="pill">Page / section entrance</div>
+    <div style="font-size:10.5px;color:#8a8a93">opacity + translateY(6px) · 200ms</div>
+  </div>
+  <div class="demo" style="animation:sfPop .6s ease infinite alternate">
+    <div style="font-size:11px;font-weight:600;color:#8a8a93;letter-spacing:0.06em">SFPOP</div>
+    <div class="pill">Dropdowns · drawers</div>
+    <div style="font-size:10.5px;color:#8a8a93">opacity + scale(.97) + translateY(5px) · 150ms</div>
+  </div>
+  <div class="demo" style="animation:sfToast 3s ease infinite">
+    <div style="font-size:11px;font-weight:600;color:#8a8a93;letter-spacing:0.06em">SFTOAST</div>
+    <div class="pill">Notification toasts</div>
+    <div style="font-size:10.5px;color:#8a8a93">slide-up from bottom · 200ms</div>
+  </div>
+</div>
+</body>
+</html>

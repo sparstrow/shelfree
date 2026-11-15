@@ -1,0 +1,41 @@
+/* Shelfree Design System — Typography Tokens
+ *
+ * Fonts: loaded via Google Fonts. Add this <link> to your HTML <head>:
+ *
+ *   <link rel="preconnect" href="https://fonts.googleapis.com">
+ *   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ *   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+ *
+ * The @import below makes styles.css self-sufficient (consumers linking the one
+ * entry file get the webfonts). To self-host instead, upload the Geist / Geist Mono
+ * .woff2 files and replace this @import with @font-face rules pointing at them.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* ── Font families ──────────────────────────────────────────── */
+  --font-sans:  'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-mono:  'Geist Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* ── Type scale ─────────────────────────────────────────────── */
+  --text-xs:    11px;     /* meta labels, column headers          */
+  --text-sm:    11.5px;   /* secondary meta, column headers       */
+  --text-base:  12.5px;   /* table cell content                   */
+  --text-body:  13px;     /* body text, form labels               */
+  --text-md:    13.5px;   /* form inputs, auth paragraphs         */
+  --text-lg:    15px;     /* sidebar nav labels                   */
+  --text-xl:    18px;     /* page titles (h1)                     */
+  --text-2xl:   21px;     /* section headings, auth card titles   */
+  --text-3xl:   25px;     /* auth page headings                   */
+
+  /* ── Font weights ───────────────────────────────────────────── */
+  --weight-normal:   400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  /* ── Letter spacing ─────────────────────────────────────────── */
+  --tracking-heading:  -0.02em;   /* all headings              */
+  --tracking-label:     0.06em;   /* UPPER section labels      */
+  --tracking-micro:     0.09em;   /* 10.5px sidebar sections   */
+}

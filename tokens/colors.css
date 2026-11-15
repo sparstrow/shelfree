@@ -1,0 +1,98 @@
+/* Shelfree Design System — Color Tokens
+ * Dark mode is :root (default). Light mode: add data-theme="light" to the root element.
+ * All existing designs consume these exact variable names without prefix.
+ */
+
+:root {
+  /* ── Surfaces ─────────────────────────────────────────────────── */
+  --sidebar:      #08080a;   /* icon rail, deepest surface         */
+  --background:   #0c0c0e;   /* main page background               */
+  --panel:        #161618;   /* content panels, table headers      */
+  --card:         #161618;   /* cards, dropdowns, drawers          */
+
+  /* ── Foreground ───────────────────────────────────────────────── */
+  --foreground:   #f4f4f5;   /* primary text                       */
+  --muted:        #1e1e22;   /* muted surface / hover tint         */
+  --muted-fg:     #8a8a93;   /* secondary/meta text                */
+
+  /* ── Borders & Inputs ─────────────────────────────────────────── */
+  --border:       #26262b;   /* dividers, card outlines            */
+  --input:        #34343b;   /* input border (unfocused)           */
+
+  /* ── Brand / Primary ─────────────────────────────────────────── */
+  --primary:       oklch(0.72 0.13 58);   /* terracotta amber       */
+  --primary-hover: oklch(0.66 0.13 58);   /* darkened on hover      */
+  --primary-fg:    #2a1a08;               /* text on primary bg     */
+  --ring:          oklch(0.72 0.13 58);   /* focus ring base        */
+
+  /* ── Table / Row ─────────────────────────────────────────────── */
+  --row-hover:    #161618;                       /* row hover bg    */
+  --row-sel:      oklch(0.31 0.045 58);          /* selected row bg */
+
+  /* ── Status — OK / Success ───────────────────────────────────── */
+  --ok-bg:        color-mix(in oklab, oklch(0.72 0.16 155) 16%, transparent);
+  --ok-fg:        oklch(0.82 0.13 155);
+
+  /* ── Status — Info ───────────────────────────────────────────── */
+  --info-bg:      color-mix(in oklab, oklch(0.7 0.13 245) 16%, transparent);
+  --info-fg:      oklch(0.82 0.1 245);
+
+  /* ── Status — Warning ────────────────────────────────────────── */
+  --warn-bg:      color-mix(in oklab, oklch(0.78 0.14 70) 16%, transparent);
+  --warn-fg:      oklch(0.84 0.12 75);
+
+  /* ── Status — Danger / Bad ───────────────────────────────────── */
+  --bad-bg:       color-mix(in oklab, oklch(0.7 0.18 25) 18%, transparent);
+  --bad-fg:       oklch(0.82 0.13 25);
+
+  /* ── Status — Neutral ────────────────────────────────────────── */
+  --neutral-bg:   #26262b;
+  --neutral-fg:   #a1a1aa;
+}
+
+[data-theme="light"] {
+  /* ── Surfaces ─────────────────────────────────────────────────── */
+  --sidebar:      #fafafa;
+  --background:   #ffffff;
+  --panel:        #fafafa;
+  --card:         #ffffff;
+
+  /* ── Foreground ───────────────────────────────────────────────── */
+  --foreground:   #18181b;
+  --muted:        #f4f4f5;
+  --muted-fg:     #71717a;
+
+  /* ── Borders & Inputs ─────────────────────────────────────────── */
+  --border:       #e4e4e7;
+  --input:        #d9d9de;
+
+  /* ── Brand / Primary ─────────────────────────────────────────── */
+  --primary:       oklch(0.62 0.14 50);
+  --primary-hover: oklch(0.56 0.14 50);
+  --primary-fg:    #ffffff;
+  --ring:          oklch(0.62 0.14 50);
+
+  /* ── Table / Row ─────────────────────────────────────────────── */
+  --row-hover:    #fafafa;
+  --row-sel:      oklch(0.965 0.025 65);
+
+  /* ── Status — OK ─────────────────────────────────────────────── */
+  --ok-bg:        oklch(0.95 0.045 155);
+  --ok-fg:        oklch(0.42 0.1 155);
+
+  /* ── Status — Info ───────────────────────────────────────────── */
+  --info-bg:      oklch(0.95 0.035 245);
+  --info-fg:      oklch(0.45 0.1 245);
+
+  /* ── Status — Warning ────────────────────────────────────────── */
+  --warn-bg:      oklch(0.95 0.05 70);
+  --warn-fg:      oklch(0.5 0.11 55);
+
+  /* ── Status — Danger ─────────────────────────────────────────── */
+  --bad-bg:       oklch(0.95 0.04 25);
+  --bad-fg:       oklch(0.5 0.15 25);
+
+  /* ── Status — Neutral ────────────────────────────────────────── */
+  --neutral-bg:   #f4f4f5;
+  --neutral-fg:   #71717a;
+}
