@@ -136,8 +136,9 @@ re-based on Kanalora data, so existing installs re-seed rather than keep the
 old generic sites) — a single JSON blob:
 `{ warehouses: Warehouse[], layouts: { [warehouseId::floorId]: Layout } }`.
 Written on every mutation (`persist()`), seeded from `baseWarehouses()` /
-`baseLayouts()` (3 sample sites: NorthDoor Main DC with 3 floors fully laid
-out, East Coast 3PL and Retail Forward Stock both undesigned) on first load,
+`baseLayouts()` (3 Kanalora sample sites: Tiruvannamalai — Main `TVM-MAIN`
+with a ground floor + carton loft laid out, Assembly unit `TVM-ASSY` laid out,
+and Chennai DC `CHN-DC` (3PL) undesigned) on first load,
 and migrated (`migrate()`) from an older single-layout-per-warehouse shape if
 present.
 

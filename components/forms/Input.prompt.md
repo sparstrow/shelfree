@@ -34,7 +34,7 @@ Form input primitives for all ERP data-entry surfaces. All share the same 36 px 
   onChange={e => setCat(e.target.value)}
   options={[
     { value: 'all', label: 'All categories' },
-    { value: 'barn-door', label: 'Barn Door' },
+    { value: 'sambrani-holder', label: 'Sambrani Holder' },
   ]}
 />
 ```
