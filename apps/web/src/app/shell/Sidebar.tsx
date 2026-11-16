@@ -230,6 +230,11 @@ export function Sidebar() {
   const isOpen = (id: string) => (navExpanded[id] !== undefined ? navExpanded[id] : id === activeModuleId)
 
   const toggleModule = (module: ModuleDef) => {
+    // Single-page modules (Notes) and the collapsed rail have nothing to expand: go to the page.
+    if (module.pages.length <= 1 || collapsed) {
+      void navigate({ to: '/$module/$page', params: { module: module.id, page: module.pages[0].slug } })
+      return
+    }
     const open = isOpen(module.id)
     setNavExpanded(module.id, !open)
     if (!open && module.id !== activeModuleId) {
@@ -380,7 +385,8 @@ export function Sidebar() {
 
         {MODULES.map((module) => {
           const moduleActive = module.id === activeModuleId
-          const open = !collapsed && isOpen(module.id)
+          const expandable = module.pages.length > 1
+          const open = expandable && !collapsed && isOpen(module.id)
           return (
             <div key={module.id} className="flex flex-col gap-0.5">
               <button
@@ -396,7 +402,7 @@ export function Sidebar() {
                   <ModuleIcon id={module.id} />
                 </span>
                 <span className={textClass(collapsed)}>{module.name}</span>
-                <Chevron open={open} collapsed={collapsed} />
+                {expandable && <Chevron open={open} collapsed={collapsed} />}
               </button>
               <Collapsible open={open}>
                 {module.pages.map((page) => (

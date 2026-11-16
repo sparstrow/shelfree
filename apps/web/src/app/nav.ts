@@ -204,5 +204,5 @@ export function allNavPages(): NavPageRow[] {
   )
 }
 
-/** Where the app opens: Warehouse ▸ Items, as in the prototype. */
-export const DEFAULT_LANDING = { module: 'warehouse' as ModuleId, slug: 'items' }
+/** Where the app opens: Purchasing ▸ Purchase Orders, as in the prototype. */
+export const DEFAULT_LANDING = { module: 'purchasing' as ModuleId, slug: 'purchase-orders' }

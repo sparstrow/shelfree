@@ -1,4 +1,4 @@
-import { ExternalLink, PackageCheck, Trash2, X } from 'lucide-react'
+import { Download, ExternalLink, Trash2, X } from 'lucide-react'
 import { StatusPill } from '@/components/StatusPill'
 import type { PurchaseOrder } from '@/data/schemas'
 import { poLineCount, poLineTotal, poReceivable, poSubtotal } from '@/domain/purchase-order'
@@ -129,7 +129,7 @@ export function PurchaseOrderDrawer({
               title="Record a goods-in receipt against this order"
               className="hover-lift inline-flex h-[30px] flex-none items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 text-[12.5px] font-semibold text-foreground hover:bg-tint-12"
             >
-              <PackageCheck className="size-[13px]" strokeWidth={2} />
+              <Download className="size-[13px]" strokeWidth={2} />
               Receive
             </button>
           )}

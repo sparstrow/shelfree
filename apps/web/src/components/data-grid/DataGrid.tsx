@@ -1,4 +1,5 @@
 import {
+  Bookmark,
   Check,
   ChevronDown,
   ChevronLeft,
@@ -12,6 +13,7 @@ import {
   Funnel,
   List,
   type LucideIcon,
+  Pin,
   RefreshCw,
   Rows3,
   Rows4,
@@ -91,6 +93,8 @@ export interface DataGridProps<T> {
   /** Side drawer rendered beside the table. */
   drawer?: ReactNode
   emptyText?: string
+  /** Footer totals row (sum of numeric columns over the current view). Off by default. */
+  showTotals?: boolean
 }
 
 const toolButton =
@@ -151,11 +155,12 @@ export function DataGrid<T>({
   actions = [],
   drawer,
   emptyText,
+  showTotals = false,
 }: DataGridProps<T>) {
   const [viewId, setViewId] = useState(dataset.views[0]?.id ?? 'all')
   const [filters, setFilters] = useState<GridFilter[]>([])
   const [search, setSearch] = useState('')
-  const [sorts, setSorts] = useState<SortSpec[]>([])
+  const [sorts, setSorts] = useState<SortSpec[]>(() => [dataset.defaultSort ?? { key: 'no', dir: 'asc' }])
   const [hidden, setHidden] = useState<Set<string>>(
     () => new Set(dataset.columns.filter((c) => !c.visible).map((c) => c.key)),
   )
@@ -376,7 +381,7 @@ export function DataGrid<T>({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button type="button" className={toolButton} title="Saved views">
-                  <List className="size-[13px] text-muted-foreground" strokeWidth={2} />
+                  <Bookmark className="size-[13px] text-muted-foreground" strokeWidth={2} />
                   {activeView?.name ?? 'Views'}
                   <ChevronDown className="size-[11px] opacity-70" strokeWidth={2} />
                 </button>
@@ -607,7 +612,7 @@ export function DataGrid<T>({
           className="relative min-w-0 flex-1 overflow-auto rounded-[10px] border border-border bg-card outline-none focus-visible:border-ring"
         >
           {/* header */}
-          <div role="row" className="sticky top-0 z-[6] flex h-9 w-max min-w-full items-stretch border-b border-border bg-panel">
+          <div role="row" className="sticky top-0 z-[6] flex h-[34px] w-max min-w-full items-stretch border-b border-border bg-panel">
             <div
               className={cn(
                 'sticky left-0 z-[7] flex flex-none items-center justify-center bg-panel',
@@ -664,6 +669,13 @@ export function DataGrid<T>({
                       >
                         {sortIndex + 1}
                       </span>
+                    )}
+                    {c.frozen && (
+                      <Pin
+                        aria-label="Pinned column"
+                        className={cn('size-[11px] flex-none text-primary opacity-85', c.frozen === 'right' && '-scale-x-100')}
+                        strokeWidth={2}
+                      />
                     )}
                   </button>
                 </div>
@@ -820,7 +832,7 @@ export function DataGrid<T>({
           )}
 
           {/* totals */}
-          {!isLoading && !error && slice.total > 0 && (
+          {showTotals && !isLoading && !error && slice.total > 0 && (
             <div className="sticky bottom-0 z-[5] flex w-max min-w-full items-stretch border-t border-border bg-panel">
               <div
                 className={cn(
