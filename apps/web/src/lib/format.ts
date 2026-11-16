@@ -29,6 +29,12 @@ export function fmtDate(iso: string | null | undefined): string {
     : d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
+/** Today in the user's own time zone, as YYYY-MM-DD. */
+export function todayLocal(): string {
+  const d = new Date()
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+}
+
 /** Today as YYYY-MM-DD (UTC, matching the prototype's comparisons). */
 export function todayIso(): string {
   return new Date().toISOString().slice(0, 10)

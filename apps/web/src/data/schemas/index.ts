@@ -63,6 +63,14 @@ export const contactLinkSchema = z.object({
 export type ContactLink = z.infer<typeof contactLinkSchema>
 
 // ── Purchasing ▸ Vendors ─────────────────────────────────────────────────────
+export const VENDOR_GST_REG_TYPES = ['regular', 'composition', 'unregistered', 'sez', 'overseas'] as const
+export const vendorGstRegTypeSchema = z.enum(VENDOR_GST_REG_TYPES)
+export type VendorGstRegType = z.infer<typeof vendorGstRegTypeSchema>
+
+/** How tax is calculated on a document: per line, or per tax-rate total. */
+export const taxCalcSchema = z.enum(['line', 'rate'])
+export type TaxCalc = z.infer<typeof taxCalcSchema>
+
 export const vendorSchema = z.object({
   no: z.string(),
   name: z.string(),
@@ -109,9 +117,13 @@ export const vendorSchema = z.object({
   }),
   /** Employee id of the purchaser responsible for this vendor. */
   purchasePerson: z.string(),
-  supplies: z.enum(['goods', 'services']),
-  gstRegType: z.enum(['regular', 'composition', 'unregistered']),
+  supplies: z.enum(['goods', 'services', 'both']),
+  gstRegType: vendorGstRegTypeSchema,
   gstin: z.string(),
+  /** Vendor-specific tax rules; when false/absent the workspace tax settings apply. */
+  taxCalcOverride: z.boolean().optional(),
+  taxCalc: taxCalcSchema.optional(),
+  roundTotal: z.boolean().optional(),
   contacts: z.array(contactLinkSchema),
 })
 export type Vendor = z.infer<typeof vendorSchema>
@@ -151,9 +163,41 @@ export const purchaseOrderSchema = z.object({
   notes: z.string(),
   /** Issued orders are locked unless explicitly reopened (`locked === false`). */
   locked: z.boolean().optional(),
+  /** True once an issued order has been reopened for editing. */
+  reopened: z.boolean().optional(),
+  /** Tax calculation method stamped from the vendor / workspace when the vendor is picked. */
+  taxCalc: taxCalcSchema.optional(),
+  roundTotal: z.boolean().optional(),
+  taxCalcSrc: z.enum(['workspace', 'vendor']).optional(),
+  /** Snapshot of the vendor's GST registration at the time of the order. */
+  vendorGstRegType: vendorGstRegTypeSchema.optional(),
+  vendorGstin: z.string().optional(),
+  vendorTaxStateCode: z.string().optional(),
   lines: z.array(purchaseOrderLineSchema),
 })
 export type PurchaseOrder = z.infer<typeof purchaseOrderSchema>
+
+// ── Purchasing ▸ Purchase Prices (vendor price list, with quantity tiers) ────
+export const purchasePriceSchema = z.object({
+  no: z.string(),
+  /** Vendor no. */
+  vendor: z.string(),
+  /** Item no. */
+  item: z.string(),
+  vendorItemNo: z.string(),
+  /** The price applies from this quantity (1 = base price). */
+  minQty: z.number(),
+  price: z.number(),
+  currency: z.string(),
+  leadDays: z.number().nullable(),
+  /** Active from / to (inclusive, ISO date). Empty = open-ended. */
+  effFrom: z.string(),
+  effTo: z.string(),
+  note: z.string(),
+  createdAt: isoDateTime,
+  updatedAt: isoDateTime,
+})
+export type PurchasePrice = z.infer<typeof purchasePriceSchema>
 
 // ── Purchasing ▸ Purchase Receipts (goods-in) ────────────────────────────────
 export const PR_STATUSES = ['Draft', 'Posted', 'Cancelled'] as const

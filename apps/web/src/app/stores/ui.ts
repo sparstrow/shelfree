@@ -35,6 +35,8 @@ interface UiState {
   tabSeq: number
   /** Demo-only "view as" switch; real roles come from the backend later. */
   demoRole: DemoRole
+  /** User-resized column widths, per grid id. */
+  columnWidths: Record<string, Record<string, number>>
 
   setTheme: (theme: Theme) => void
   setNavCollapsed: (collapsed: boolean) => void
@@ -44,6 +46,7 @@ interface UiState {
   pushRecent: (path: string) => void
   clearRecents: () => void
   setDemoRole: (role: DemoRole) => void
+  setColumnWidths: (gridId: string, widths: Record<string, number>) => void
 
   /** Record where the active tab is (called on every navigation). */
   syncActiveTab: (path: string) => void
@@ -68,6 +71,7 @@ export const useUi = create<UiState>()(
       activeTabId: 1,
       tabSeq: 1,
       demoRole: 'owner',
+      columnWidths: {},
 
       setTheme: (theme) => set({ theme }),
       setNavCollapsed: (navCollapsed) => set({ navCollapsed }),
@@ -83,6 +87,8 @@ export const useUi = create<UiState>()(
         set((s) => ({ recents: [path, ...s.recents.filter((p) => p !== path)].slice(0, 10) })),
       clearRecents: () => set({ recents: [] }),
       setDemoRole: (demoRole) => set({ demoRole }),
+      setColumnWidths: (gridId, widths) =>
+        set((s) => ({ columnWidths: { ...s.columnWidths, [gridId]: widths } })),
 
       syncActiveTab: (path) =>
         set((s) => ({

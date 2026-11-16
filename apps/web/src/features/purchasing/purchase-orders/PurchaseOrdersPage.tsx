@@ -1,4 +1,4 @@
-import { useNavigate } from '@tanstack/react-router'
+import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import { Copy, ExternalLink, Eye, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -18,9 +18,13 @@ import { useList, useRemove, useUpsert } from '@/data/queries'
 import { PurchaseOrderDrawer } from './PurchaseOrderDrawer'
 import { purchaseOrderDataset } from './dataset'
 
+const route = getRouteApi('/purchasing/purchase-orders/')
+
 /** Purchasing ▸ Purchase Orders — list, preview drawer, delete. */
 export function PurchaseOrdersPage() {
   const navigate = useNavigate()
+  // `?sel=PO00011` opens that order's preview (used when returning from the document).
+  const { sel } = route.useSearch()
   const openTab = useUi((s) => s.openTab)
   const orders = useList('purchaseOrders')
   const vendors = useList('vendors')
@@ -29,7 +33,7 @@ export function PurchaseOrdersPage() {
   const remove = useRemove('purchaseOrders')
   const restore = useUpsert('purchaseOrders')
 
-  const [activeId, setActiveId] = useState<string | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(sel ?? null)
   const [deleting, setDeleting] = useState<PurchaseOrder | null>(null)
 
   const dataset = useMemo(
@@ -121,7 +125,7 @@ export function PurchaseOrdersPage() {
               onClose={() => setActiveId(null)}
               onOpen={() => openOrder(active)}
               onReceive={() =>
-                navigate({ to: '/$module/$page', params: { module: 'purchasing', page: 'purchase-receipts' } })
+                navigate({ to: '/purchasing/purchase-receipts/$no', params: { no: 'new' }, search: { po: active.no } })
               }
               onDelete={() => setDeleting(active)}
             />

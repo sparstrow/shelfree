@@ -20,12 +20,23 @@ export function useActivePage(): ActivePage {
   return describePath(pathname)
 }
 
+/** Singular names for document screens opened from a list page. */
+export const DOCUMENT_NAMES: Record<string, string> = {
+  'purchasing/purchase-orders': 'Purchase Order',
+  'purchasing/purchase-receipts': 'Purchase Receipt',
+  'production/bills-of-materials': 'Bill of Materials',
+  'production/assembly-orders': 'Assembly Order',
+}
+
 /** Short label for a path — used by workspace tabs and recent pages. */
 export function labelForPath(pathname: string): string {
   const at = describePath(pathname)
   if (at.kind === 'page') {
-    // Record pages (…/vendors/V00001) are labelled by their record number.
-    return at.rest.length > 0 && at.rest[0] !== 'new' ? decodeURIComponent(at.rest[0]) : at.page.label
+    if (at.rest.length === 0) return at.page.label
+    // Document screens keep a fixed name; record pages (…/vendors/V00001) show the record number.
+    const documentName = DOCUMENT_NAMES[at.module.id + '/' + at.page.slug]
+    if (documentName) return documentName
+    return at.rest[0] !== 'new' ? decodeURIComponent(at.rest[0]) : at.page.label
   }
   if (at.kind === 'departments') return 'Departments'
   if (at.kind === 'settings') return 'Settings'

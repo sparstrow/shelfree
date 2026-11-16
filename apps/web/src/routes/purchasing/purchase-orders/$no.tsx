@@ -1,12 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { PlaceholderPage } from '@/app/shell/PlaceholderPage'
+import { PurchaseOrderEditor } from '@/features/purchasing/purchase-orders/PurchaseOrderEditor'
 
-/** The purchase order document editor — next page to be moved from the prototype. */
+/** The purchase order document. `$no` is an order number, or `new`. */
 export const Route = createFileRoute('/purchasing/purchase-orders/$no')({
-  component: PurchaseOrderDocument,
+  component: PurchaseOrderRoute,
 })
 
-function PurchaseOrderDocument() {
+function PurchaseOrderRoute() {
   const { no } = Route.useParams()
-  return <PlaceholderPage title={no === 'new' ? 'New purchase order' : `Purchase order ${no}`} kind="pending" />
+  return <PurchaseOrderEditor routeNo={no} />
 }

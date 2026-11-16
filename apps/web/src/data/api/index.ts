@@ -16,11 +16,13 @@ import {
   itemSchema,
   noteSchema,
   purchaseOrderSchema,
+  purchasePriceSchema,
   purchaseReceiptSchema,
   userSchema,
   vendorSchema,
   warehouseSchema,
 } from '@/data/schemas'
+import { seedPurchasePrices } from '@/data/seed/purchase-prices'
 import * as seed from '@/data/seed/seed-data.js'
 import { createCollection } from '@/data/store/collection'
 
@@ -47,6 +49,12 @@ export const api = {
     key: 'purchaseOrders',
     schema: purchaseOrderSchema,
     seed: seed.seedPurchaseOrders,
+    idOf: (r) => r.no,
+  }),
+  purchasePrices: createCollection({
+    key: 'purchasePrices',
+    schema: purchasePriceSchema,
+    seed: seedPurchasePrices,
     idOf: (r) => r.no,
   }),
   purchaseReceipts: createCollection({
