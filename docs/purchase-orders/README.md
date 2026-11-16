@@ -1,4 +1,4 @@
-# Purchase Orders — `designs/erp/Shelfree App.dc.html`
+# Purchase Orders — `prototype/designs/erp/Shelfree App.dc.html`
 
 Part of the flagship ERP shell. The first **transactional** surface (goods-in) on
 top of the master-data layer (Items / Customers / Vendors). Two connected
@@ -93,7 +93,7 @@ upgrade prompts yet (per root `CLAUDE.md` build order — gating is layered late
 
 ## Data model
 
-New entity **PurchaseOrder** (seed: `lib/shelfree-data.js` `seedPurchaseOrders()`;
+New entity **PurchaseOrder** (seed: `prototype/lib/shelfree-data.js` `seedPurchaseOrders()`;
 line `desc`/`uom`/`unitCost` are resolved from the current Item record at seed time
 so nothing is duplicated by hand — totals are always derived, never stored):
 

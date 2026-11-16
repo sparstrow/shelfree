@@ -2,7 +2,7 @@
 
 Status: built (prototype), **Starter base, ungated**.
 Spec: [`../superpowers/specs/2026-08-22-departments-navigation.md`](../superpowers/specs/2026-08-22-departments-navigation.md)
-Lives in `designs/erp/Shelfree App.dc.html` (app shell).
+Lives in `prototype/designs/erp/Shelfree App.dc.html` (app shell).
 
 ## Overview
 

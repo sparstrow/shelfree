@@ -1,6 +1,6 @@
 # Production — Bills of Materials & Assembly Orders
 
-Part of `designs/erp/Shelfree App.dc.html`. First manufacturing surface: what an
+Part of `prototype/designs/erp/Shelfree App.dc.html`. First manufacturing surface: what an
 item is made of (BOM) and the order that turns components into finished goods
 (assembly order).
 
@@ -118,7 +118,7 @@ warnings, over-consumption on finish, and cycle rejection on save.
 ## Persistence
 
 - BOMs and assembly orders: `localStorage` key `shelfree.bom.v1` (seeded from
-  `lib/shelfree-data.js` on first run).
+  `prototype/lib/shelfree-data.js` on first run).
 - Workspace config: `shelfree.settings.workspace.v1` under `production`.
 - User config: `shelfree.settings.user.v1`.
 

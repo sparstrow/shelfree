@@ -17,7 +17,7 @@
 ---
 
 ## Task 1 — Seed data
-**File:** `lib/shelfree-data.js`
+**File:** `prototype/lib/shelfree-data.js`
 
 - `seedBOMs()` — 7 records:
   - `BOM00001/20/30` — `ASH-{PWH,TER,BLK}-18` ← lid + `RM-BASE-STD` + `RM-GASKET` +
@@ -36,7 +36,7 @@
 **Verify:** `check_design_system` clean; app boots with the new arrays present.
 
 ## Task 2 — App shell wiring
-**File:** `designs/erp/Shelfree App.dc.html` (logic)
+**File:** `prototype/designs/erp/Shelfree App.dc.html` (logic)
 
 - `modules()` → `{ id:'production', name:'Production', pages:['Bills of Materials','Assembly Orders','Production Orders'] }` after `warehouse`; Production Orders filtered out unless `axisOn('production')`.
 - `axisDefs()` → `{ key:'production', label:'Production orders & routing', desc:'Routed manufacturing with operations and yield.', tier:'growth' }`.

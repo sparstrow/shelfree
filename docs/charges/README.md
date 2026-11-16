@@ -9,7 +9,7 @@ accounts account and can be **allocated to landed cost** (spread across received
 lines). Freight is always a Charge line, never a raw G/L line, so GST, landed-cost
 allocation and freight reporting work.
 Second page on the reference-dataset registry (`chgReg()` in
-`designs/erp/Shelfree App.dc.html`) — grid + shared reference drawer.
+`prototype/designs/erp/Shelfree App.dc.html`) — grid + shared reference drawer.
 Sits under Purchasing, in the setup block below the rule. Tier: parked (POC) — ungated.
 Future-pass hint: Starter base (landed-cost allocation itself → likely Growth).
 
@@ -34,7 +34,7 @@ Future-pass hint: Starter base (landed-cost allocation itself → likely Growth)
 `Charge { no: string(2–12, A–Z 0–9 -, PK), name: string, direction: 'Purchase'|'Sales'|'Both', purchaseAcct: accountCode|'', salesAcct: accountCode|'', gst: 'Goods rate'|'0%'|'5%'|'12%'|'18%'|'28%', sac: string(4/6/8 digits), allocate: boolean, desc: string, system: boolean, active: boolean, createdAt: ISO, updatedAt: ISO }`
 - `gst = 'Goods rate'` → composite supply: the line takes the GST rate of the goods on the
   same document (vendor-billed freight/packing).
-- Seed (`lib/shelfree-data.js → seedCharges()`): **FRT-IN** Freight inward → 5110, goods
+- Seed (`prototype/lib/shelfree-data.js → seedCharges()`): **FRT-IN** Freight inward → 5110, goods
   rate, SAC 996511, allocate, **system** · **INS** Transit insurance → 5115, 18%, 997136,
   allocate · **LOAD** Loading & unloading → 5115, 18%, 996719, expensed · **PKG** Packing &
   forwarding → 5115, goods rate, 998540, allocate.

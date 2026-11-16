@@ -5,7 +5,7 @@ Read-only list of the official GST state codes (the first two digits of every GS
 only, no rates** — rates are national (see `docs/tax-codes/`). Used by every address State field,
 GSTIN parsing, and (from task 6) the tax engine's same-state vs different-state comparison.
 Spec: `docs/superpowers/specs/2026-09-25-tax-codes-gst.md` §2.2; plan task 2. Built in
-`designs/erp/Shelfree App.dc.html` (`gstStates()`, `gstStateByCode/ByName()`, `gstinParse()`,
+`prototype/designs/erp/Shelfree App.dc.html` (`gstStates()`, `gstStateByCode/ByName()`, `gstinParse()`,
 `stOptsFor()`, `st*` methods, `stVM()`). Tier: parked (POC) — ungated. Future-pass hint: Starter base.
 
 ## Screens & states

@@ -14,7 +14,7 @@ transporters on shipments, bank relationship managers…) add a link field — n
 name/phone columns.
 
 Fourth page on the reference-dataset registry (`cntReg()` in
-`designs/erp/Shelfree App.dc.html`). Sits under **People** (Users · Employees · **Contacts** ·
+`prototype/designs/erp/Shelfree App.dc.html`). Sits under **People** (Users · Employees · **Contacts** ·
 Time Sheets). Tier: parked (POC) — ungated. Future-pass hint: Starter base.
 
 ## Screens & states
@@ -53,7 +53,7 @@ Links live on the owning record:
   whenever a contact or link changes (`cntMirror` / `cntSyncParties`) — never an
   independent source.
 
-Seed (`lib/shelfree-data.js → seedContacts()`): derived from the carrier, vendor and customer
+Seed (`prototype/lib/shelfree-data.js → seedContacts()`): derived from the carrier, vendor and customer
 seeds (in that order, deduped by name) so ids are stable across loads; the party seeds carry
 the matching `contactId`s.
 

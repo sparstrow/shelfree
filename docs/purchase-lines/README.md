@@ -1,4 +1,4 @@
-# Purchase Lines — `designs/erp/Shelfree App.dc.html`
+# Purchase Lines — `prototype/designs/erp/Shelfree App.dc.html`
 
 Tier: **Starter base — ungated, always-on.**
 Spec: [`../superpowers/specs/2026-09-20-purchase-lines.md`](../superpowers/specs/2026-09-20-purchase-lines.md)

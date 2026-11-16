@@ -1,4 +1,4 @@
-# Settings — `designs/erp/Shelfree App.dc.html`
+# Settings — `prototype/designs/erp/Shelfree App.dc.html`
 
 ## Overview
 
@@ -248,7 +248,7 @@ Full rules and backend contract: [`../sales-pricing/README.md`](../sales-pricing
 ## Navigation icons (added 2026-08-12)
 
 Every navigable page now carries **one shared glyph**, defined once in
-`pageIcons()` / `pageIcon(key)` in `designs/erp/Shelfree App.dc.html`. The map is
+`pageIcons()` / `pageIcon(key)` in `prototype/designs/erp/Shelfree App.dc.html`. The map is
 keyed by **module page label** (`'Items'`, `'Sales Prices'`, …), **settings page id**
 (`'ws-profile'`, `'cfg-tax'`, …) and **settings group tab** (`'grp-workspace'`,
 `'grp-configuration'`, `'grp-terminology'`, `'grp-my'`), plus `__view` (saved view)

@@ -1,0 +1,177 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+@import "./tokens.css";
+
+/* Dark is the default theme; `dark:` utilities apply when the root says dark. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme inline {
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+
+  /* shadcn palette */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Shelfree extras */
+  --color-panel: var(--panel);
+  --color-row-hover: var(--row-hover);
+  --color-row-sel: var(--row-sel);
+  --color-primary-hover: var(--primary-hover);
+  --color-new-btn-fg: var(--new-btn-fg);
+  --color-ok-bg: var(--ok-bg);
+  --color-ok-fg: var(--ok-fg);
+  --color-info-bg: var(--info-bg);
+  --color-info-fg: var(--info-fg);
+  --color-warn-bg: var(--warn-bg);
+  --color-warn-fg: var(--warn-fg);
+  --color-bad-bg: var(--bad-bg);
+  --color-bad-fg: var(--bad-fg);
+  --color-neutral-bg: var(--neutral-bg);
+  --color-neutral-fg: var(--neutral-fg);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-fg: var(--danger-fg);
+  --color-avatar: var(--avatar-bg);
+  /* hover tints: foreground mixed into transparent, as the prototype does */
+  --color-tint-7: color-mix(in oklab, var(--foreground) 7%, transparent);
+  --color-tint-10: color-mix(in oklab, var(--foreground) 10%, transparent);
+  --color-tint-12: color-mix(in oklab, var(--foreground) 12%, transparent);
+  --color-tint-14: color-mix(in oklab, var(--foreground) 14%, transparent);
+  --color-tint-16: color-mix(in oklab, var(--foreground) 16%, transparent);
+  --color-primary-tint: color-mix(in oklab, var(--primary) 15%, transparent);
+
+  --shadow-base: var(--shadow);
+  --shadow-pop: var(--shadow-lg);
+  --shadow-lift: var(--lift);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  --animate-sf-fade: sfFade 0.18s ease;
+  --animate-sf-pop: sfPop 0.15s ease-out;
+  --animate-sf-toast: sfToast 0.2s ease;
+  --animate-sf-slide: sfSlide 0.18s ease;
+  --animate-sf-sheet: sfSheet 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  --animate-sf-spin: sfSpin 0.8s linear infinite;
+  --animate-sf-shimmer: sfShimmer 1.4s ease infinite;
+
+  @keyframes sfFade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes sfPop {
+    from { opacity: 0; transform: scale(0.97) translateY(5px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes sfToast {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes sfSlide {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes sfSheet {
+    from { transform: translateY(100%); }
+    to { transform: none; }
+  }
+  @keyframes sfSpin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes sfShimmer {
+    0% { background-position: 100% 0; }
+    100% { background-position: 0 0; }
+  }
+}
+
+/* The standard interactive hover: 1px lift + elevation, 140 ms. */
+@utility hover-lift {
+  transition:
+    background-color 0.14s ease,
+    color 0.14s ease,
+    transform 0.14s ease,
+    box-shadow 0.14s ease;
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: var(--lift);
+  }
+}
+
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-font-smoothing: antialiased;
+    /* The prototype has no CSS reset: text uses the font's natural line height. */
+    line-height: normal;
+  }
+  body {
+    @apply bg-background text-foreground;
+    margin: 0;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  /* Native <option> popups render on an OS surface; keep them legible in both themes. */
+  select {
+    color-scheme: light dark;
+  }
+  option {
+    background: var(--card);
+    color: var(--foreground);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

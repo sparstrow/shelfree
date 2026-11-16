@@ -5,7 +5,7 @@ Workspace-wide GST behaviour: tax calculation method, rupee rounding, default ta
 line-override and GSTIN-mismatch checks, bill-to ≠ ship-to handling, when input tax credit is
 booked (spec Q5) and the value used on branch transfers (spec Q6). Spec
 `docs/superpowers/specs/2026-09-25-tax-codes-gst.md` §2.4 (+ §2.6 user preference); plan task 5.
-Built in `designs/erp/Shelfree App.dc.html` (`taxSetDefaults()`, `taxSet()`, `tsSet()`, `ts*`
+Built in `prototype/designs/erp/Shelfree App.dc.html` (`taxSetDefaults()`, `taxSet()`, `tsSet()`, `ts*`
 methods, `tsVM()`). Settings id `cfg-taxset`.
 Tier: parked (POC) — ungated. Future-pass hint: rounding / defaults / checks = Starter;
 bill-to ≠ ship-to + branch transfer value = Growth (multi-registration); ITC 2B hold = Growth.
@@ -178,7 +178,7 @@ Defaults: `line, true, '6190', 'GST5', true, true, 'warn', 'onBill', 'landed', 9
 - Old change-history entries still render their labels (`tsMeta`/`tsOpts` keep the keys for history only).
 - Backend: drop `tax_settings.new_vendor_reg`; vendor create defaults `gst_type = 'regular'` until templates exist.
 
-## Quiet help — shipped in the app (2026-10-15 · prototype `designs/erp/Tax Settings Quiet.dc.html`)
+## Quiet help — shipped in the app (2026-10-15 · prototype `prototype/designs/erp/Tax Settings Quiet.dc.html`)
 Live in `Shelfree App.dc.html` (Tax settings). Goal: cut settings-page text noise; guidance on demand. App specifics: preference stored as `me.showSetHelp` (boolean, default false) in `localStorage['shelfree.settings.user.v1']` via `meSet`; popover state `hp` / `hpTouch` (generic — reusable by other settings pages via `hpH(key)` + a help-text map like `tsHelpText()`); preview open state `tsPrevOpen` (session only). "Default: X · Use default" lines now show only with Descriptions on; otherwise the default + Use default live in the popover. Option labels keep their "(default)" suffix in the dropdown.
 - **Default = quiet.** Page, section and setting descriptions, option explanations, the "Press 1–6" hint and the preview footnote are hidden. Each title/label shows only its name + an ⓘ button.
 - **Help on demand.** Hover a label or ⓘ (350 ms delay) → popover with the description, every option's explanation (current marked, default tagged) or the default value, plus the CA note where flagged. Click ⓘ pins it (close ✕, click outside, Esc). Focus on ⓘ opens it for keyboard users.

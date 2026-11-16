@@ -1,4 +1,4 @@
-# ERP app shell — `designs/erp/Shelfree App.dc.html`
+# ERP app shell — `prototype/designs/erp/Shelfree App.dc.html`
 
 ## Overview
 
@@ -22,7 +22,7 @@ not one of the six modules implemented in this file today. If it's added, update
 Catalog, Sales Orders, and Sales Invoices are **not** wired into this app shell
 (they hit the shared placeholder page like any other unbuilt page here). Live,
 standalone versions of those three exist as separate DCs under
-`designs/erp/Sales - Marketing/` — see that folder's own docs; they are not
+`prototype/designs/erp/Sales - Marketing/` — see that folder's own docs; they are not
 reachable by navigating this app.
 
 Three "live" page types exist inside this shell:
@@ -82,7 +82,7 @@ Shared machinery keyed by dataset id (`items` / `customers` / `vendors`):
   visible/ordered columns, see `defaultCols()`), sort (`sortKey`/`sortDir`), saved views.
 - Data grid with row selection (`selNo` / party equivalents), bulk-select + bulk toolbar (`bulkBtnSt`, `bulkDelete`).
 - **Row inline edit**: `chipEdit` tracks a single cell being edited in place.
-- **3-tier record navigation** (from `lib/record-nav.js`, shared by every list page):
+- **3-tier record navigation** (from `prototype/lib/record-nav.js`, shared by every list page):
   1. single-click row → opens the **side drawer** (quick preview card, `selOpen`)
   2. double-click row, drawer **"Open in new tab"**, row-menu **Open in new tab**, or **Enter** → opens the item **full-page in a new workspace tab** (warehouse page `Item`, `pinnedNo`) — see `docs/item-page/README.md`. (The old tier-2 centered card modal, `viewCardVM`/`openView`, was never rendered; `openView` now routes to the full page.)
   - Esc closes the deepest open surface first (tab → drawer), via `handleEsc()`.
@@ -167,7 +167,7 @@ tracking without becoming a wall of fields).
 ### Settings — Units of measure, Item categories, Locations & warehouses, Keyboard shortcuts
 - Reached via `settingsOpen` + `settingsPage` (`'uom' | 'categories' | 'locations' | 'shortcuts'`), with its own breadcrumb (`settingsCrumb`).
 - **Units of measure**: seeded list (code/name/measurement category/UQC/conversion/symbol), searchable (`uomSearch`), user can add custom units — persisted.
-- **Item categories**: parent/sub-category tree (`catGroups`, `catAll`), used to classify items; editable and persisted. **Not hardcoded in the app** — the tree ships with the catalogue data (`lib/shelfree-data.js` → `seedItemCategories()`, whose leaf names are exactly the `category` values used by `seedItems()`: Finished Goods › Sambrani Holder / Combo Pack, Consumables › Sambrani Cones, Accessory, Components › Ceramic Component / Raw Material, Packaging). On every load the app runs `reconcileItemCategories(storedOrSeedTree, items)`, which appends any category present on an item but missing from the tree as a root node (auto code + colour), so Settings can never drift from the item table. A user-saved tree in localStorage wins over the seed, and is still reconciled.
+- **Item categories**: parent/sub-category tree (`catGroups`, `catAll`), used to classify items; editable and persisted. **Not hardcoded in the app** — the tree ships with the catalogue data (`prototype/lib/shelfree-data.js` → `seedItemCategories()`, whose leaf names are exactly the `category` values used by `seedItems()`: Finished Goods › Sambrani Holder / Combo Pack, Consumables › Sambrani Cones, Accessory, Components › Ceramic Component / Raw Material, Packaging). On every load the app runs `reconcileItemCategories(storedOrSeedTree, items)`, which appends any category present on an item but missing from the tree as a root node (auto code + colour), so Settings can never drift from the item table. A user-saved tree in localStorage wins over the seed, and is still reconciled.
 - **Item-level UoM**: each item can have a base unit + master-pack override, stored separately from the global UoM list. Managed on the **item profile page → Units of measure tab** (no longer a modal): base-unit picker, auto-derived master pack, the item's unit list with per-unit conversion editing, add-unit picker (from the global Settings list) and remove. The Items ribbon action `Actions ▸ Units of measure` opens the selected item's profile on that tab (`itemTab: 'units'`); `uomTargetNo()` resolves which item the UoM edits apply to (`uomCardNo || selNo`).
 - **Keyboard shortcuts**: a reference-only page (`isShortcutsSettings`, `shortcutGroups()`) listing every shortcut/gesture built into the app so far, grouped by scope (Global, Data grid). Pure display — no state, no persistence. This is the living catalogue the CLAUDE.md "keyboard shortcuts" rule requires updating whenever a new shortcut ships.
 - **Locations & warehouses**: mounted as a separate sibling Design Component, `SFLocationsWarehouses.dc.html`, via `<dc-import name="SFLocationsWarehouses" theme="{{ vm.theme }}">` inside the `isLocSettings` section — not inlined into this file's Component class. It manages its own warehouses/layouts state, view routing (list ↔ structure designer), and localStorage entirely internally; the only thing the shell passes in is the active `theme` so dark/light stays in sync with the rest of the app. See `docs/locations-warehouses/README.md` for the full spec (site list, 2D/3D structure designer, zones/aisles/bins, creation wizard).
@@ -179,10 +179,10 @@ Runtime-switchable via props/state, not user-facing product features:
 
 ## Data model
 
-Seed data lives in `lib/shelfree-data.js` (`seedAll()` returns the full bundle).
+Seed data lives in `prototype/lib/shelfree-data.js` (`seedAll()` returns the full bundle).
 
 - **Item**: `no, desc, category, type, uom, vendor, cost, price, lead, rp` (reorder point), `rq` (reorder qty), `locs` (stock locations), plus supply/attribute fields. Derived: `onHand`, `available`, `committed`, `margin`, `_status` (Healthy/Low stock/Out of stock).
-  - **Tracking depth** (added 2026-08-01, all optional, default off): `tracksLot: boolean`, `tracksExpiry: boolean`, `tracksSerial: boolean`, `barcode: string` (presence = has a barcode). Each is only readable/writable in the UI while its workspace axis is on; `trackingPatch()` refuses to write a flag whose axis is off, so a hidden control can never silently change stored data. Seeded in `lib/shelfree-data.js` by category (ceramics + cones are lot-tracked, cones/raw resin carry expiry, sellable SKUs get a GS1-IN `890…` barcode, nothing is serialised).
+  - **Tracking depth** (added 2026-08-01, all optional, default off): `tracksLot: boolean`, `tracksExpiry: boolean`, `tracksSerial: boolean`, `barcode: string` (presence = has a barcode). Each is only readable/writable in the UI while its workspace axis is on; `trackingPatch()` refuses to write a flag whose axis is off, so a hidden control can never silently change stored data. Seeded in `prototype/lib/shelfree-data.js` by category (ceramics + cones are lot-tracked, cones/raw resin carry expiry, sellable SKUs get a GS1-IN `890…` barcode, nothing is serialised).
 - **Order** (sales): `no, customer, orderDate, shipDate, location, status, lines`.
 - **Invoice**: `no, customer, invDate, dueDate, amount, status` (Draft/Open/Overdue/Paid).
 - **Product** (catalog): `sku, name, axis, children, msrp, channels, tags, blurb`.
@@ -197,7 +197,7 @@ Seed data lives in `lib/shelfree-data.js` (`seedAll()` returns the full bundle).
 
 ## Interactions & business rules
 
-- Record nav is a strict 3-tier funnel (drawer → card → tab); state lives in one `nav` slice per `lib/record-nav.js` so all list pages behave identically.
+- Record nav is a strict 3-tier funnel (drawer → card → tab); state lives in one `nav` slice per `prototype/lib/record-nav.js` so all list pages behave identically.
 - Deep-linking: on load, a `no` query param (`deepLink()`) auto-selects a matching item and routes to Warehouse › Items.
 - Column visibility/order and sort are per-dataset (`cols`, `sortKey/sortDir`) and reset via `defaultCols()`.
 - Bulk actions (delete) operate on the current row multi-selection; single-row delete reuses the same confirm dialog with `delNo` set to the row id instead of `'__bulk__'`.
@@ -355,7 +355,7 @@ Full spec — data model, business rules, tier matrix, backend endpoints — liv
 ## Navigation icons (added 2026-08-12)
 
 Every navigable page now carries **one shared glyph**, defined once in
-`pageIcons()` / `pageIcon(key)` in `designs/erp/Shelfree App.dc.html`. The map is
+`pageIcons()` / `pageIcon(key)` in `prototype/designs/erp/Shelfree App.dc.html`. The map is
 keyed by **module page label** (`'Items'`, `'Sales Prices'`, …), **settings page id**
 (`'ws-profile'`, `'cfg-tax'`, …) and **settings group tab** (`'grp-workspace'`,
 `'grp-configuration'`, `'grp-terminology'`, `'grp-my'`), plus `__view` (saved view)
@@ -380,7 +380,7 @@ adds no accessibility dependency on colour or glyph alone.
 
 ## List-page toolbar card + pagination (added 2026-08-14)
 
-Ported from the `templates/customers-shadcn-concept` reference into the shared
+Ported from the `prototype/templates/customers-shadcn-concept` reference into the shared
 table page (Items / Customers / Vendors / Purchase Orders / BOMs / Assembly
 Orders), so every list page gets it at once.
 
@@ -473,7 +473,7 @@ table page.
 
 
 ### Concept A — split header adopted (2026-08-15)
-The toolbar card is gone. Prototyped in `templates/list-page-header-a/ListPageHeaderA.dc.html`, now live on all list pages:
+The toolbar card is gone. Prototyped in `prototype/templates/list-page-header-a/ListPageHeaderA.dc.html`, now live on all list pages:
 - **Breadcrumb row** carries page identity and the primary action: `module / page` + a
   record-count chip (`recordCount`, tooltip = `itemCountLabel`) on the left; page search,
   notifications, a divider, and the **New <record>** button on the right. Chip and button

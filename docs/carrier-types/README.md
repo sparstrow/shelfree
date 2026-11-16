@@ -10,7 +10,7 @@ which carrier fields apply:
 - `gta` — *Goods transport agency (GTA)*: road transporter issuing an LR (lorry receipt);
   carriers of this type default to **reverse charge** (we pay GST on the freight).
 - `own` — *Own vehicle*: no GSTIN, GST or tracking link.
-Built in `designs/erp/Shelfree App.dc.html` (`carrTypes()`, `ctVM()`, template
+Built in `prototype/designs/erp/Shelfree App.dc.html` (`carrTypes()`, `ctVM()`, template
 "SETTINGS · CARRIER TYPES"). Tier: parked (POC) — ungated. Future-pass hint: Starter base.
 
 ## Screens & states

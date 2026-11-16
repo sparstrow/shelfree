@@ -9,7 +9,7 @@ production/WIP accounts arrive with production finance, revenue/AR with sales fi
 Tier: parked (POC) — ungated. Future-pass hint: Starter base.
 
 It is the first page built on the **reference-dataset registry** (`refDs()` in
-`designs/erp/Shelfree App.dc.html`): a registry entry gives a master list the full
+`prototype/designs/erp/Shelfree App.dc.html`): a registry entry gives a master list the full
 generic data grid plus the shared reference drawer (view / edit / create).
 
 ## Screens & states
@@ -35,7 +35,7 @@ generic data grid plus the shared reference drawer (view / edit / create).
   liabilities · Equity → Equity · Income → Revenue from operations / Other income ·
   Expense → Direct expenses (COGS) / Indirect expenses.
 - Code ranges: 1xxx Asset · 2xxx Liability · 3xxx Equity · 4xxx Income · 5xxx Direct / 6xxx Indirect expense.
-- Seed (`lib/shelfree-data.js → seedAccounts()`, all system): 1300 Inventory · 1410/1411/1412
+- Seed (`prototype/lib/shelfree-data.js → seedAccounts()`, all system): 1300 Inventory · 1410/1411/1412
   GST input CGST/SGST/IGST · 2100 Accounts payable — vendors · 2110 Freight inward clearing ·
   2320 GST payable — reverse charge · 5110 Freight inward · 5115 Other purchase charges ·
   6190 Round off (added 2026-09-26 with Tax settings — rupee rounding on bill/invoice totals).

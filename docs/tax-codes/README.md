@@ -7,7 +7,7 @@ IGST different states, UTGST in UTs without a legislature); users never pick it.
 keeps **dated rate rows**, so a government rate change is a new row, never an edit of a rate
 already in effect. Spec: `docs/superpowers/specs/2026-09-25-tax-codes-gst.md` §2.1; plan task 1
 (`docs/superpowers/plans/2026-09-25-tax-codes-gst.md`). Built in
-`designs/erp/Shelfree App.dc.html` (`taxCodes()`, `taxRateOn()`, `tc*` methods, `tcVM()`).
+`prototype/designs/erp/Shelfree App.dc.html` (`taxCodes()`, `taxRateOn()`, `tc*` methods, `tcVM()`).
 Tier: parked (POC) — ungated. Future-pass hint: Starter base.
 
 ## Screens & states

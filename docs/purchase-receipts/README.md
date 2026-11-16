@@ -1,7 +1,7 @@
 # Purchase Receipts — goods-in against a purchase order
 
 Status: built (prototype). Ungated — tiers are parked (see root `CLAUDE.md`).
-Lives in `designs/erp/Shelfree App.dc.html` (app shell).
+Lives in `prototype/designs/erp/Shelfree App.dc.html` (app shell).
 Sits in **Purchasing**, directly after Purchase Orders. There is deliberately no
 "Warehouse Receipts" / "Warehouse Shipments" page: receiving is a *purchasing*
 event, and Kanalora has no shipping operation complex enough to justify a
@@ -65,7 +65,7 @@ order. It is the step that turns an order into stock:
 
 ## Data model
 
-New entity `PurchaseReceipt`, seeded in `lib/shelfree-data.js`
+New entity `PurchaseReceipt`, seeded in `prototype/lib/shelfree-data.js`
 (`seedPurchaseReceipts()`):
 
 ```

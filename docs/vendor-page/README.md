@@ -1,4 +1,4 @@
-# Vendor profile page — `designs/erp/Shelfree App.dc.html`
+# Vendor profile page — `prototype/designs/erp/Shelfree App.dc.html`
 
 In-app full-page screen inside the ERP shell. The purchasing mirror of the
 Customer profile (`docs/customer-page/README.md`): **Vendors grid → drawer
@@ -82,7 +82,7 @@ except contacts, GSTIN, address fields and the blocked flag on the vendor.
 
 ## Data model
 
-New fields on **Vendor** (`lib/shelfree-data.js → seedVendors()`):
+New fields on **Vendor** (`prototype/lib/shelfree-data.js → seedVendors()`):
 
 | Field | Shape | Notes |
 |---|---|---|

@@ -97,7 +97,7 @@ editing to the Items drawer.
 
 ### 4.1 `BOM`
 
-Seeded in `lib/shelfree-data.js` → `seedBOMs()`; persisted at `shelfree.bom.v1`.
+Seeded in `prototype/lib/shelfree-data.js` → `seedBOMs()`; persisted at `shelfree.bom.v1`.
 
 | Field | Type | Notes |
 |---|---|---|

@@ -1,4 +1,4 @@
-# Purchase prices — `designs/erp/Shelfree App.dc.html`
+# Purchase prices — `prototype/designs/erp/Shelfree App.dc.html`
 
 Purchasing ▸ **Purchase Prices**. Spec: [`../superpowers/specs/2026-10-17-purchase-prices.md`](../superpowers/specs/2026-10-17-purchase-prices.md) · Plan: [`../superpowers/plans/2026-10-18-purchase-prices.md`](../superpowers/plans/2026-10-18-purchase-prices.md).
 Tier: Starter base, ungated (tiers parked). Phase 1 (register page) and phase 2 (vendor page *Items supplied* + Vendor Purchase Items now read/write this store) shipped 2026-10-18. Phase 3 (PO pricing — vendor-scoped item search, locked cost + tier hint, re-price on qty/vendor/date, below-minimum / no-price line errors blocking Save & Issue, drift pill + Purchase Lines columns) shipped 2026-10-22 — see `../purchase-orders/README.md`. Phase 4 (Configuration ▸ Purchase pricing, terminology, help map, security, existing-PO wrap-up) next.

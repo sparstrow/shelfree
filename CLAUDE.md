@@ -1,71 +1,78 @@
-# Project memory — Shelfree Design System
+# Project memory — Shelfree
 
 Operating rules for **every turn**. This file is *how to work*; the visual/design
-spec lives in `readme.md`. Rule of thumb: a fact about the design → `readme.md`;
-a behaviour to repeat every turn → here.
+spec lives in `prototype/readme.md`. Rule of thumb: a fact about the design →
+`prototype/readme.md`; a behaviour to repeat every turn → here.
 
-## UI baseline: shadcn/ui (actual source)
-We build on **shadcn/ui component source** — not just its conventions.
-- New/edited components use real shadcn source: `cva` variant maps, `cn()` class
-  composition, shadcn's exact Tailwind class strings, and shadcn's `variant`/`size`
-  API. Check the component's shadcn page before authoring a new one.
-- **Styling is Tailwind classes**, not inline styles and not the old CSS-var
-  component pattern. Any page/card that mounts a component must load, in `<head>`:
-  `<script src="https://cdn.tailwindcss.com"></script>` then
-  `<script src="<rel>/lib/tailwind-shadcn.js"></script>` (the shadcn colour/radius
-  config), plus `styles.css` for tokens + fonts.
-- `cn()` and `cva()` live in `lib/utils.js` — import them
-  (`import { cn, cva } from "../../lib/utils"`); don't reinvent.
-- Theme colours are HSL-channel vars in `tokens/shadcn.css` under `--sh-*` (prefixed
-  only to avoid colliding with the legacy full-colour `--primary`/`--foreground`
-  that hand-written app chrome still uses; the Tailwind config bridges `bg-primary`
-  → `--sh-primary`). Dark is `:root` default; light under `[data-theme="light"]`.
-- **A-now / B-later:** frontend is built here on the Tailwind **Play CDN**
-  (dev-grade). Production handoff to Claude Code — real Vite + compiled Tailwind +
-  npm Radix + backend — comes later; keep component source faithful so that lift
-  is clean.
-- **Do NOT add bare npm imports** (`@radix-ui/*`, `class-variance-authority`, etc.)
-  — they can't resolve in this project's in-browser compiler. Those arrive in the B repo.
+## Where things live (since 2026-11-15)
+- **`apps/web/` — the React frontend. All feature work happens here.**
+- **`prototype/` — the frozen Claude Design prototype** (`.dc.html`). It is the
+  visual + behavioural reference for pages not yet moved. Never add features to
+  it; never edit its generated files (`support.js`, `_ds_bundle.js`,
+  `_ds_manifest.json`, `_adherence.oxlintrc.json`).
+- **`docs/`** — the functional spec / backend handoff contract (rules below).
+- Migration spec: `docs/superpowers/specs/2026-11-15-react-frontend-migration.md`.
+  **Page-by-page status: `docs/superpowers/plans/2026-11-15-react-frontend-migration.md`
+  — update it in the same turn a page is ported.**
+- Sections below that name prototype helpers (`hpH()`, `ipRowFactory()`,
+  `shortcutGroups()`, `cntReg()`, `lkOpen()` …) describe the **reference
+  behaviour**. When porting, reproduce the behaviour in React; the plan file
+  maps each helper to its React home once it exists.
+
+## Frontend stack & rules (`apps/web`)
+Vite · React 19 · TypeScript strict · Tailwind v4 · shadcn/ui (Radix) · TanStack
+Router / Query / Table / Virtual · React Hook Form + zod · Zustand · Vitest +
+Playwright · oxlint. Backend is **not decided yet** (direction: Supabase storage,
+separate backend over the network) — don't add backend code or SDKs.
+
+- **The data seam — never break it.** Screens/components must not import seed
+  data or touch `localStorage`. They use TanStack Query hooks in
+  `src/data/queries/`, which call async functions in `src/data/api/` — the only
+  code that talks to storage. When the backend arrives, only `api/` changes.
+- **Entity shapes are zod schemas** in `src/data/schemas/`; derive types with
+  `z.infer`. Seed data lives in `src/data/seed/` — extend it, don't fork
+  parallel data. Every dataset reflects Kanalora (see Product context).
+- **Business rules are pure functions in `src/domain/`** (no React, no browser
+  APIs) with Vitest tests — numbering, money/GST maths, totals, status
+  transitions. The backend will enforce the same rules.
+- **shadcn/ui = actual source**: add components with
+  `pnpm dlx shadcn@latest add <name>` into `src/components/ui/`; compose with
+  `cn()` / `cva` from `src/lib/utils.ts`. Check the shadcn page before authoring
+  a new primitive.
+- **Styling is Tailwind classes** on theme tokens. No inline `style` except
+  genuinely dynamic values (measured sizes, per-record colours).
+- **One URL per page** (TanStack Router file routes in `src/routes/`). Page code
+  lives in `src/features/<module>/<page>/`. Shareable grid state goes in the URL.
+- **Async everywhere:** every screen handles loading, empty and error states.
+- **Porting = parity.** Same screens, copy, flows, shortcuts and data as the
+  prototype; no redesign while moving. Check each page side by side.
 
 ## Tokens & colour
-- Never hardcode colours/spacing/type. Components: Tailwind theme tokens
-  (`bg-primary`, `text-muted-foreground`, `rounded-md`). Hand-written app chrome:
-  `var(--…)` from `tokens/`. Status colours (`--ok-bg`, `--bad-fg`, …) are in
-  `tokens/colors.css` and are also reachable from components via arbitrary classes
-  (`bg-[var(--ok-bg)]`).
-- Dark default; never pure `#000`/`#fff`.
+- Never hardcode colours/spacing/type. Use Tailwind theme tokens
+  (`bg-primary`, `text-muted-foreground`, `border-border`, `bg-panel`,
+  `text-ok-fg` …) defined in `apps/web/src/styles/tokens.css` — the prototype's
+  CSS variables carried over 1:1, mapped into Tailwind with `@theme`.
+- Dark default; light under `[data-theme="light"]`; never pure `#000`/`#fff`.
 
-## Content conventions (full spec in readme.md)
+## Content conventions (full spec in prototype/readme.md)
 - Sentence case UI labels; Title case module names; UPPER sidebar section heads.
 - `tabular-nums` on all financial/inventory figures; IDs & codes in Geist Mono;
   no emoji; status = colour + icon + text.
-- Seed data comes from `lib/shelfree-data.js` — extend it, don't fork parallel data.
 
-## Authoring in this design-system project
-- Reusable templates/screens = Design Components (`.dc.html`), never plain HTML.
-- A component = `Name.jsx` + `Name.d.ts` + a `@dsCard` `.html` thumbnail in the
-  same folder.
-- Never hand-write `_ds_bundle.js` / `_ds_manifest.json` / `_adherence.oxlintrc.json`
-  — they were generated by Claude Design and are **frozen** at the 2026-11-15
-  export (see below).
-
-## Working in Claude Code (since 2026-11-15)
-The project moved from claude.ai/design to Claude Code. What changed:
-- **No `dc_write` / `check_design_system`.** Edit `.dc.html` files directly. The
-  DC runtime (`support.js`, copied next to each `.dc.html`) is a generated vendor
-  file — never edit it.
-- **Verify in the browser after every change.** Start the `shelfree` preview
-  (`.claude/launch.json`, Python static server on `127.0.0.1:5173`) and open
-  `/designs/erp/Shelfree%20App.dc.html`. Check the console for new errors and click
-  through what you touched. A change isn't done until it has been seen rendering.
-  (Known noise: `<path> attribute d: Expected moveto … "{{ x.icon }}"` errors
-  are pre-binding template placeholders, harmless.)
-- **Git is the safety net.** Repo: `github.com/sparstrow/shelfree` (branch `main`).
-  Commit in small, reviewable steps — one feature/fix per commit — so any round
-  can be diffed and reverted. Commit/push only when the user asks or the task
-  plan says so.
+## Working in Claude Code
+- **Run the app:** `pnpm dev` (root) → `http://localhost:5174`. In Claude Code,
+  `.claude/launch.json` has `web` (React, 5174) and `prototype` (static server,
+  5173 → `/prototype/designs/erp/Shelfree%20App.dc.html`).
+- **Verify in the browser after every change** — open the page, click through
+  what you touched, check the console. Then `pnpm typecheck`, `pnpm lint`,
+  `pnpm test`. A change isn't done until it has been seen working.
+- **Git:** repo `github.com/sparstrow/shelfree`. Never commit to `main` directly:
+  work on a branch, small commits (one feature/fix each), open a PR, enable
+  auto-merge (the user asked for PRs to auto-merge). Push/PR when the task plan
+  says so or the user asks.
 - **Staging/production** will be the user's Coolify on a Hostinger VPS — not
   wired up yet; don't deploy without being asked.
+
 
 ## Product context: Kanalora (the company this ERP is built for)
 Shelfree is being built out as the ERP for **Kanalora**, a small manufacturer
@@ -88,10 +95,10 @@ example in this project should reflect this business, not a generic one.
   monthly full-moon (Pournami) pilgrim nights, and Karthigai Deepam draw heavy
   tourist/pilgrim footfall — this is the core demand seasonality for the
   product, and sample sales data should reflect spikes around those dates.
-- **Seed data:** `lib/shelfree-data.js` — items, vendors, customers, employees,
+- **Seed data:** `prototype/lib/shelfree-data.js` — items, vendors, customers, employees,
   orders, invoices, and purchase orders are all modeled on this business (see
   file header comment). Company/workspace identity (`wsDefaults()` /
-  `meDefaults()` in `designs/erp/Shelfree App.dc.html`) is set to Kanalora,
+  `meDefaults()` in `prototype/designs/erp/Shelfree App.dc.html`) is set to Kanalora,
   Tiruvannamalai, Tamil Nadu.
 
 ## Scale-adaptive by design (Shelfree's core product principle)
@@ -262,7 +269,7 @@ Every page we build (settings especially, but also forms, drawers, config
 screens) ships **quiet by default**: show only names, labels and controls. Most
 users already know what a setting does; help is there for the one they're unsure
 of, not printed for all of them. Reference build: Settings › Tax settings in
-`designs/erp/Shelfree App.dc.html` (`hpH()`, `tsHelpText()`, `tsHelpVM()`), spec
+`prototype/designs/erp/Shelfree App.dc.html` (`hpH()`, `tsHelpText()`, `tsHelpVM()`), spec
 in `docs/tax-settings/README.md` → "Quiet help".
 - **No descriptive text inline by default** — no page/section subtitles, no
   per-field descriptions, no "what this option means" text under selects, no
@@ -294,7 +301,7 @@ in `docs/tax-settings/README.md` → "Quiet help".
 ## Edit in place — nothing moves, nothing hides
 Every record page, drawer and card with a view/edit toggle uses **in-place
 editing**. Reference build: Vendor page (Overview ▸ Details / Tax, Contact &
-address) in `designs/erp/Shelfree App.dc.html`; shared helpers `ipRowFactory()`
+address) in `prototype/designs/erp/Shelfree App.dc.html`; shared helpers `ipRowFactory()`
 (row VM) + `ipModeVM()` (header buttons); spec in `docs/vendor-page/README.md`.
 - **Same rows, same order, same position** in view and edit. Never render a
   separate edit form or a "read-only facts + form below" split. Clicking Edit
@@ -350,7 +357,7 @@ adds or changes one**:
   pattern in the ERP app shell).
 - **Add it to the in-app Keyboard Shortcuts page in the same turn.** Every live
   page's shortcuts are catalogued in Settings → General → Keyboard shortcuts
-  (`designs/erp/Shelfree App.dc.html`, `shortcutGroups()` — one array entry per
+  (`prototype/designs/erp/Shelfree App.dc.html`, `shortcutGroups()` — one array entry per
   shortcut, grouped by where it applies). This page is the single source of
   truth for the user; a shortcut that isn't listed there doesn't count as
   shipped. When a page/prototype outside that app shell grows its own shortcuts,

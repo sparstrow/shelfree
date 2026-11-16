@@ -74,7 +74,7 @@ Default tab: **Overview**.
   than a single retail counter sale, but stay ungated — even a one-location
   shop may ship to festival stalls or extend informal credit.
 
-## Data model additions (prototype-only, `lib/shelfree-data.js`)
+## Data model additions (prototype-only, `prototype/lib/shelfree-data.js`)
 
 - `customer.shipTo: [{id, label, address, isDefault}]` — default `[]`.
 - `customer.contacts: [{id, name, role, phone, email, isPrimary}]` — seed

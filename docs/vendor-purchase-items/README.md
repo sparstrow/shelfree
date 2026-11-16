@@ -1,6 +1,6 @@
 # Vendor Purchase Items
 
-In-app screen inside `designs/erp/Shelfree App.dc.html` (not a separate file —
+In-app screen inside `prototype/designs/erp/Shelfree App.dc.html` (not a separate file —
 opening it in a new tab hit the sandbox's preview-token restriction on
 navigating to a second static file, so it's now a screen within the same
 single-page app instead). Reached from the Vendors table's HOME ribbon
@@ -37,7 +37,7 @@ New state on the app component (not a new Vendor/Item field):
 - `vendorItemsRows`: `{ [vendorNo]: Row[] }`, an in-memory cache seeded from
   localStorage when the screen opens.
 - Row shape: `{ no, desc, uom, price, currency, added }` — `no`/`desc`/`uom`
-  copied from the item master (`lib/shelfree-data.js` → `seedItems()`) at
+  copied from the item master (`prototype/lib/shelfree-data.js` → `seedItems()`) at
   add-time; `price` a number; `currency` one of `USD | CAD | EUR`; `added` an
   ISO timestamp set when the row is created.
 
@@ -68,7 +68,7 @@ is just a read-through cache of that per vendor.
   price, currency, created_at }`, unique on `(vendor_no, item_no)`.
 - `price`/`currency` here are the "cost from this vendor" — likely the source
   for whichever vendor is chosen as an item's primary supplier
-  (`Item.vendor`/`Item.cost` in `lib/shelfree-data.js`); reconcile if multiple
+  (`Item.vendor`/`Item.cost` in `prototype/lib/shelfree-data.js`); reconcile if multiple
   vendors can quote the same item (this prototype assumes one open list per
   vendor, no per-item price history yet).
 - Add an edit-price interaction and price history before treating this as a

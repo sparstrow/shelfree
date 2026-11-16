@@ -6,7 +6,7 @@ sort / column state), a **default view per page**, and a **recents** group in th
 page-search palette.
 
 Implements [`docs/superpowers/specs/2026-08-03-favorites-quick-access.md`](../superpowers/specs/2026-08-03-favorites-quick-access.md)
-(approved 2026-08-03). Lives in `designs/erp/Shelfree App.dc.html`.
+(approved 2026-08-03). Lives in `prototype/designs/erp/Shelfree App.dc.html`.
 
 Tier: **Starter base — always on, ungated.** Shared views, org-level defaults and
 admin-pushed sidebar presets are Growth/Enterprise and are *not* built (see Tier

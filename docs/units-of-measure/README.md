@@ -1,6 +1,6 @@
 # Units of measure — item register + item profile tab
 
-Part of `designs/erp/Shelfree App.dc.html`. Two surfaces, one data source:
+Part of `prototype/designs/erp/Shelfree App.dc.html`. Two surfaces, one data source:
 
 1. **Item profile → Units of measure tab** — per-item management (base unit,
    auto-derived master pack, the item's unit list, conversions, add/remove).

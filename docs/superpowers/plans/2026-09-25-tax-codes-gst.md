@@ -1,7 +1,7 @@
 # Plan — Tax codes & GST
 
 Spec: `docs/superpowers/specs/2026-09-25-tax-codes-gst.md` (approved 2026-09-25; §2.7 added 2026-09-26 as task 4, later tasks renumbered +1).
-Build one task at a time; each task ends click-through-able in `designs/erp/Shelfree App.dc.html`
+Build one task at a time; each task ends click-through-able in `prototype/designs/erp/Shelfree App.dc.html`
 and updates its `docs/<page>/README.md` + Keyboard shortcuts page in the same turn.
 
 | # | Task | Where to click | Status |

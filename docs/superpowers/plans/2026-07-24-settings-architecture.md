@@ -1,7 +1,7 @@
 # Plan — Settings architecture build
 
 **Spec:** `docs/superpowers/specs/2026-07-24-settings-architecture.md` (approved)
-**Target:** `designs/erp/Shelfree App.dc.html` (built in-shell; UoM/categories feed the Items grid and terminology must apply app-wide)
+**Target:** `prototype/designs/erp/Shelfree App.dc.html` (built in-shell; UoM/categories feed the Items grid and terminology must apply app-wide)
 
 ## Tasks
 
