@@ -100,6 +100,8 @@ export interface ListEditor<T> {
   save: (record: T, mode: 'edit' | 'new') => Promise<unknown>
   /** `CODE · Name`, for toasts and the edit sub-heading. */
   label: (record: T) => string
+  /** Optional view-mode content rendered below fields and facts in the drawer. */
+  extra?: (record: T) => ReactNode
 }
 
 interface Editing<T> {
@@ -390,7 +392,9 @@ export function ListPage<T>({
             )
           )
         }
-      />
+      >
+        {!editing && active ? editor.extra?.(active) : null}
+      </EditableDrawer>
     )
   } else if (preview && active) {
     const blocked = remove?.blockedReason?.(active) ?? null
