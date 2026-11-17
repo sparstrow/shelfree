@@ -69,7 +69,13 @@ separate backend over the network) — don't add backend code or SDKs.
 - **Git:** repo `github.com/sparstrow/shelfree`. Never commit to `main` directly:
   work on a branch, small commits (one feature/fix each), open a PR, enable
   auto-merge (the user asked for PRs to auto-merge). Push/PR when the task plan
-  says so or the user asks.
+  says so or the user asks. After a merge: switch to `main`, `git pull --ff-only`,
+  delete the branch locally (`git branch -d`) and on GitHub.
+- **CI:** `.github/workflows/ci.yml` runs on every PR and push to `main` — job
+  *Type check, lint, unit tests* (typecheck, lint, Vitest, production build) and
+  job *Browser tests* (Playwright, Chromium). Auto-merge waits for them. Run the
+  same locally before pushing: `pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm test:e2e`.
+  A failing run uploads the Playwright report as an artifact.
 - **Staging/production** will be the user's Coolify on a Hostinger VPS — not
   wired up yet; don't deploy without being asked.
 
