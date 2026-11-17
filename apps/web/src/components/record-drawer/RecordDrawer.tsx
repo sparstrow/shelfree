@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 export interface DrawerStat {
   value: string
   label: string
+  tone?: 'bad'
 }
 
 export interface DrawerLine {
@@ -17,6 +18,11 @@ export interface DrawerLine {
 export interface DrawerFact {
   k: string
   v: string
+}
+
+export interface DrawerSection {
+  heading: string
+  rows: DrawerFact[]
 }
 
 export interface RecordDrawerProps {
@@ -31,6 +37,8 @@ export interface RecordDrawerProps {
   linesHeading?: string
   lines?: DrawerLine[]
   linesEmptyText?: string
+  /** Named fact sections rendered before DETAILS with the same row styling. */
+  sections?: DrawerSection[]
   facts?: DrawerFact[]
   /** Extra content between the facts and the footer. */
   children?: ReactNode
@@ -46,6 +54,23 @@ export const drawerSecondaryButton =
 export const drawerDangerIconButton =
   'hover-lift inline-flex h-[30px] w-[34px] flex-none items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:border-bad-fg hover:bg-bad-bg hover:text-bad-fg disabled:pointer-events-none disabled:opacity-40'
 
+function FactSection({ heading, rows, className }: { heading: string; rows: DrawerFact[]; className: string }) {
+  return (
+    <div className={className}>
+      <div className="my-1.5 text-[11px] font-semibold tracking-[0.05em] text-muted-foreground">{heading}</div>
+      {rows.map((fact) => (
+        <div
+          key={fact.k}
+          className="flex justify-between gap-[10px] border-b border-dashed border-border py-[5px] text-[12.5px]"
+        >
+          <span className="text-muted-foreground">{fact.k}</span>
+          <span className="tnum min-w-0 text-right font-medium break-words">{fact.v}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 /** The 336 px preview panel beside a list: tier one of the record navigation. */
 export function RecordDrawer({
   ariaLabel,
@@ -57,6 +82,7 @@ export function RecordDrawer({
   linesHeading,
   lines,
   linesEmptyText = 'Nothing here yet.',
+  sections,
   facts,
   children,
   footer,
@@ -92,7 +118,7 @@ export function RecordDrawer({
           <div className="flex gap-2 border-b border-border px-[14px] py-3">
             {stats.map((stat, i) => (
               <div key={stat.label} className={cn('flex-1 text-center', i > 0 && 'border-l border-border')}>
-                <div className="tnum text-base font-bold">{stat.value}</div>
+                <div className={cn('tnum text-base font-bold', stat.tone === 'bad' && 'text-bad-fg')}>{stat.value}</div>
                 <div className="mt-0.5 text-[11px] text-muted-foreground">{stat.label}</div>
               </div>
             ))}
@@ -117,20 +143,11 @@ export function RecordDrawer({
           </div>
         )}
 
-        {facts && (
-          <div className="px-[14px] pt-2 pb-[14px]">
-            <div className="my-1.5 text-[11px] font-semibold tracking-[0.05em] text-muted-foreground">DETAILS</div>
-            {facts.map((fact) => (
-              <div
-                key={fact.k}
-                className="flex justify-between gap-[10px] border-b border-dashed border-border py-[5px] text-[12.5px]"
-              >
-                <span className="text-muted-foreground">{fact.k}</span>
-                <span className="tnum text-right font-medium">{fact.v}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        {sections?.map((section) => (
+          <FactSection key={section.heading} heading={section.heading} rows={section.rows} className="px-[14px] pt-2 pb-1" />
+        ))}
+
+        {facts && <FactSection heading="DETAILS" rows={facts} className="px-[14px] pt-2 pb-[14px]" />}
         {children}
       </div>
 

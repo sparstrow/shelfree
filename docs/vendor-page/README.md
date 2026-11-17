@@ -241,3 +241,20 @@ Backend: replace the per-vendor contact table with the shared `contacts` + `cont
 ## One home for people (2026-10-17)
 
 Primary contact / Phone / Email were removed from *Contact & address* (now **Address & payment**) — they duplicated the **Contacts** tab. People are managed only on the Contacts tab; flat `contact/phone/email` stay a read mirror of the primary link (`cntMirror`). Backend: `PATCH /vendors/:id` must reject direct writes to those fields — they derive from the primary `vendor_contacts` link.
+
+## React app — Vendors list (2026-11-17)
+
+- **URLs**: `/purchasing/vendors` (`?sel=` opens the preview drawer on arrival); `/purchasing/vendors/$no` (renders `PlaceholderPage` until the full vendor profile page is ported; `/purchasing/vendors/new` uses the same placeholder).
+- **Files**:
+  - `apps/web/src/domain/vendor.ts` + `vendor.test.ts` — pure helpers `vendorStatus`, `vendorSuppliesLabel`, `vendorLocation`.
+  - `apps/web/src/lib/privacy.ts` + `privacy.test.ts` — `maskPhone` (`•••• ` + last 4 digits, `''` when no digits).
+  - `apps/web/src/features/purchasing/vendors/dataset.ts` — `vendorDataset({ vendors, employees })` (17 columns, 5 views, 16 filter columns including filter-only `city`/`state`, masked `phone` column/export, full `phone` in `searchBlob`).
+  - `apps/web/src/features/purchasing/vendors/VendorsPage.tsx` — `ListPage` wrapper reading via `useList` (`vendors`, `employees`, `purchaseOrders`, `purchaseReceipts`).
+  - `apps/web/src/routes/purchasing/vendors/index.tsx` and `apps/web/src/routes/purchasing/vendors/$no.tsx`.
+  - `apps/web/src/components/record-drawer/RecordDrawer.tsx` — added optional `tone?: 'bad'` on `DrawerStat` (`text-bad-fg` when overdue > 0) and optional `sections?: DrawerSection[]` rendered before `DETAILS` (used for the `CONTACT` section).
+- **Rules & decisions**:
+  - **Phone masking (PII)**: the grid cell and CSV/clipboard exports display `maskPhone(phone)` (or `—` when empty), while the preview drawer's `CONTACT` section shows the full phone number. Quick search (`searchBlob`) continues to match the full number.
+  - **Referential integrity on delete (decision)**: the prototype allowed deleting any vendor; the React UI blocks deleting any vendor referenced by a purchase order or purchase receipt (`'This vendor has purchase orders or receipts — block it instead'`). Backend `DELETE /vendors/:no` must enforce the same referential integrity check (rejecting deletion when orders or receipts exist) and emit an audit event on delete. Unreferenced vendors use confirm + Undo.
+  - **Out of scope for this slice**: drawer inline Edit mode (moves to the vendor profile page), the vendor profile page itself, Purchase items, and new-PO-for-vendor.
+- **Tests**: Vitest unit tests in `apps/web/src/domain/vendor.test.ts` and `apps/web/src/lib/privacy.test.ts`; Playwright e2e tests in `apps/web/e2e/vendors.spec.ts` (seed count, masked phone in grid vs full phone in drawer, *Service providers* / *Overdue balance* views, blocked vs undoable delete, double-click navigation).
+

@@ -18,6 +18,8 @@ import { Route as PurchasingPurchaseOrdersIndexRouteImport } from './routes/purc
 import { Route as PurchasingPurchaseOrdersNoRouteImport } from './routes/purchasing/purchase-orders/$no'
 import { Route as PurchasingPurchaseReceiptsIndexRouteImport } from './routes/purchasing/purchase-receipts/index'
 import { Route as PurchasingPurchaseReceiptsNoRouteImport } from './routes/purchasing/purchase-receipts/$no'
+import { Route as PurchasingVendorsIndexRouteImport } from './routes/purchasing/vendors/index'
+import { Route as PurchasingVendorsNoRouteImport } from './routes/purchasing/vendors/$no'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -69,6 +71,16 @@ const PurchasingPurchaseReceiptsNoRoute =
     path: '/purchasing/purchase-receipts/$no',
     getParentRoute: () => rootRouteImport,
   } as any)
+const PurchasingVendorsIndexRoute = PurchasingVendorsIndexRouteImport.update({
+  id: '/purchasing/vendors/',
+  path: '/purchasing/vendors/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PurchasingVendorsNoRoute = PurchasingVendorsNoRouteImport.update({
+  id: '/purchasing/vendors/$no',
+  path: '/purchasing/vendors/$no',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -77,9 +89,11 @@ export interface FileRoutesByFullPath {
   '/$module/$page': typeof ModulePageRoute
   '/purchasing/purchase-orders/$no': typeof PurchasingPurchaseOrdersNoRoute
   '/purchasing/purchase-receipts/$no': typeof PurchasingPurchaseReceiptsNoRoute
+  '/purchasing/vendors/$no': typeof PurchasingVendorsNoRoute
   '/purchasing/purchase-lines/': typeof PurchasingPurchaseLinesIndexRoute
   '/purchasing/purchase-orders/': typeof PurchasingPurchaseOrdersIndexRoute
   '/purchasing/purchase-receipts/': typeof PurchasingPurchaseReceiptsIndexRoute
+  '/purchasing/vendors/': typeof PurchasingVendorsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -88,9 +102,11 @@ export interface FileRoutesByTo {
   '/$module/$page': typeof ModulePageRoute
   '/purchasing/purchase-orders/$no': typeof PurchasingPurchaseOrdersNoRoute
   '/purchasing/purchase-receipts/$no': typeof PurchasingPurchaseReceiptsNoRoute
+  '/purchasing/vendors/$no': typeof PurchasingVendorsNoRoute
   '/purchasing/purchase-lines': typeof PurchasingPurchaseLinesIndexRoute
   '/purchasing/purchase-orders': typeof PurchasingPurchaseOrdersIndexRoute
   '/purchasing/purchase-receipts': typeof PurchasingPurchaseReceiptsIndexRoute
+  '/purchasing/vendors': typeof PurchasingVendorsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -100,9 +116,11 @@ export interface FileRoutesById {
   '/$module/$page': typeof ModulePageRoute
   '/purchasing/purchase-orders/$no': typeof PurchasingPurchaseOrdersNoRoute
   '/purchasing/purchase-receipts/$no': typeof PurchasingPurchaseReceiptsNoRoute
+  '/purchasing/vendors/$no': typeof PurchasingVendorsNoRoute
   '/purchasing/purchase-lines/': typeof PurchasingPurchaseLinesIndexRoute
   '/purchasing/purchase-orders/': typeof PurchasingPurchaseOrdersIndexRoute
   '/purchasing/purchase-receipts/': typeof PurchasingPurchaseReceiptsIndexRoute
+  '/purchasing/vendors/': typeof PurchasingVendorsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -113,9 +131,11 @@ export interface FileRouteTypes {
     | '/$module/$page'
     | '/purchasing/purchase-orders/$no'
     | '/purchasing/purchase-receipts/$no'
+    | '/purchasing/vendors/$no'
     | '/purchasing/purchase-lines/'
     | '/purchasing/purchase-orders/'
     | '/purchasing/purchase-receipts/'
+    | '/purchasing/vendors/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -124,9 +144,11 @@ export interface FileRouteTypes {
     | '/$module/$page'
     | '/purchasing/purchase-orders/$no'
     | '/purchasing/purchase-receipts/$no'
+    | '/purchasing/vendors/$no'
     | '/purchasing/purchase-lines'
     | '/purchasing/purchase-orders'
     | '/purchasing/purchase-receipts'
+    | '/purchasing/vendors'
   id:
     | '__root__'
     | '/'
@@ -135,9 +157,11 @@ export interface FileRouteTypes {
     | '/$module/$page'
     | '/purchasing/purchase-orders/$no'
     | '/purchasing/purchase-receipts/$no'
+    | '/purchasing/vendors/$no'
     | '/purchasing/purchase-lines/'
     | '/purchasing/purchase-orders/'
     | '/purchasing/purchase-receipts/'
+    | '/purchasing/vendors/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -147,9 +171,11 @@ export interface RootRouteChildren {
   ModulePageRoute: typeof ModulePageRoute
   PurchasingPurchaseOrdersNoRoute: typeof PurchasingPurchaseOrdersNoRoute
   PurchasingPurchaseReceiptsNoRoute: typeof PurchasingPurchaseReceiptsNoRoute
+  PurchasingVendorsNoRoute: typeof PurchasingVendorsNoRoute
   PurchasingPurchaseLinesIndexRoute: typeof PurchasingPurchaseLinesIndexRoute
   PurchasingPurchaseOrdersIndexRoute: typeof PurchasingPurchaseOrdersIndexRoute
   PurchasingPurchaseReceiptsIndexRoute: typeof PurchasingPurchaseReceiptsIndexRoute
+  PurchasingVendorsIndexRoute: typeof PurchasingVendorsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -217,6 +243,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PurchasingPurchaseReceiptsNoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/purchasing/vendors/': {
+      id: '/purchasing/vendors/'
+      path: '/purchasing/vendors'
+      fullPath: '/purchasing/vendors/'
+      preLoaderRoute: typeof PurchasingVendorsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/purchasing/vendors/$no': {
+      id: '/purchasing/vendors/$no'
+      path: '/purchasing/vendors/$no'
+      fullPath: '/purchasing/vendors/$no'
+      preLoaderRoute: typeof PurchasingVendorsNoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -227,9 +267,11 @@ const rootRouteChildren: RootRouteChildren = {
   ModulePageRoute: ModulePageRoute,
   PurchasingPurchaseOrdersNoRoute: PurchasingPurchaseOrdersNoRoute,
   PurchasingPurchaseReceiptsNoRoute: PurchasingPurchaseReceiptsNoRoute,
+  PurchasingVendorsNoRoute: PurchasingVendorsNoRoute,
   PurchasingPurchaseLinesIndexRoute: PurchasingPurchaseLinesIndexRoute,
   PurchasingPurchaseOrdersIndexRoute: PurchasingPurchaseOrdersIndexRoute,
   PurchasingPurchaseReceiptsIndexRoute: PurchasingPurchaseReceiptsIndexRoute,
+  PurchasingVendorsIndexRoute: PurchasingVendorsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
