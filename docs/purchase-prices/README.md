@@ -43,3 +43,12 @@ Status is derived: Scheduled (starts after today) · Expired (ended) · Expiring
 - Seed derives only from existing POs so current POs stay valid under phase-3 rules; no other prices invented.
 - Phase 3: Save draft is blocked as well as Issue when a line is unpriced or below minimum (spec D7); "Remove unpriced lines" gives a one-click way out with Undo.
 - Phase 3: opening a Draft silently re-prices it in the editor (toast reports the count); stored POs are only rewritten when saved. Bulk rewrite of stored drafts is phase 4.
+
+## React app (2026-11-16)
+
+The price **data and rules** are in `apps/web` (schema `purchasePriceSchema`,
+collection `purchasePrices` → `shelfree.v2.purchasePrices`, rules
+`domain/purchase-prices.ts`: `resolvePrice`, `activePriceRows`,
+`vendorPricedItems`). The demo price list is built from the seeded orders by
+`data/seed/purchase-prices.ts`, as the prototype did. The Purchase Prices
+**page** is not ported yet (placeholder).

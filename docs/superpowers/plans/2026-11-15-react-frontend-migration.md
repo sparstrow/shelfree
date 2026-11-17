@@ -25,35 +25,41 @@ same turn a page is ported.**
   CSV export, row right-click menu, keyboard (↑ ↓ Enter Space Esc, `/`, Alt+←/→).
 - **Purchasing ▸ Purchase Orders list** + preview drawer + delete (drafts only, with undo).
 
+## Done (2026-11-16, same branch, PR #1)
+
+- Parity fixes on the list (header, sort/pin indicators, totals off by default, landing page).
+- **Purchase order document** — full editor incl. price-list pricing, GST rules, lock/reopen.
+- **Purchase Receipts** — list, order picker, goods-in document, posting command
+  (stock + PO status). Posted receipts can't be deleted (decision, see its doc).
+- **Purchase Lines** report.
+- Data: purchase prices (seeded from orders), workspace settings document, GST reference data.
+- Shared parts: record drawer, document header/fields, confirm dialog, notes thread.
+- Tests: 41 unit, 14 Playwright browser tests (`pnpm test`, `pnpm test:e2e`).
+
 ## Known gaps in what is done (fix next)
 
-- Parity nits found in the side-by-side check, not yet fixed: grid header should
-  be 34 px and show the default `No. ↑` sort + pin icon; views button icon is a
-  bookmark; Notes (single-page module) has no chevron; "Receive" icon.
-- Totals row: prototype shows it only when `showTotals` is on — confirm default.
 - Grid features still to port: user-saved views, filter side panel, column
   reorder / resize / pin menu, grouping, find-in-view, footer aggregate chooser,
   bulk edit / bulk delete, in-cell editing.
 - Sidebar: favourite views, drag-reorder / rename favourites, sidebar right-click menu.
 - Theme switch in the account menu is temporary until My settings ▸ Appearance is ported.
 - Keyboard shortcuts page not ported yet — the grid shortcuts above must be listed there.
-- `docs/purchase-orders/README.md` not yet updated with the React file map.
-- No Playwright tests yet (`scripts/shots.mjs` takes side-by-side screenshots).
+- Grid bulk actions (bulk edit, multi-row issue/cancel/close/duplicate/delete) not ported.
+- `scripts/shots.mjs` takes side-by-side screenshots against the prototype.
 
 ## Next, in order
 
-1. Fix the parity nits above.
-2. Purchase order document editor (`/purchasing/purchase-orders/$no`, incl. `new`).
-3. Purchase Receipts (list + document), Purchase Lines.
-4. Vendors (list, drawer, profile page — in-place editing, contacts links, notes block).
-5. Purchase Prices, Charges, Carriers (reference-dataset registry + drawer).
-6. Then: Production → Warehouse/Items → Sales → Finance (CoA) → People → Notes →
+1. Vendors (list, drawer, profile page — in-place editing, contacts links, notes block).
+2. Purchase Prices, Charges, Carriers (reference-dataset registry + drawer).
+3. Then: Production → Warehouse/Items → Sales → Finance (CoA) → People → Notes →
    Settings / My settings / Keyboard shortcuts / Departments.
 
 ## Page status
 
 | Page | Status |
 |---|---|
-| Purchasing ▸ Purchase Orders (list) | ported (gaps above) |
-| Purchasing ▸ Purchase Orders (document) | pending |
+| Purchasing ▸ Purchase Orders (list + document) | ported |
+| Purchasing ▸ Purchase Receipts (list + document) | ported |
+| Purchasing ▸ Purchase Lines | ported |
+| Purchasing ▸ Vendors, Purchase Prices, Charges, Carriers | pending (next) |
 | Every other prototype page | pending |

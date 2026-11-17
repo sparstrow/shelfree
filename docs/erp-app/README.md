@@ -508,3 +508,50 @@ registry. See `docs/locations-warehouses/README.md`.
 ## People drawer — edit in place (2026-10-17)
 
 Users / Employees detail drawer no longer swaps to a separate form. `pplSel.rows` (shared `ipRowFactory()`) lists the same rows in view and edit — Users: User ID, Email, Role, Status, Linked employee, Department; Employees: Employee ID, Job title, Department, Type, Status, Reports to, Email, Phone, Location, Joined, App account. Edit swaps editable values for controls in place; read-only rows stay text. Module permissions always render the None/Read/Write segmented control (disabled in view, live in edit) instead of switching from pills. The "Editing …" banner was removed. Stats strip shows in both modes. No data-model change.
+
+## React app — shell, grid and data layer (2026-11-16)
+
+The app now runs as `apps/web` (Vite, React 19, TypeScript, Tailwind v4,
+shadcn/ui, TanStack Router + Query). Spec:
+[`../superpowers/specs/2026-11-15-react-frontend-migration.md`](../superpowers/specs/2026-11-15-react-frontend-migration.md);
+page status: [`../superpowers/plans/2026-11-15-react-frontend-migration.md`](../superpowers/plans/2026-11-15-react-frontend-migration.md).
+
+**Where things are**
+
+| Concern | File |
+|---|---|
+| Module / page registry, URLs (`/<module>/<page-slug>`) | `apps/web/src/app/nav.ts` |
+| Sidebar, workspace tabs, top bar, page search | `apps/web/src/app/shell/` |
+| UI state (theme, sidebar, tabs, favourites, recents, column widths, demo role) | `apps/web/src/app/stores/ui.ts` |
+| Shared list grid (views, filters, search, sort, columns, density, selection, totals, paging, CSV export, row menu) | `apps/web/src/components/data-grid/` |
+| Preview drawer, document header/fields, confirm dialog, notes thread | `apps/web/src/components/` |
+| Entity schemas (zod) | `apps/web/src/data/schemas/index.ts` |
+| Data seam (one async API per entity) | `apps/web/src/data/api/` |
+| Multi-record commands (post receipt…) | `apps/web/src/data/api/commands.ts` |
+| Workspace settings document | `apps/web/src/data/api/settings.ts` |
+| Business rules (pure, unit-tested) | `apps/web/src/domain/` |
+
+**Screens & states.** Every page in the registry has a URL. Pages not yet
+moved show "This screen has not been moved to the new app yet" (or "is not
+built yet" for pages the prototype never built). Every list and document has
+loading (skeleton), empty and error (retry) states.
+
+**Keyboard (grid).** ↑/↓ move the active row, Enter opens it, Space toggles
+its checkbox, Esc closes the preview then clears the selection, `/` focuses
+the quick search, Alt+←/→ change page, Shift-click a header adds a sort
+column, Shift-click a row selects a range. Right-click a row for its menu.
+Not yet ported: the Settings ▸ Keyboard shortcuts page itself (these must be
+listed there when it is).
+
+**Persistence (frontend today).** `localStorage` keys `shelfree.v2.<collection>`
+(one per entity, seeded from `apps/web/src/data/seed/` on first use),
+`shelfree.v2.settings` (workspace settings) and `shelfree.v2.ui` (per-browser
+UI preferences). Prototype keys (`shelfree.*.v1`) are not read.
+
+**Backend-build notes.** Each `data/api` collection method maps to one REST
+endpoint (`GET /<collection>`, `GET /<collection>/{id}`, `PUT /<collection>/{id}`,
+`DELETE /<collection>/{id}`); each command in `commands.ts` is one
+transactional endpoint. The zod schemas are the request/response proposal.
+`domain/` rules must be re-applied server-side. UI preferences
+(`shelfree.v2.ui`) may move to a per-user preferences endpoint; nothing in
+them is sensitive.

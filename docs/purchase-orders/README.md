@@ -304,3 +304,32 @@ Spec: [`../superpowers/specs/2026-10-17-purchase-prices.md`](../superpowers/spec
 - Non-Draft orders: never re-priced. Drift is a read-time comparison (`current_price` on the line DTO), not stored.
 - Audit: line cost changes on Draft are part of the PO update event (old/new cost, price row id). Permission `purchasing.orders.edit`; changing a price requires `purchasing.prices.edit`.
 - Decisions: drift is informational (no re-cost of released orders); open question for phase 4 — whether "Back to order" should become a persisted auto-saved draft.
+
+## React app (2026-11-16)
+
+Ported to `apps/web`. URLs: list `/purchasing/purchase-orders` (`?sel=PO00011`
+opens that order's preview), document `/purchasing/purchase-orders/PO00011`,
+new `/purchasing/purchase-orders/new`.
+
+- **Files:** list `features/purchasing/purchase-orders/PurchaseOrdersPage.tsx`
+  + `dataset.ts` + `PurchaseOrderDrawer.tsx`; document `PurchaseOrderEditor.tsx`
+  + `PurchaseOrderLines.tsx`; rules `domain/purchase-order.ts`,
+  `domain/purchase-order-editing.ts`, `domain/purchase-prices.ts`, `domain/gst.ts`.
+- **Same behaviour as the prototype:** columns/views/filters, drawer, delete
+  drafts only (with undo), header fields, line grid (select, view-only sort,
+  resize, drag reorder, ↑/↓ between qty cells, right-click / ⋯ menu, inline
+  item search limited to the vendor's priced items), price-list pricing with
+  below-minimum / no-price checks and the unpriced banner, tax method stamp +
+  stale warning, GST tags and the composition inter-state rule, lock / reopen /
+  save & lock / issue / cancel, receipts card, notes thread.
+- **New shortcut:** `R` on the list starts a receipt for the active order
+  (also in the row menu as *Receive goods*).
+- **"Back to order" from Purchase Prices** keeps the unsaved draft in memory
+  only (`draft-stash.ts`); it is lost on reload, as before.
+- **Settings read:** `purchasing.lockCostToPriceList`, `purchasing.blockBelowMinQty`,
+  `tax.taxCalc`, `tax.roundTotal`, `tax.compInterState` in `shelfree.v2.settings`
+  (UI to change them arrives with the Settings pages).
+- **Line column widths** persist per browser in `shelfree.v2.ui` (`columnWidths['purchase-order-lines']`).
+- **Not yet ported:** bulk actions on the grid (bulk edit, multi-row issue /
+  cancel / close / duplicate / delete), saved user views, grouping.
+- **Tests:** `apps/web/e2e/purchase-orders.spec.ts`, `src/domain/*.test.ts`.
