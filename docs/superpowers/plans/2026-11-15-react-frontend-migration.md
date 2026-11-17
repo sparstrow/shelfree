@@ -61,5 +61,6 @@ same turn a page is ported.**
 | Purchasing ▸ Purchase Orders (list + document) | ported |
 | Purchasing ▸ Purchase Receipts (list + document) | ported |
 | Purchasing ▸ Purchase Lines | ported |
-| Purchasing ▸ Vendors, Purchase Prices, Charges, Carriers | pending (next) |
+| Purchasing ▸ Vendors (list) | ported (profile pending) |
+| Purchasing ▸ Purchase Prices, Charges, Carriers | pending (next) |
 | Every other prototype page | pending |

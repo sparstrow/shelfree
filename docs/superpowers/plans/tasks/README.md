@@ -1,0 +1,10 @@
+# Task briefs for delegated work
+
+Briefs handed to a second coding agent (agy) for groundwork. Claude plans the
+task, writes the brief, then reviews, runs every check, fixes and merges the
+result. A brief names the files to touch, the template options to use, the
+rules that differ from a naive port, and the acceptance tests.
+
+| Brief | Page | Outcome |
+|---|---|---|
+| [2026-11-17-vendors-list.md](2026-11-17-vendors-list.md) | Purchasing ▸ Vendors list | Pilot. All checks passed first time; reviewer added the vendor notes panel the brief had missed. |
