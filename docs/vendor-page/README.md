@@ -258,3 +258,57 @@ Primary contact / Phone / Email were removed from *Contact & address* (now **Add
   - **Out of scope for this slice**: drawer inline Edit mode (moves to the vendor profile page), the vendor profile page itself, Purchase items, and new-PO-for-vendor.
 - **Tests**: Vitest unit tests in `apps/web/src/domain/vendor.test.ts` and `apps/web/src/lib/privacy.test.ts`; Playwright e2e tests in `apps/web/e2e/vendors.spec.ts` (seed count, masked phone in grid vs full phone in drawer, *Service providers* / *Overdue balance* views, blocked vs undoable delete, double-click navigation).
 
+
+## React app — profile page template and Overview (2026-11-17)
+
+The Vendor profile is the first user of the shared **Record page** template (`apps/web/src/components/record-page/RecordPage.tsx`; Customer and Item will reuse it). Only the **Overview** tab is ported; the other nine tabs render "This tab has not been moved yet".
+
+- **URL**: `/purchasing/vendors/$no?tab=<id>` (tab ids: `overview` (default, omitted from the URL), `details`, `items`, `orders`, `receipts`, `payables`, `performance`, `notes`, `docs`, `contacts`). `/purchasing/vendors/new` still shows the placeholder (vendor creation is a later task). Entry: double-click / Enter on a Vendors row, drawer *Open full profile*.
+- **Files**:
+  - `components/record-page/RecordPage.tsx` — template: header (back, number pill, title, status, tags, meta), mode-stable Edit / Cancel / Save cell (inactive group `invisible` + `inert`), tab bar, edit state (`draft`, `errors`, `formError`, review-before-save), keys, loading / error / not-found, `RecordCard`, `RecordTabPending`.
+  - `components/record-fields/FieldRows.tsx` + `model.ts` — the in-place label | value rows, extracted from `EditableDrawer` (which now uses it unchanged: Charges, Chart of Accounts and Contacts drawers render identically).
+  - `features/purchasing/vendors/VendorProfilePage.tsx` (tabs, header, save) and `VendorOverview.tsx` (cards).
+  - `domain/vendor.ts` (+ tests): `vendorStats`, `vendorSupply`, `vendorActivity`, `vendorLastOrderDate`, `vendorGstEffect`, `vendorToForm`, `normalizeVendorForm`, `validateVendorForm`, `gstinFormatError`, `vendorGstReview`, `applyVendorForm`, `vendorSavedNote`.
+  - `data/schemas`: `vendor.gstRegLog[]` (optional) — mirror of the audit event, feeds Recent activity.
+  - `e2e/vendor-profile.spec.ts`.
+- **Overview cards** (same as the prototype): KPI strip (Balance · Due now · Open orders · On-time delivery); **Details** (Category, Supplies*, Payment terms, Payment method, Purchase person, Purchase budget, Vendor since*, Last order*, Open orders*; *read-only text rows that stay put in edit); **Supply** (item counts; subcontract operations / work centre / cost / quoted lead; buttons to the Items supplied and Purchase orders tabs); **Tax** (GST registration, GSTIN with copy, effect line, Tax rules, Calculate tax, Round total — Calculate / Round only for Regular vendors, and read-only text in edit until *Vendor-specific* is chosen); **Recent activity**. Contact person / phone / email are **not** edited here ("One home for people" — they belong to the Contacts tab).
+- **Edit in place**: Edit swaps each value for its control in the same 32 px box (e2e asserts the same x / y / height). The title is an input in the same box; the GSTIN row appears or disappears only when the chosen registration type needs it.
+- **Keyboard** (to be listed in Settings ▸ General ▸ Keyboard shortcuts → "Vendor profile page" when that page is ported — until then this table is the catalogue):
+
+  | Key | Result |
+  |---|---|
+  | `[` / `]` | Previous / next tab |
+  | `1`–`9`, `0` | Jump to tab 1–10 |
+  | `E` | Edit |
+  | `Ctrl/Cmd+S` | Save changes (also from inside a field; confirms a pending "Save anyway") |
+  | `Esc` | Cancel edit; otherwise back to Vendors with the row selected |
+
+  None of these fire while typing in a field, except `Esc` and `Ctrl/Cmd+S` while editing. Shortcuts are also on the buttons' tooltips.
+- **Rules** (pure, in `domain/vendor.ts`): name required; budget ≥ 0; GSTIN required for Regular / Composition / SEZ with the 15-character pattern and a known state code (cleared on save for Unregistered / Overseas); Overseas with country India is refused. Changing the registration type while Draft / Issued / Part-received orders exist shows the amber review ("N open purchase orders use X…") with *Save anyway* / *Keep editing*. Saving appends a `gstRegLog` entry when the type or GSTIN changed; toast: "Vendor updated" + "now composition — applies to new purchase orders" / "new tax calculation applies to new purchase orders". Vendor-specific tax rules are only stored for vendors that charge GST; back on *Workspace settings* the dependent rows return to the workspace values.
+- **Persistence**: vendor edits go through `useUpsert('vendors')` (localStorage-backed collection today). Nothing else is stored.
+
+### Ported vs pending
+
+Ported: header, tabs + URL sync, shortcuts, Overview (all five cards), in-place edit, validation, GST review.
+Pending: tabs 2–10 (Address & payment, Items supplied, Purchase orders, Purchase receipts, Payables & blocking, Performance, Notes & activity, Documents, Contacts); header Delete and *New purchase order* buttons (and the `N` shortcut); *Open Tax settings* button (Settings page not ported); GSTIN warnings that don't block (duplicate GSTIN on another vendor, GSTIN state ≠ address state, check-character mismatch — the mismatch setting isn't in the React settings yet); drawer inline edit stays out (moved here).
+
+### Deliberate changes from the prototype
+
+- The prototype's *Edit* edited contact / phone / email / address from several tabs; the React Overview edits only what it shows, and people live on the Contacts tab.
+- Tax rule values are shown as the workspace's while inheriting (read-only text in edit, as before).
+- The registration review also counts **Draft** orders (the prototype's `vendOpenPOs` rule), not only receivable ones.
+- Esc / Back return to the list with `?sel=<no>`, so the row is selected and the drawer re-opens.
+
+### Backend-build notes
+
+- `PATCH /vendors/:no` with `{ name, category, paymentTerms, paymentMethod, purchasePerson, budgetedAmount, gstRegType, gstin, taxCalcOverride, taxCalc, roundTotal }` — server re-validates every rule above; rejects direct writes to contact / phone / email (derived from the primary contact link); tax fields only accepted when the registration type charges GST (clear them when override is false).
+- `GET /vendors/:no/overview` (or the profile endpoint above) should return the KPI figures and Recent activity computed server-side; the React page derives them from the full order / receipt lists only because the prototype data is local. Do not trust client-computed figures.
+- `?preview=1` on the PATCH returning `{ impact: { openPoCount } }` replaces the client-side review count.
+- Audit event `vendor.gst_registration.updated` (old → new type + GSTIN, actor, time, open-PO count) replaces `gstRegLog`; `vendor.updated` for the other fields. Permission `vendors.edit` / `vendors.tax.edit`.
+- Security gate (`docs/security/README.md`): no new PII on this tab (contact fields are not shown or edited here); GSTIN is a business identifier; nothing sensitive in localStorage beyond the existing vendor collection.
+
+#### Decisions & deferred-to-backend
+
+- The template owns edit state (`draft`, `errors`, `formError`) so a draft survives tab switches; saving from any tab validates the whole form and jumps to the tab holding the first error.
+- Warnings that don't block saving (duplicate GSTIN etc.) are deferred until the GSTIN field gets server lookups (GSTN public search).
+- Notes thread (`NotesBlock`, entity `vendor`) lives on the **Notes & activity** tab in the prototype, not on Overview, so it arrives with that tab.

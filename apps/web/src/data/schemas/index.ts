@@ -71,6 +71,18 @@ export type VendorGstRegType = z.infer<typeof vendorGstRegTypeSchema>
 export const taxCalcSchema = z.enum(['line', 'rate'])
 export type TaxCalc = z.infer<typeof taxCalcSchema>
 
+/** Prototype mirror of the audit event `vendor.gst_registration.updated` — feeds the activity list. */
+export const gstRegLogEntrySchema = z.object({
+  at: isoDateTime,
+  from: vendorGstRegTypeSchema,
+  to: vendorGstRegTypeSchema,
+  gstinFrom: z.string(),
+  gstinTo: z.string(),
+  openPOs: z.number(),
+  by: z.string(),
+})
+export type GstRegLogEntry = z.infer<typeof gstRegLogEntrySchema>
+
 export const vendorSchema = z.object({
   no: z.string(),
   name: z.string(),
@@ -124,6 +136,7 @@ export const vendorSchema = z.object({
   taxCalcOverride: z.boolean().optional(),
   taxCalc: taxCalcSchema.optional(),
   roundTotal: z.boolean().optional(),
+  gstRegLog: z.array(gstRegLogEntrySchema).optional(),
   contacts: z.array(contactLinkSchema),
 })
 export type Vendor = z.infer<typeof vendorSchema>

@@ -67,8 +67,20 @@ page that uses it — that is the point, so put shared behaviour in the template
   view-only sort, resize, drag reorder, ↑/↓ between inputs marked `data-col`,
   row menu, Add line, line numbers). A document gives `columns` and, for adding
   lines, `renderAddLine`.
-- **Record page** (profile with tabs: Vendor, Customer, Item) → to be built as a
-  template together with the Vendor page, its first user.
+- **Record page** (profile with tabs: Vendor, Customer, Item) →
+  `src/components/record-page/RecordPage.tsx`. A page gives `record` (+ `state`),
+  `header(record, draft, editing)`, `titleField`, `tabs` (`{ id, label, badge? }`,
+  URL `?tab=`; the route must `validateSearch` `tab`), a tab renderer as the
+  children function (`{ record, draft, editing, errors, onChange, goToTab }`), and
+  the edit contract `toDraft`, `validate(draft, record)`, `save(draft, record)`
+  (returns the toast text), plus optional `normalize`, `onChange(draft, key)`,
+  `review` (a warning that needs "Save anyway"), `tabOfField`, `actions`. The
+  template owns the header with its mode-stable Edit / Cancel / Save cell, the tab
+  bar, edit state, keys `[` `]` `1`–`0` `E` `Ctrl+S` `Esc`, and loading / error /
+  not-found. Cards use `RecordCard` and render rows with `FieldRows`
+  (`components/record-fields/` — the same rows the editable drawer uses, so
+  view ↔ edit never moves a field). Reference build:
+  `features/purchasing/vendors/VendorProfilePage.tsx`.
 - **Exceptions are options, never copies.** A page that must differ switches a
   standard part off or adds its own through the template's props (e.g. Purchase
   Lines omits `remove`/`create`/`preview`; receipt lines pass no `onChange`, so
