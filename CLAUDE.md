@@ -47,6 +47,32 @@ separate backend over the network) — don't add backend code or SDKs.
 - **Porting = parity.** Same screens, copy, flows, shortcuts and data as the
   prototype; no redesign while moving. Check each page side by side.
 
+## Page templates — one layout, many pages (since 2026-11-17)
+Every screen is built from a shared template. A page **describes** its data;
+the template **owns** layout and behaviour. A change to a template reaches every
+page that uses it — that is the point, so put shared behaviour in the template.
+- **List page** → `src/components/list-page/ListPage.tsx`. A page gives a
+  `Dataset` (columns, filters, views, search — `components/data-grid/model.ts`),
+  `recordPath`, `preview`, `create`, `remove` (`useCollectionDelete`), extra
+  `actions` and `shortcuts`. The template supplies top bar, grid, drawer + its
+  footer, view / open / open in new tab / copy number / delete-with-undo.
+- **Document page** → `src/components/document/DocumentPage.tsx` (frame, title
+  row, footer, loading / error / not-found) with `DocumentCard`, `TotalsCard`,
+  `Field`, `Notice` from `components/document/`.
+- **Lines inside a document** → `src/components/document/LineGrid.tsx` (select,
+  view-only sort, resize, drag reorder, ↑/↓ between inputs marked `data-col`,
+  row menu, Add line, line numbers). A document gives `columns` and, for adding
+  lines, `renderAddLine`.
+- **Record page** (profile with tabs: Vendor, Customer, Item) → to be built as a
+  template together with the Vendor page, its first user.
+- **Exceptions are options, never copies.** A page that must differ switches a
+  standard part off or adds its own through the template's props (e.g. Purchase
+  Lines omits `remove`/`create`/`preview`; receipt lines pass no `onChange`, so
+  add/remove/reorder are off). Comment the exception where it is declared. If
+  the option you need doesn't exist, add it to the template (so other pages can
+  use it too) rather than forking the template into a page.
+- Never build a list, document or line table from scratch in a feature folder.
+
 ## Tokens & colour
 - Never hardcode colours/spacing/type. Use Tailwind theme tokens
   (`bg-primary`, `text-muted-foreground`, `border-border`, `bg-panel`,
