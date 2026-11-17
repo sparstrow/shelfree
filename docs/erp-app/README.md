@@ -567,7 +567,7 @@ change in one place. Rule and file map: root `CLAUDE.md` → "Page templates".
 | List page + `editor` option (records edited in the drawer) | `ListPage.tsx` + `components/record-drawer/EditableDrawer.tsx` | Charges |
 | Document page | `apps/web/src/components/document/DocumentPage.tsx` | Purchase order, Purchase receipt |
 | Line grid (inside documents) | `apps/web/src/components/document/LineGrid.tsx` | PO lines (all features), receipt lines (quantities only) |
-| Record page (profile with tabs) | not built yet — arrives with the Vendor page | — |
+| Record page (profile with tabs) | `apps/web/src/components/record-page/RecordPage.tsx` (+ `components/record-fields/FieldRows.tsx` for in-place rows) | Vendor profile (Overview tab; Customer and Item to follow) |
 
 **List page standard behaviour:** top bar with count and New button; data grid;
 preview drawer whose footer is always *Open {record}* + page buttons + Delete;
