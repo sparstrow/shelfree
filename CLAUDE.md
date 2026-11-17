@@ -56,6 +56,10 @@ page that uses it — that is the point, so put shared behaviour in the template
   `recordPath`, `preview`, `create`, `remove` (`useCollectionDelete`), extra
   `actions` and `shortcuts`. The template supplies top bar, grid, drawer + its
   footer, view / open / open in new tab / copy number / delete-with-undo.
+  Reference lists edited in the drawer (charges, carriers, chart of accounts,
+  contacts…) pass `editor` (fields, view, blank, duplicate, validate, save):
+  the template adds New / Edit / Duplicate / Save, keys N / E / Ctrl+S / Esc,
+  and keeps rows in place between view and edit (`EditableDrawer`).
 - **Document page** → `src/components/document/DocumentPage.tsx` (frame, title
   row, footer, loading / error / not-found) with `DocumentCard`, `TotalsCard`,
   `Field`, `Notice` from `components/document/`.

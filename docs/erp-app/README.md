@@ -563,7 +563,8 @@ change in one place. Rule and file map: root `CLAUDE.md` → "Page templates".
 
 | Template | File | Used by |
 |---|---|---|
-| List page | `apps/web/src/components/list-page/ListPage.tsx` | Purchase Orders, Purchase Receipts, Purchase Lines |
+| List page | `apps/web/src/components/list-page/ListPage.tsx` | Purchase Orders, Purchase Receipts, Purchase Lines, Vendors |
+| List page + `editor` option (records edited in the drawer) | `ListPage.tsx` + `components/record-drawer/EditableDrawer.tsx` | Charges |
 | Document page | `apps/web/src/components/document/DocumentPage.tsx` | Purchase order, Purchase receipt |
 | Line grid (inside documents) | `apps/web/src/components/document/LineGrid.tsx` | PO lines (all features), receipt lines (quantities only) |
 | Record page (profile with tabs) | not built yet — arrives with the Vendor page | — |
@@ -586,3 +587,7 @@ drawer's Order button are page actions shown in the standard footer.
 
 **Backend notes:** none — this is a frontend structure change; data, rules and
 APIs are unchanged.
+
+**Toasts (2026-11-17, deliberate change):** shown bottom-centre instead of the
+prototype's bottom-right, because at bottom-right they covered the preview
+drawer's Save / Cancel / Edit buttons for several seconds after every save.
