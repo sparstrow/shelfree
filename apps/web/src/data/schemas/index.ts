@@ -398,3 +398,104 @@ export const customerSchema = z.object({
   notes: z.array(customerSeedNoteSchema).optional(),
 })
 export type Customer = z.infer<typeof customerSchema>
+
+// ── Production ▸ Bills of Materials ──────────────────────────────────────────
+export const BOM_STATUSES = ['draft', 'active', 'archived'] as const
+export const bomStatusSchema = z.enum(BOM_STATUSES)
+export type BomStatus = z.infer<typeof bomStatusSchema>
+
+export const BOM_KINDS = ['assembly', 'production'] as const
+export const bomKindSchema = z.enum(BOM_KINDS)
+export type BomKind = z.infer<typeof bomKindSchema>
+
+export const bomLineSchema = z.object({
+  lineNo: z.number(),
+  item: z.string(),
+  desc: z.string(),
+  qtyPer: z.number(),
+  uom: z.string(),
+  scrapPct: z.number(),
+  note: z.string(),
+})
+export type BomLine = z.infer<typeof bomLineSchema>
+
+export const bomOperationSchema = z.object({
+  seq: z.number(),
+  name: z.string(),
+  workCentre: z.string().nullable(),
+  setupMin: z.number(),
+  runMinPerUnit: z.number(),
+  notes: z.string(),
+})
+export type BomOperation = z.infer<typeof bomOperationSchema>
+
+export const bomSchema = z.object({
+  no: z.string(),
+  parentItem: z.string(),
+  parentDesc: z.string(),
+  kind: bomKindSchema,
+  version: z.string(),
+  status: bomStatusSchema,
+  effectiveFrom: isoDate.nullable(),
+  effectiveTo: isoDate.nullable(),
+  outputQty: z.number(),
+  uom: z.string(),
+  labourCost: z.number(),
+  overheadPct: z.number(),
+  lines: z.array(bomLineSchema),
+  /** Seed text source only; runtime notes live in the global `notes` collection. */
+  notes: z.string().optional(),
+  operations: z.array(bomOperationSchema),
+  yieldPct: z.number(),
+  wipLocation: z.string(),
+  createdAt: isoDateTime,
+  updatedAt: isoDateTime,
+  createdBy: z.string(),
+})
+export type Bom = z.infer<typeof bomSchema>
+
+// ── Production ▸ Assembly Orders ─────────────────────────────────────────────
+export const AO_STATUSES = [
+  'planned',
+  'draft',
+  'released',
+  'inProgress',
+  'finished',
+  'cancelled',
+] as const
+export const aoStatusSchema = z.enum(AO_STATUSES)
+export type AoStatus = z.infer<typeof aoStatusSchema>
+
+export const assemblyOrderLineSchema = z.object({
+  lineNo: z.number(),
+  item: z.string(),
+  desc: z.string(),
+  uom: z.string(),
+  scrapPct: z.number(),
+  qtyRequired: z.number(),
+  qtyConsumed: z.number(),
+  note: z.string(),
+})
+export type AssemblyOrderLine = z.infer<typeof assemblyOrderLineSchema>
+
+export const assemblyOrderSchema = z.object({
+  no: z.string(),
+  item: z.string(),
+  desc: z.string(),
+  uom: z.string(),
+  bomId: z.string(),
+  bomVersion: z.string(),
+  qty: z.number(),
+  qtyFinished: z.number(),
+  location: z.string(),
+  dueDate: isoDate,
+  orderDate: isoDate,
+  status: aoStatusSchema,
+  assignee: z.string().nullable(),
+  lines: z.array(assemblyOrderLineSchema),
+  sourceSalesLine: z.string().nullable(),
+  /** Seed text source only; runtime notes live in the global `notes` collection. */
+  notes: z.string().optional(),
+  createdAt: isoDateTime,
+})
+export type AssemblyOrder = z.infer<typeof assemblyOrderSchema>

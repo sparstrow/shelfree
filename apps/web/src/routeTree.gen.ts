@@ -15,6 +15,10 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ModulePageRouteImport } from './routes/$module/$page'
 import { Route as FinanceChartOfAccountsIndexRouteImport } from './routes/finance/chart-of-accounts/index'
 import { Route as PeopleContactsIndexRouteImport } from './routes/people/contacts/index'
+import { Route as ProductionAssemblyOrdersIndexRouteImport } from './routes/production/assembly-orders/index'
+import { Route as ProductionAssemblyOrdersNoRouteImport } from './routes/production/assembly-orders/$no'
+import { Route as ProductionBillsOfMaterialsIndexRouteImport } from './routes/production/bills-of-materials/index'
+import { Route as ProductionBillsOfMaterialsNoRouteImport } from './routes/production/bills-of-materials/$no'
 import { Route as PurchasingChargesIndexRouteImport } from './routes/purchasing/charges/index'
 import { Route as PurchasingPurchaseLinesIndexRouteImport } from './routes/purchasing/purchase-lines/index'
 import { Route as PurchasingPurchaseOrdersIndexRouteImport } from './routes/purchasing/purchase-orders/index'
@@ -59,6 +63,30 @@ const PeopleContactsIndexRoute = PeopleContactsIndexRouteImport.update({
   path: '/people/contacts/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProductionAssemblyOrdersIndexRoute =
+  ProductionAssemblyOrdersIndexRouteImport.update({
+    id: '/production/assembly-orders/',
+    path: '/production/assembly-orders/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ProductionAssemblyOrdersNoRoute =
+  ProductionAssemblyOrdersNoRouteImport.update({
+    id: '/production/assembly-orders/$no',
+    path: '/production/assembly-orders/$no',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ProductionBillsOfMaterialsIndexRoute =
+  ProductionBillsOfMaterialsIndexRouteImport.update({
+    id: '/production/bills-of-materials/',
+    path: '/production/bills-of-materials/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ProductionBillsOfMaterialsNoRoute =
+  ProductionBillsOfMaterialsNoRouteImport.update({
+    id: '/production/bills-of-materials/$no',
+    path: '/production/bills-of-materials/$no',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PurchasingChargesIndexRoute = PurchasingChargesIndexRouteImport.update({
   id: '/purchasing/charges/',
   path: '/purchasing/charges/',
@@ -130,6 +158,8 @@ export interface FileRoutesByFullPath {
   '/departments': typeof DepartmentsRoute
   '/settings': typeof SettingsRoute
   '/$module/$page': typeof ModulePageRoute
+  '/production/assembly-orders/$no': typeof ProductionAssemblyOrdersNoRoute
+  '/production/bills-of-materials/$no': typeof ProductionBillsOfMaterialsNoRoute
   '/purchasing/purchase-orders/$no': typeof PurchasingPurchaseOrdersNoRoute
   '/purchasing/purchase-receipts/$no': typeof PurchasingPurchaseReceiptsNoRoute
   '/purchasing/vendors/$no': typeof PurchasingVendorsNoRoute
@@ -137,6 +167,8 @@ export interface FileRoutesByFullPath {
   '/warehouse/items/$no': typeof WarehouseItemsNoRoute
   '/finance/chart-of-accounts/': typeof FinanceChartOfAccountsIndexRoute
   '/people/contacts/': typeof PeopleContactsIndexRoute
+  '/production/assembly-orders/': typeof ProductionAssemblyOrdersIndexRoute
+  '/production/bills-of-materials/': typeof ProductionBillsOfMaterialsIndexRoute
   '/purchasing/charges/': typeof PurchasingChargesIndexRoute
   '/purchasing/purchase-lines/': typeof PurchasingPurchaseLinesIndexRoute
   '/purchasing/purchase-orders/': typeof PurchasingPurchaseOrdersIndexRoute
@@ -150,6 +182,8 @@ export interface FileRoutesByTo {
   '/departments': typeof DepartmentsRoute
   '/settings': typeof SettingsRoute
   '/$module/$page': typeof ModulePageRoute
+  '/production/assembly-orders/$no': typeof ProductionAssemblyOrdersNoRoute
+  '/production/bills-of-materials/$no': typeof ProductionBillsOfMaterialsNoRoute
   '/purchasing/purchase-orders/$no': typeof PurchasingPurchaseOrdersNoRoute
   '/purchasing/purchase-receipts/$no': typeof PurchasingPurchaseReceiptsNoRoute
   '/purchasing/vendors/$no': typeof PurchasingVendorsNoRoute
@@ -157,6 +191,8 @@ export interface FileRoutesByTo {
   '/warehouse/items/$no': typeof WarehouseItemsNoRoute
   '/finance/chart-of-accounts': typeof FinanceChartOfAccountsIndexRoute
   '/people/contacts': typeof PeopleContactsIndexRoute
+  '/production/assembly-orders': typeof ProductionAssemblyOrdersIndexRoute
+  '/production/bills-of-materials': typeof ProductionBillsOfMaterialsIndexRoute
   '/purchasing/charges': typeof PurchasingChargesIndexRoute
   '/purchasing/purchase-lines': typeof PurchasingPurchaseLinesIndexRoute
   '/purchasing/purchase-orders': typeof PurchasingPurchaseOrdersIndexRoute
@@ -171,6 +207,8 @@ export interface FileRoutesById {
   '/departments': typeof DepartmentsRoute
   '/settings': typeof SettingsRoute
   '/$module/$page': typeof ModulePageRoute
+  '/production/assembly-orders/$no': typeof ProductionAssemblyOrdersNoRoute
+  '/production/bills-of-materials/$no': typeof ProductionBillsOfMaterialsNoRoute
   '/purchasing/purchase-orders/$no': typeof PurchasingPurchaseOrdersNoRoute
   '/purchasing/purchase-receipts/$no': typeof PurchasingPurchaseReceiptsNoRoute
   '/purchasing/vendors/$no': typeof PurchasingVendorsNoRoute
@@ -178,6 +216,8 @@ export interface FileRoutesById {
   '/warehouse/items/$no': typeof WarehouseItemsNoRoute
   '/finance/chart-of-accounts/': typeof FinanceChartOfAccountsIndexRoute
   '/people/contacts/': typeof PeopleContactsIndexRoute
+  '/production/assembly-orders/': typeof ProductionAssemblyOrdersIndexRoute
+  '/production/bills-of-materials/': typeof ProductionBillsOfMaterialsIndexRoute
   '/purchasing/charges/': typeof PurchasingChargesIndexRoute
   '/purchasing/purchase-lines/': typeof PurchasingPurchaseLinesIndexRoute
   '/purchasing/purchase-orders/': typeof PurchasingPurchaseOrdersIndexRoute
@@ -193,6 +233,8 @@ export interface FileRouteTypes {
     | '/departments'
     | '/settings'
     | '/$module/$page'
+    | '/production/assembly-orders/$no'
+    | '/production/bills-of-materials/$no'
     | '/purchasing/purchase-orders/$no'
     | '/purchasing/purchase-receipts/$no'
     | '/purchasing/vendors/$no'
@@ -200,6 +242,8 @@ export interface FileRouteTypes {
     | '/warehouse/items/$no'
     | '/finance/chart-of-accounts/'
     | '/people/contacts/'
+    | '/production/assembly-orders/'
+    | '/production/bills-of-materials/'
     | '/purchasing/charges/'
     | '/purchasing/purchase-lines/'
     | '/purchasing/purchase-orders/'
@@ -213,6 +257,8 @@ export interface FileRouteTypes {
     | '/departments'
     | '/settings'
     | '/$module/$page'
+    | '/production/assembly-orders/$no'
+    | '/production/bills-of-materials/$no'
     | '/purchasing/purchase-orders/$no'
     | '/purchasing/purchase-receipts/$no'
     | '/purchasing/vendors/$no'
@@ -220,6 +266,8 @@ export interface FileRouteTypes {
     | '/warehouse/items/$no'
     | '/finance/chart-of-accounts'
     | '/people/contacts'
+    | '/production/assembly-orders'
+    | '/production/bills-of-materials'
     | '/purchasing/charges'
     | '/purchasing/purchase-lines'
     | '/purchasing/purchase-orders'
@@ -233,6 +281,8 @@ export interface FileRouteTypes {
     | '/departments'
     | '/settings'
     | '/$module/$page'
+    | '/production/assembly-orders/$no'
+    | '/production/bills-of-materials/$no'
     | '/purchasing/purchase-orders/$no'
     | '/purchasing/purchase-receipts/$no'
     | '/purchasing/vendors/$no'
@@ -240,6 +290,8 @@ export interface FileRouteTypes {
     | '/warehouse/items/$no'
     | '/finance/chart-of-accounts/'
     | '/people/contacts/'
+    | '/production/assembly-orders/'
+    | '/production/bills-of-materials/'
     | '/purchasing/charges/'
     | '/purchasing/purchase-lines/'
     | '/purchasing/purchase-orders/'
@@ -254,6 +306,8 @@ export interface RootRouteChildren {
   DepartmentsRoute: typeof DepartmentsRoute
   SettingsRoute: typeof SettingsRoute
   ModulePageRoute: typeof ModulePageRoute
+  ProductionAssemblyOrdersNoRoute: typeof ProductionAssemblyOrdersNoRoute
+  ProductionBillsOfMaterialsNoRoute: typeof ProductionBillsOfMaterialsNoRoute
   PurchasingPurchaseOrdersNoRoute: typeof PurchasingPurchaseOrdersNoRoute
   PurchasingPurchaseReceiptsNoRoute: typeof PurchasingPurchaseReceiptsNoRoute
   PurchasingVendorsNoRoute: typeof PurchasingVendorsNoRoute
@@ -261,6 +315,8 @@ export interface RootRouteChildren {
   WarehouseItemsNoRoute: typeof WarehouseItemsNoRoute
   FinanceChartOfAccountsIndexRoute: typeof FinanceChartOfAccountsIndexRoute
   PeopleContactsIndexRoute: typeof PeopleContactsIndexRoute
+  ProductionAssemblyOrdersIndexRoute: typeof ProductionAssemblyOrdersIndexRoute
+  ProductionBillsOfMaterialsIndexRoute: typeof ProductionBillsOfMaterialsIndexRoute
   PurchasingChargesIndexRoute: typeof PurchasingChargesIndexRoute
   PurchasingPurchaseLinesIndexRoute: typeof PurchasingPurchaseLinesIndexRoute
   PurchasingPurchaseOrdersIndexRoute: typeof PurchasingPurchaseOrdersIndexRoute
@@ -312,6 +368,34 @@ declare module '@tanstack/react-router' {
       path: '/people/contacts'
       fullPath: '/people/contacts/'
       preLoaderRoute: typeof PeopleContactsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/production/assembly-orders/': {
+      id: '/production/assembly-orders/'
+      path: '/production/assembly-orders'
+      fullPath: '/production/assembly-orders/'
+      preLoaderRoute: typeof ProductionAssemblyOrdersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/production/assembly-orders/$no': {
+      id: '/production/assembly-orders/$no'
+      path: '/production/assembly-orders/$no'
+      fullPath: '/production/assembly-orders/$no'
+      preLoaderRoute: typeof ProductionAssemblyOrdersNoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/production/bills-of-materials/': {
+      id: '/production/bills-of-materials/'
+      path: '/production/bills-of-materials'
+      fullPath: '/production/bills-of-materials/'
+      preLoaderRoute: typeof ProductionBillsOfMaterialsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/production/bills-of-materials/$no': {
+      id: '/production/bills-of-materials/$no'
+      path: '/production/bills-of-materials/$no'
+      fullPath: '/production/bills-of-materials/$no'
+      preLoaderRoute: typeof ProductionBillsOfMaterialsNoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/purchasing/charges/': {
@@ -406,6 +490,8 @@ const rootRouteChildren: RootRouteChildren = {
   DepartmentsRoute: DepartmentsRoute,
   SettingsRoute: SettingsRoute,
   ModulePageRoute: ModulePageRoute,
+  ProductionAssemblyOrdersNoRoute: ProductionAssemblyOrdersNoRoute,
+  ProductionBillsOfMaterialsNoRoute: ProductionBillsOfMaterialsNoRoute,
   PurchasingPurchaseOrdersNoRoute: PurchasingPurchaseOrdersNoRoute,
   PurchasingPurchaseReceiptsNoRoute: PurchasingPurchaseReceiptsNoRoute,
   PurchasingVendorsNoRoute: PurchasingVendorsNoRoute,
@@ -413,6 +499,8 @@ const rootRouteChildren: RootRouteChildren = {
   WarehouseItemsNoRoute: WarehouseItemsNoRoute,
   FinanceChartOfAccountsIndexRoute: FinanceChartOfAccountsIndexRoute,
   PeopleContactsIndexRoute: PeopleContactsIndexRoute,
+  ProductionAssemblyOrdersIndexRoute: ProductionAssemblyOrdersIndexRoute,
+  ProductionBillsOfMaterialsIndexRoute: ProductionBillsOfMaterialsIndexRoute,
   PurchasingChargesIndexRoute: PurchasingChargesIndexRoute,
   PurchasingPurchaseLinesIndexRoute: PurchasingPurchaseLinesIndexRoute,
   PurchasingPurchaseOrdersIndexRoute: PurchasingPurchaseOrdersIndexRoute,

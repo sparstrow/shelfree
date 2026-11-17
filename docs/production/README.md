@@ -180,3 +180,52 @@ collection. See [`../notes/README.md`](../notes/README.md).
 Assembly-order `location`, BOM `wipLocation` and production settings (`outputLoc`, `wipLoc`) now hold
 Locations & warehouses ids (`WH-TVM`, `WH-ASSY`); legacy `main` / `assembly` / `east` / `returns` values are
 re-keyed on load. Committed sales stock is netted at the principal location (`locMain()`).
+
+## React app (2026-11-17)
+
+List pages for **Production ▸ Bills of Materials** and **Production ▸ Assembly Orders** are ported in
+`apps/web/`. Document editors (`/production/bills-of-materials/$no` and `/production/assembly-orders/$no`) remain
+pending placeholders in a follow-up task.
+
+### Files & URLs
+
+- Schemas & API collections: [`bomSchema` / `assemblyOrderSchema`](../../apps/web/src/data/schemas/index.ts),
+  `api.boms` / `api.assemblyOrders` in [`apps/web/src/data/api/index.ts`](../../apps/web/src/data/api/index.ts).
+- Domain helpers & unit tests: [`apps/web/src/domain/production.ts`](../../apps/web/src/domain/production.ts),
+  [`apps/web/src/domain/production.test.ts`](../../apps/web/src/domain/production.test.ts).
+- Bills of Materials list (`/production/bills-of-materials`, `?sel=<no>` preview; `/production/bills-of-materials/$no`
+  pending placeholder): [`dataset.ts`](../../apps/web/src/features/production/boms/dataset.ts),
+  [`BomsPage.tsx`](../../apps/web/src/features/production/boms/BomsPage.tsx),
+  [`index.tsx`](../../apps/web/src/routes/production/bills-of-materials/index.tsx),
+  [`$no.tsx`](../../apps/web/src/routes/production/bills-of-materials/$no.tsx).
+- Assembly Orders list (`/production/assembly-orders`, `?sel=<no>` preview; `/production/assembly-orders/$no` pending
+  placeholder): [`dataset.ts`](../../apps/web/src/features/production/assembly-orders/dataset.ts),
+  [`AssemblyOrdersPage.tsx`](../../apps/web/src/features/production/assembly-orders/AssemblyOrdersPage.tsx),
+  [`index.tsx`](../../apps/web/src/routes/production/assembly-orders/index.tsx),
+  [`$no.tsx`](../../apps/web/src/routes/production/assembly-orders/$no.tsx).
+- Drawer warning banner & muted line support: optional `notice` and `DrawerLine.rightTone` props added to
+  [`RecordDrawer.tsx`](../../apps/web/src/components/record-drawer/RecordDrawer.tsx).
+- Playwright list specs: [`apps/web/e2e/production.spec.ts`](../../apps/web/e2e/production.spec.ts).
+
+### Behaviour & deliberate differences from prototype
+
+- **Same as prototype**: columns (widths, alignment, freeze, hidden defaults), sort order (`no` asc), search blobs,
+  system/default views (`All` / `Active` / `Drafts` / `Archived` for BOMs; `All orders` / `Open` / `Finished` /
+  `Cancelled` for Assembly Orders), filter columns, multi-level rolled-up BOM costs (materials + labour + overhead %,
+  depth cap 6), net stock availability netting `qtySO` at the active principal warehouse (`mainLocationId`), preview
+  drawer stats/lines/facts, assembly-order shortage warning banner, and append-only `NotesBlock` threads (`bom` and
+  `assemblyOrder`). Neither list page mutates stock or item costs.
+- **Delete rules (stricter than prototype)**:
+  - A BOM can be deleted only when `status !== 'active'` and no assembly order references it (`ao.bomId === bom.no`).
+  - An assembly order can be deleted only in its opening status (`planned` or `draft`).
+- **Growth `production` axis**: `apps/web` does not yet expose the `production` axis toggle, so `bomDataset({ showKind })`
+  defaults `showKind` to `false` (hiding the `Kind` column and filter while keeping all 9 seeded BOM rows so multi-level
+  rollups such as `CMB-PWH-12` → `SBC-CONE-12` calculate identically).
+
+### Persistence & tests
+
+- Browser `localStorage` collections: `shelfree.v2.boms`, `shelfree.v2.assemblyOrders` (alongside `shelfree.v2.notes`,
+  `shelfree.v2.items`, `shelfree.v2.warehouses`, `shelfree.v2.employees`).
+- Covered by unit tests (`production.test.ts`), schema seed validation (`seed.test.ts`), and Playwright list specs
+  (`production.spec.ts`).
+
