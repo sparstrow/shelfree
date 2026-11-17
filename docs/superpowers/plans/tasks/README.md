@@ -8,3 +8,4 @@ rules that differ from a naive port, and the acceptance tests.
 | Brief | Page | Outcome |
 |---|---|---|
 | [2026-11-17-vendors-list.md](2026-11-17-vendors-list.md) | Purchasing ▸ Vendors list | Pilot. All checks passed first time; reviewer added the vendor notes panel the brief had missed. |
+| [2026-11-17-customers-list.md](2026-11-17-customers-list.md) | Sales ▸ Customers list | All checks passed first time; no changes needed on review. agy ~2.7 min. |

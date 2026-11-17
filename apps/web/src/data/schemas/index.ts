@@ -348,9 +348,53 @@ export const noteSchema = z.object({
 })
 export type Note = z.infer<typeof noteSchema>
 
-// ── Sales ▸ Customers — modelled fully when the Sales module is ported ───────
-export const customerSchema = z.looseObject({
+// ── Sales ▸ Customers ────────────────────────────────────────────────────────
+export const CUSTOMER_STATUSES = ['Active', 'On hold', 'Prospect'] as const
+export const customerStatusSchema = z.enum(CUSTOMER_STATUSES)
+export type CustomerStatus = z.infer<typeof customerStatusSchema>
+
+export const customerShipToSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  address: z.string(),
+  isDefault: z.boolean(),
+})
+export type CustomerShipTo = z.infer<typeof customerShipToSchema>
+
+export const customerSeedNoteSchema = z.object({
+  id: z.string(),
+  at: isoDate,
+  by: z.string(),
+  text: z.string(),
+})
+export type CustomerSeedNote = z.infer<typeof customerSeedNoteSchema>
+
+export const customerSchema = z.object({
   no: z.string(),
   name: z.string(),
+  /** Read mirror of the primary contact link — never an independent source. */
+  contact: z.string(),
+  phone: z.string(),
+  email: z.string(),
+  city: z.string(),
+  state: z.string(),
+  terms: z.string(),
+  balance: z.number(),
+  creditLimit: z.number(),
+  overdue: z.number(),
+  status: customerStatusSchema,
+  lastOrder: isoDate,
+  /** Employee id of the sales rep responsible for this customer. */
+  salesRep: z.string(),
+  openOrders: z.number(),
+  createdAt: isoDate.optional(),
+  pricingEligible: z.boolean().optional(),
+  gstin: z.string().optional(),
+  creditHold: z.boolean().optional(),
+  riskNote: z.string().optional(),
+  shipTo: z.array(customerShipToSchema),
+  contacts: z.array(contactLinkSchema),
+  /** Seed text source only; runtime notes live in the global `notes` collection. */
+  notes: z.array(customerSeedNoteSchema).optional(),
 })
 export type Customer = z.infer<typeof customerSchema>

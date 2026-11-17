@@ -217,3 +217,19 @@ Per CLAUDE.md "Edit in place": Overview ▸ Details (`detailRows`) and Billing &
 ## One home for people (2026-10-17)
 
 Primary contact / Phone / Email were removed from *Contact & billing* (now **Billing & address**) — they duplicated the **Contacts** tab and let users edit the flat `contact/phone/email` fields independently of the linked contact. People are managed only on the Contacts tab; the flat fields stay a read mirror of the primary link (`cntMirror`) for the header meta, grid, drawer and documents. Backend: `PATCH /customers/:id` must reject direct writes to contact/phone/email — they derive from the primary `customer_contacts` link.
+
+## React app — Customers list (2026-11-17)
+
+- **URLs**: `/sales/customers` (`?sel=` opens the preview drawer on arrival); `/sales/customers/$no` (renders `PlaceholderPage` until the full customer profile page is ported; `/sales/customers/new` uses the same placeholder).
+- **Files**:
+  - `apps/web/src/data/schemas/index.ts` — full `customerSchema` (`z.object`) with `CUSTOMER_STATUSES` (`Active | On hold | Prospect`), `shipTo[]`, `contacts[]` (`contactLinkSchema`), `notes[]`, and all scalar fields.
+  - `apps/web/src/domain/customer.ts` + `customer.test.ts` — pure helpers `customerStatus`, `customerLocation`, `customerDeleteBlockedReason`.
+  - `apps/web/src/features/sales/customers/dataset.ts` — `customerDataset({ customers, employees })` (12 columns matching the prototype's widths/visibility/aggregates, 2 views `All customers` and `On hold`, 11 filter columns including filter-only `city`/`state`, masked `phone` column/export, full `phone` in `searchBlob`).
+  - `apps/web/src/features/sales/customers/CustomersPage.tsx` — `ListPage` wrapper reading via `useList` (`customers`, `employees`), preview drawer (`Balance`, `Credit limit`, `Overdue` with `bad` tone when > 0, `CONTACT` section, `DETAILS` facts, and `NotesBlock` with `entityType="customer"`).
+  - `apps/web/src/routes/sales/customers/index.tsx` and `apps/web/src/routes/sales/customers/$no.tsx`.
+- **Rules & decisions**:
+  - **Phone masking (PII)**: the grid cell and CSV/clipboard exports display `maskPhone(phone)` (or `—` when empty), while the preview drawer's `CONTACT` section shows the full phone number. Quick search (`searchBlob`) continues to match the full number.
+  - **Sales rep lookup**: `salesRep` stores an employee id and displays the employee's name (from `useList('employees')`, `—` when none).
+  - **Referential/balance integrity on delete (decision)**: the prototype allowed deleting any customer; the React UI blocks deleting any customer with `openOrders > 0` or non-zero `balance` (`'This customer has open orders or a balance — put it on hold instead'`). Backend `DELETE /customers/:no` must enforce this check (rejecting deletion when open orders or a non-zero balance exist) and emit an audit event on delete. Idle customers use confirm + Undo.
+  - **Out of scope for this slice**: drawer inline Edit mode, the customer profile page, customer-specific sales prices in the drawer, and sales orders.
+- **Tests**: Vitest unit tests in `apps/web/src/domain/customer.test.ts` and `apps/web/src/data/schemas/seed.test.ts`; Playwright e2e tests in `apps/web/e2e/customers.spec.ts` (seed count, masked phone in grid vs full phone in drawer, *On hold* view, blocked vs undoable delete, double-click navigation, and notes thread in preview).
