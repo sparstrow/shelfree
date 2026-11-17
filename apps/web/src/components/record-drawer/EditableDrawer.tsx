@@ -11,11 +11,12 @@
 import { CircleAlert, X } from 'lucide-react'
 import { type ReactNode, useEffect, useRef } from 'react'
 import { StatusPill } from '@/components/StatusPill'
-import { type EditorField, FieldRows, fieldBoxClass } from '@/components/record-fields/FieldRows'
+import { FieldRows } from '@/components/record-fields/FieldRows'
+import { type EditorField, fieldBoxClass } from '@/components/record-fields/model'
 import { cn } from '@/lib/utils'
 import type { DrawerFact } from './RecordDrawer'
 
-export type { EditorField, EditorFieldType, EditorOption } from '@/components/record-fields/FieldRows'
+export type { EditorField, EditorFieldType, EditorOption } from '@/components/record-fields/model'
 
 export interface EditableDrawerProps<T> {
   ariaLabel: string
