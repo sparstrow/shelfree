@@ -95,6 +95,8 @@ export interface DataGridProps<T> {
   emptyText?: string
   /** Footer totals row (sum of numeric columns over the current view). Off by default. */
   showTotals?: boolean
+  /** Filters applied when the grid first opens (deep links such as "lines for item X"). */
+  initialFilters?: Omit<GridFilter, 'id'>[]
 }
 
 const toolButton =
@@ -156,9 +158,12 @@ export function DataGrid<T>({
   drawer,
   emptyText,
   showTotals = false,
+  initialFilters,
 }: DataGridProps<T>) {
   const [viewId, setViewId] = useState(dataset.views[0]?.id ?? 'all')
-  const [filters, setFilters] = useState<GridFilter[]>([])
+  const [filters, setFilters] = useState<GridFilter[]>(() =>
+    (initialFilters ?? []).map((f) => ({ ...f, id: nextFilterId() })),
+  )
   const [search, setSearch] = useState('')
   const [sorts, setSorts] = useState<SortSpec[]>(() => [dataset.defaultSort ?? { key: 'no', dir: 'asc' }])
   const [hidden, setHidden] = useState<Set<string>>(
