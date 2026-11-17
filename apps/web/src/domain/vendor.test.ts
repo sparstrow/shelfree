@@ -1,4 +1,4 @@
-import type { PurchaseOrder, PurchaseReceipt, Vendor } from '@/data/schemas'
+import type { PurchaseOrder, PurchasePrice, PurchaseReceipt, Vendor } from '@/data/schemas'
 import {
   applyVendorForm,
   gstinFormatError,
@@ -11,6 +11,7 @@ import {
   vendorLocation,
   vendorSavedNote,
   vendorStats,
+  vendorSupply,
   vendorStatus,
   vendorSuppliesLabel,
   vendorToForm,
@@ -126,6 +127,7 @@ describe('vendorStats', () => {
     // PO00001 has 40 of 100 received (60 left at 50) + PO00002 untouched (100 at 50).
     expect(s.openValue).toBe(60 * 50 + 100 * 50)
     expect(s.lateOpen).toBe(1)
+    expect(s.taxPending).toBe(3)
     expect(s.timed).toBe(1)
     expect(s.onTime).toBe(1)
     expect(s.onTimePct).toBe(100)
@@ -135,6 +137,28 @@ describe('vendorStats', () => {
   it('has no on-time percentage before any posted receipt', () => {
     const s = vendorStats('V00001', [order()], [receipt({ status: 'Draft' })], '2026-07-20')
     expect(s.onTimePct).toBeNull()
+  })
+})
+
+describe('vendorSupply', () => {
+  const items = [
+    { no: 'RM-LID', vendor: 'Kailash Ceramics Works' },
+    { no: 'RM-BASE', vendor: 'Someone else' },
+    { no: 'RM-OLD', vendor: '' },
+  ]
+  const price = (item: string, effTo = ''): PurchasePrice => ({
+    no: 'PP1', vendor: 'V00001', item, vendorItemNo: '', minQty: 1, price: 10, currency: 'INR',
+    leadDays: null, effFrom: '', effTo, note: '', createdAt: '', updatedAt: '',
+  })
+
+  it('unions preferred, priced and ordered items that exist, and counts the preferred and priced ones', () => {
+    const orders = [order({ lines: [{ item: 'RM-BASE', desc: '', qty: 1, uom: 'NOS', unitCost: 1 }, { item: 'GONE', desc: '', qty: 1, uom: 'NOS', unitCost: 1 }] })]
+    const s = vendorSupply({ no: 'V00001', name: 'Kailash Ceramics Works' }, items, [price('RM-LID'), price('RM-OLD', '2026-01-01'), price('NOPE')], orders, '2026-07-20')
+    expect(s).toEqual({ total: 3, preferred: 1, priced: 1 })
+  })
+
+  it('is empty for a vendor with nothing linked', () => {
+    expect(vendorSupply({ no: 'V00009', name: 'New' }, items, [], [], '2026-07-20')).toEqual({ total: 0, preferred: 0, priced: 0 })
   })
 })
 

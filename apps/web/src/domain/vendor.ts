@@ -2,7 +2,7 @@
  * Vendor domain helpers. Pure functions — no React, no storage — so the same
  * rules can be enforced server-side. See docs/vendor-page/README.md.
  */
-import type { PurchaseOrder, PurchaseReceipt, TaxCalc, Vendor, VendorGstRegType } from '@/data/schemas'
+import type { Item, PurchaseOrder, PurchasePrice, PurchaseReceipt, TaxCalc, Vendor, VendorGstRegType } from '@/data/schemas'
 import { int } from '@/lib/format'
 import { gstStateByCode, vendorGstType, vendorGstTypeInfo, vendorTaxCalc } from './gst'
 import { poOverdue, poReceiptProgress, poReceivable } from './purchase-order'
@@ -45,6 +45,8 @@ export interface VendorStats {
   /** Value still to receive on open orders (outstanding qty × unit cost). */
   openValue: number
   lateOpen: number
+  /** Draft, issued or part-received orders — the ones a registration change reaches. */
+  taxPending: number
   onTime: number
   timed: number
   onTimePct: number | null
@@ -82,10 +84,43 @@ export function vendorStats(
     open,
     openValue,
     lateOpen: open.filter((p) => poOverdue(p, today)).length,
+    taxPending: orders.filter((p) => p.status === 'Draft' || poReceivable(p)).length,
     onTime,
     timed,
     onTimePct: timed ? Math.round((onTime / timed) * 100) : null,
     rejectedQty: posted.reduce((n, r) => n + prQtyRejected(r), 0),
+  }
+}
+
+export interface VendorSupply {
+  /** Items linked to the vendor in any way. */
+  total: number
+  /** Of those, items that name this vendor as preferred. */
+  preferred: number
+  /** Items with a price row that has not expired. */
+  priced: number
+}
+
+/** Items supplied: preferred-vendor items ∪ price-list rows ∪ anything ordered before (real items only). */
+export function vendorSupply(
+  vendor: Pick<Vendor, 'no' | 'name'>,
+  items: readonly Pick<Item, 'no' | 'vendor'>[],
+  prices: readonly PurchasePrice[],
+  orders: readonly PurchaseOrder[],
+  today: string,
+): VendorSupply {
+  const known = new Set(items.map((i) => i.no))
+  const mine = prices.filter((r) => r.vendor === vendor.no && known.has(r.item))
+  const preferred = new Set(items.filter((i) => i.vendor === vendor.name).map((i) => i.no))
+  const ordered = orders
+    .filter((p) => p.vendor === vendor.no && p.status !== 'Cancelled')
+    .flatMap((p) => p.lines.map((l) => l.item))
+    .filter((no) => known.has(no))
+  const all = new Set([...mine.map((r) => r.item), ...preferred, ...ordered])
+  return {
+    total: all.size,
+    preferred: [...all].filter((no) => preferred.has(no)).length,
+    priced: new Set(mine.filter((r) => !r.effTo || r.effTo >= today).map((r) => r.item)).size,
   }
 }
 
@@ -200,7 +235,7 @@ export function vendorToForm(v: Vendor, ws: WorkspaceTax): VendorForm {
 }
 
 /** Tidy typed values before they are validated or saved. */
-export function normalizeVendorForm(form: VendorForm): VendorForm {
+export function normalizeVendorForm<T extends VendorForm>(form: T): T {
   const gstin = vendorGstTypeInfo(form.gstRegType).gstin ? form.gstin.replace(/\s+/g, '').toUpperCase() : form.gstin
   return {
     ...form,

@@ -1,12 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { z } from 'zod'
 import { PlaceholderPage } from '@/app/shell/PlaceholderPage'
+import { VendorProfilePage } from '@/features/purchasing/vendors/VendorProfilePage'
 
-/** Vendor profile placeholder — the full profile is a later task. */
+/** The vendor profile. `$no` is a vendor number; `?tab=` is the open tab. */
 export const Route = createFileRoute('/purchasing/vendors/$no')({
-  component: VendorProfilePlaceholder,
+  validateSearch: z.object({
+    tab: z.string().optional(),
+  }),
+  component: VendorProfileRoute,
 })
 
-function VendorProfilePlaceholder() {
+function VendorProfileRoute() {
   const { no } = Route.useParams()
-  return <PlaceholderPage title={`Vendor ${no}`} kind="pending" />
+  // Creating a vendor is a later task: `new` keeps the placeholder.
+  if (no === 'new') return <PlaceholderPage title="New vendor" kind="pending" />
+  return <VendorProfilePage no={no} />
 }

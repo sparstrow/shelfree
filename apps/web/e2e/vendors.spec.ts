@@ -48,7 +48,7 @@ test.describe('Vendors list', () => {
   test('opens vendor profile route on row double-click', async ({ page }) => {
     await page.getByRole('row', { name: /V00002/ }).dblclick()
     await expect(page).toHaveURL(/\/purchasing\/vendors\/V00002$/)
-    await expect(page.getByText('Vendor V00002')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Malaimayil Dhoop & Sambrani Works', level: 1 })).toBeVisible()
   })
 })
 
