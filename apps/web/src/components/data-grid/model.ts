@@ -90,6 +90,8 @@ export interface Dataset<T> {
   views: GridView[]
   filterColumns: FilterColumn[]
   defaultSort?: SortSpec
+  /** Optional row warning flag shown as a dot before the first column's text (the string as `title`). */
+  rowFlag?: (row: T) => string | null
 }
 
 export const OPS_BY_KIND: Record<FilterKind, { op: FilterOp; label: string }[]> = {

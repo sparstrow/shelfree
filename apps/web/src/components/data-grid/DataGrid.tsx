@@ -755,9 +755,10 @@ export function DataGrid<T>({
                       <CheckBox state={checked ? 'on' : 'off'} />
                     </button>
                   </div>
-                  {columns.map((c) => {
+                  {columns.map((c, colIndex) => {
                     const text = dataset.text(row, c.key)
                     const negative = c.type === 'num' && Number(dataset.raw(row, c.key)) < 0
+                    const flag = colIndex === 0 ? (dataset.rowFlag?.(row) ?? null) : null
                     return (
                       <div
                         key={c.key}
@@ -773,6 +774,7 @@ export function DataGrid<T>({
                           frozenClass(c, ''),
                         )}
                       >
+                        {flag && <span title={flag} className="size-1.5 flex-none rounded-full bg-warn-fg" />}
                         {c.type === 'pill' ? (
                           <StatusPill label={text} />
                         ) : (
