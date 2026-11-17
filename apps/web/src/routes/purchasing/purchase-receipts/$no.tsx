@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
-import { PlaceholderPage } from '@/app/shell/PlaceholderPage'
+import { PurchaseReceiptEditor } from '@/features/purchasing/purchase-receipts/PurchaseReceiptEditor'
 
 /** The purchase receipt (goods-in) document. `$no` is a receipt number, or `new` with `?po=`. */
 export const Route = createFileRoute('/purchasing/purchase-receipts/$no')({
@@ -13,5 +13,6 @@ export const Route = createFileRoute('/purchasing/purchase-receipts/$no')({
 
 function PurchaseReceiptRoute() {
   const { no } = Route.useParams()
-  return <PlaceholderPage title={no === 'new' ? 'New purchase receipt' : `Purchase receipt ${no}`} kind="pending" />
+  const { po } = Route.useSearch()
+  return <PurchaseReceiptEditor routeNo={no} orderNo={po} />
 }

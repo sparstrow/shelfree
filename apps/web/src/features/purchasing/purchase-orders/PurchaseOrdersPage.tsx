@@ -1,6 +1,6 @@
 import { getRouteApi, useNavigate } from '@tanstack/react-router'
-import { Copy, ExternalLink, Eye, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Copy, Download, ExternalLink, Eye, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { TopBar } from '@/app/shell/TopBar'
 import { useUi } from '@/app/stores/ui'
@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import type { PurchaseOrder } from '@/data/schemas'
+import { poReceivable } from '@/domain/purchase-order'
 import { useList, useRemove, useUpsert } from '@/data/queries'
 import { PurchaseOrderDrawer } from './PurchaseOrderDrawer'
 import { purchaseOrderDataset } from './dataset'
@@ -81,10 +82,29 @@ export function PurchaseOrdersPage() {
     })
   }
 
+  const receive = (po: PurchaseOrder) =>
+    navigate({ to: '/purchasing/purchase-receipts/$no', params: { no: 'new' }, search: { po: po.no } })
+
+  // R: start a goods-in receipt against the active order.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null
+      if (el && (/^(input|textarea|select)$/i.test(el.tagName) || el.isContentEditable)) return
+      if (e.metaKey || e.ctrlKey || e.altKey || e.key.toLowerCase() !== 'r') return
+      if (active && poReceivable(active)) {
+        e.preventDefault()
+        void receive(active)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
   const actions: GridAction<PurchaseOrder>[] = [
     { label: 'View', icon: Eye, onSelect: (po) => setActiveId(po.no) },
     { label: 'Open purchase order', icon: ExternalLink, onSelect: openOrder },
     { label: 'Open in new tab', icon: ExternalLink, onSelect: openInNewTab },
+    { label: 'Receive goods', icon: Download, disabled: (po) => !poReceivable(po), onSelect: receive },
     { label: 'Copy number', icon: Copy, onSelect: copyNo },
     {
       label: 'Delete',
@@ -124,9 +144,7 @@ export function PurchaseOrdersPage() {
               canDelete={active.status === 'Draft'}
               onClose={() => setActiveId(null)}
               onOpen={() => openOrder(active)}
-              onReceive={() =>
-                navigate({ to: '/purchasing/purchase-receipts/$no', params: { no: 'new' }, search: { po: active.no } })
-              }
+              onReceive={() => receive(active)}
               onDelete={() => setDeleting(active)}
             />
           )

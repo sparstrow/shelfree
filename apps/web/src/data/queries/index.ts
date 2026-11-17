@@ -4,6 +4,7 @@
  */
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type Api, type CollectionName, api } from '@/data/api'
+import { postPurchaseReceipt } from '@/data/api/commands'
 
 type RecordOf<K extends CollectionName> = Awaited<ReturnType<Api[K]['list']>>[number]
 
@@ -49,5 +50,19 @@ export function useRemove<K extends CollectionName>(name: K) {
   return useMutation({
     mutationFn: (id: string) => api[name].remove(id),
     onSuccess: () => client.invalidateQueries({ queryKey: [name] }),
+  })
+}
+
+/** Post a goods-in receipt (moves stock and updates the purchase order). */
+export function usePostPurchaseReceipt() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: postPurchaseReceipt,
+    onSuccess: () =>
+      Promise.all(
+        (['purchaseReceipts', 'purchaseOrders', 'items'] as const).map((name) =>
+          client.invalidateQueries({ queryKey: [name] }),
+        ),
+      ),
   })
 }
