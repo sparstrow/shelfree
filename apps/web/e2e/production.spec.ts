@@ -9,15 +9,18 @@ test.describe('Production ▸ Bills of Materials list', () => {
   test('lists seeded BOMs, filters by view, and shows components and notes in preview', async ({ page }) => {
     await expect(page.getByText('Showing 1–9 of 9 bills of materials')).toBeVisible()
 
+    await expect(page.getByRole('menu')).toHaveCount(0)
     await page.getByTitle('Saved views').click()
     await page.getByRole('menuitem', { name: 'Active' }).click()
     await expect(page.getByText('Showing 1–7 of 7 bills of materials')).toBeVisible()
 
+    await expect(page.getByRole('menu')).toHaveCount(0)
     await page.getByTitle('Saved views').click()
     await page.getByRole('menuitem', { name: 'Drafts' }).click()
     await expect(page.getByRole('row', { name: /BOM00008/ })).toBeVisible()
     await expect(page.getByRole('row', { name: /BOM00001/ })).toHaveCount(0)
 
+    await expect(page.getByRole('menu')).toHaveCount(0)
     await page.getByTitle('Saved views').click()
     await page.getByRole('menuitem', { name: 'All' }).click()
 
@@ -61,6 +64,7 @@ test.describe('Production ▸ Assembly Orders list', () => {
   }) => {
     await expect(page.getByText('Showing 1–6 of 6 assembly orders')).toBeVisible()
 
+    await expect(page.getByRole('menu')).toHaveCount(0)
     await page.getByTitle('Saved views').click()
     await page.getByRole('menuitem', { name: 'Open' }).click()
     await expect(page.getByText('Showing 1–4 of 4 assembly orders')).toBeVisible()
