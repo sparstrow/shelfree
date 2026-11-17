@@ -158,3 +158,47 @@ notes thread for that item (author + date/time per note, newest first, no edit
 or delete — only mark-invalid with a permanent reason). Keyed by
 `{entityType:'item', entityNo:<item.no>}`. See
 [`../notes/README.md`](../notes/README.md).
+
+## React app (2026-11-17)
+
+Warehouse ▸ Items list ported to `apps/web`. URLs: list `/warehouse/items`
+(`?sel=<no>` opens that item's preview drawer); `/warehouse/items/$no` shows
+`<PlaceholderPage kind="pending" />` until the full item profile is ported.
+
+- **Files:** list `features/warehouse/items/ItemsPage.tsx` + `dataset.ts`; routes
+  `routes/warehouse/items/index.tsx` + `routes/warehouse/items/$no.tsx`; rules
+  `domain/item.ts` + `item.test.ts`; shared template additions `rowFlag` on
+  `components/data-grid/model.ts` + `DataGrid.tsx` and `beforeFacts` on
+  `components/record-drawer/RecordDrawer.tsx`.
+- **Same as prototype:** columns, widths, default visibility (`committed`,
+  `cost`, `margin`, `vendor`, `lead` hidden by default; `location`, `expiry`,
+  `barcode` visible per default axes), *All items* / *Low stock* views,
+  filters, quick search, 6 px `bg-warn-fg` low-stock dot before `no` (`onHand
+  <= rp`), stats (`On hand`, `Committed`, `Available` red when `<= 0`),
+  reorder banner + `STOCK BY LOCATION` horizontal bars (`bg-primary` on
+  `bg-muted`), `DETAILS` facts, and the `NotesBlock` (`entityType: 'item'`).
+- **Deliberate differences:**
+  - *Unit price / Unit cost* omit footer averages (`GridColumn.agg` in React
+    supports `'sum' | null` only so far).
+  - *Base UoM* reads `item.uom` and *Master Pack UoM* shows `—` until the
+    `itemUom` store lands; *Category* / *Sub-category* hierarchy resolves via a
+    default parent table in `domain/item.ts` until `itemCategories` lands.
+  - *STOCK BY LOCATION* (plus optional reorder banner) renders through the new
+    optional `RecordDrawerProps.beforeFacts` slot so it sits above `DETAILS`
+    while `NotesBlock` stays in `children` below `DETAILS`.
+  - Out-of-scope Actions-menu shortcuts (*Sales prices*, *Stock by location*,
+    *Unit of measure*) are omitted until those target pages are ported.
+- **Persistence (`localStorage` today):** collections `shelfree.v2.items`,
+  `shelfree.v2.warehouses`, `shelfree.v2.purchaseOrders`,
+  `shelfree.v2.purchaseReceipts`, `shelfree.v2.notes`; grid column widths / UI
+  state in `shelfree.v2.ui`.
+- **Backend & security rules:** server enforces tenant scoping and
+  `warehouse.items.read` / `warehouse.items.write` RBAC; item deletes must be
+  rejected server-side (`409`) whenever stock on hand `> 0` or the item
+  appears on any purchase order or purchase receipt line (`'This item has
+  stock or is on purchase documents — block it instead'`) and must emit an
+  audit event; axis-off tracking fields (`tracksLot`, `tracksExpiry`,
+  `tracksSerial`, `barcode`) are soft-hidden only and validated on write per
+  `docs/security/README.md`.
+- **Tests:** `apps/web/src/domain/item.test.ts` (unit),
+  `apps/web/e2e/items.spec.ts` (Playwright).

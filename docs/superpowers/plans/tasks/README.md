@@ -11,3 +11,4 @@ rules that differ from a naive port, and the acceptance tests.
 | [2026-11-17-customers-list.md](2026-11-17-customers-list.md) | Sales ▸ Customers list | All checks passed first time; no changes needed on review. agy ~2.7 min. |
 | [2026-11-17-chart-of-accounts.md](2026-11-17-chart-of-accounts.md) | Finance ▸ Chart of Accounts | All checks passed first time. Review: the editor now passes new/edit mode to `onChange` (agy had worked around its absence). |
 | [2026-11-17-contacts.md](2026-11-17-contacts.md) | People ▸ Contacts | xhigh. Code passed first time; 3 test selectors fixed on review (loose text match, dialog role). Added `ListEditor.extra`. |
+| [2026-11-17-items-list.md](2026-11-17-items-list.md) | Warehouse ▸ Items list | xhigh. Code matched the prototype; review fixed 2 wrong test expectations, 1 lint warning, and a test reaching into storage internals. Added `Dataset.rowFlag`, `RecordDrawer.beforeFacts`. |

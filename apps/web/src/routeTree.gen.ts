@@ -25,6 +25,8 @@ import { Route as PurchasingVendorsIndexRouteImport } from './routes/purchasing/
 import { Route as PurchasingVendorsNoRouteImport } from './routes/purchasing/vendors/$no'
 import { Route as SalesCustomersIndexRouteImport } from './routes/sales/customers/index'
 import { Route as SalesCustomersNoRouteImport } from './routes/sales/customers/$no'
+import { Route as WarehouseItemsIndexRouteImport } from './routes/warehouse/items/index'
+import { Route as WarehouseItemsNoRouteImport } from './routes/warehouse/items/$no'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -112,6 +114,16 @@ const SalesCustomersNoRoute = SalesCustomersNoRouteImport.update({
   path: '/sales/customers/$no',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WarehouseItemsIndexRoute = WarehouseItemsIndexRouteImport.update({
+  id: '/warehouse/items/',
+  path: '/warehouse/items/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WarehouseItemsNoRoute = WarehouseItemsNoRouteImport.update({
+  id: '/warehouse/items/$no',
+  path: '/warehouse/items/$no',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -122,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/purchasing/purchase-receipts/$no': typeof PurchasingPurchaseReceiptsNoRoute
   '/purchasing/vendors/$no': typeof PurchasingVendorsNoRoute
   '/sales/customers/$no': typeof SalesCustomersNoRoute
+  '/warehouse/items/$no': typeof WarehouseItemsNoRoute
   '/finance/chart-of-accounts/': typeof FinanceChartOfAccountsIndexRoute
   '/people/contacts/': typeof PeopleContactsIndexRoute
   '/purchasing/charges/': typeof PurchasingChargesIndexRoute
@@ -130,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/purchasing/purchase-receipts/': typeof PurchasingPurchaseReceiptsIndexRoute
   '/purchasing/vendors/': typeof PurchasingVendorsIndexRoute
   '/sales/customers/': typeof SalesCustomersIndexRoute
+  '/warehouse/items/': typeof WarehouseItemsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -140,6 +154,7 @@ export interface FileRoutesByTo {
   '/purchasing/purchase-receipts/$no': typeof PurchasingPurchaseReceiptsNoRoute
   '/purchasing/vendors/$no': typeof PurchasingVendorsNoRoute
   '/sales/customers/$no': typeof SalesCustomersNoRoute
+  '/warehouse/items/$no': typeof WarehouseItemsNoRoute
   '/finance/chart-of-accounts': typeof FinanceChartOfAccountsIndexRoute
   '/people/contacts': typeof PeopleContactsIndexRoute
   '/purchasing/charges': typeof PurchasingChargesIndexRoute
@@ -148,6 +163,7 @@ export interface FileRoutesByTo {
   '/purchasing/purchase-receipts': typeof PurchasingPurchaseReceiptsIndexRoute
   '/purchasing/vendors': typeof PurchasingVendorsIndexRoute
   '/sales/customers': typeof SalesCustomersIndexRoute
+  '/warehouse/items': typeof WarehouseItemsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -159,6 +175,7 @@ export interface FileRoutesById {
   '/purchasing/purchase-receipts/$no': typeof PurchasingPurchaseReceiptsNoRoute
   '/purchasing/vendors/$no': typeof PurchasingVendorsNoRoute
   '/sales/customers/$no': typeof SalesCustomersNoRoute
+  '/warehouse/items/$no': typeof WarehouseItemsNoRoute
   '/finance/chart-of-accounts/': typeof FinanceChartOfAccountsIndexRoute
   '/people/contacts/': typeof PeopleContactsIndexRoute
   '/purchasing/charges/': typeof PurchasingChargesIndexRoute
@@ -167,6 +184,7 @@ export interface FileRoutesById {
   '/purchasing/purchase-receipts/': typeof PurchasingPurchaseReceiptsIndexRoute
   '/purchasing/vendors/': typeof PurchasingVendorsIndexRoute
   '/sales/customers/': typeof SalesCustomersIndexRoute
+  '/warehouse/items/': typeof WarehouseItemsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -179,6 +197,7 @@ export interface FileRouteTypes {
     | '/purchasing/purchase-receipts/$no'
     | '/purchasing/vendors/$no'
     | '/sales/customers/$no'
+    | '/warehouse/items/$no'
     | '/finance/chart-of-accounts/'
     | '/people/contacts/'
     | '/purchasing/charges/'
@@ -187,6 +206,7 @@ export interface FileRouteTypes {
     | '/purchasing/purchase-receipts/'
     | '/purchasing/vendors/'
     | '/sales/customers/'
+    | '/warehouse/items/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -197,6 +217,7 @@ export interface FileRouteTypes {
     | '/purchasing/purchase-receipts/$no'
     | '/purchasing/vendors/$no'
     | '/sales/customers/$no'
+    | '/warehouse/items/$no'
     | '/finance/chart-of-accounts'
     | '/people/contacts'
     | '/purchasing/charges'
@@ -205,6 +226,7 @@ export interface FileRouteTypes {
     | '/purchasing/purchase-receipts'
     | '/purchasing/vendors'
     | '/sales/customers'
+    | '/warehouse/items'
   id:
     | '__root__'
     | '/'
@@ -215,6 +237,7 @@ export interface FileRouteTypes {
     | '/purchasing/purchase-receipts/$no'
     | '/purchasing/vendors/$no'
     | '/sales/customers/$no'
+    | '/warehouse/items/$no'
     | '/finance/chart-of-accounts/'
     | '/people/contacts/'
     | '/purchasing/charges/'
@@ -223,6 +246,7 @@ export interface FileRouteTypes {
     | '/purchasing/purchase-receipts/'
     | '/purchasing/vendors/'
     | '/sales/customers/'
+    | '/warehouse/items/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -234,6 +258,7 @@ export interface RootRouteChildren {
   PurchasingPurchaseReceiptsNoRoute: typeof PurchasingPurchaseReceiptsNoRoute
   PurchasingVendorsNoRoute: typeof PurchasingVendorsNoRoute
   SalesCustomersNoRoute: typeof SalesCustomersNoRoute
+  WarehouseItemsNoRoute: typeof WarehouseItemsNoRoute
   FinanceChartOfAccountsIndexRoute: typeof FinanceChartOfAccountsIndexRoute
   PeopleContactsIndexRoute: typeof PeopleContactsIndexRoute
   PurchasingChargesIndexRoute: typeof PurchasingChargesIndexRoute
@@ -242,6 +267,7 @@ export interface RootRouteChildren {
   PurchasingPurchaseReceiptsIndexRoute: typeof PurchasingPurchaseReceiptsIndexRoute
   PurchasingVendorsIndexRoute: typeof PurchasingVendorsIndexRoute
   SalesCustomersIndexRoute: typeof SalesCustomersIndexRoute
+  WarehouseItemsIndexRoute: typeof WarehouseItemsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -358,6 +384,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SalesCustomersNoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/warehouse/items/': {
+      id: '/warehouse/items/'
+      path: '/warehouse/items'
+      fullPath: '/warehouse/items/'
+      preLoaderRoute: typeof WarehouseItemsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/warehouse/items/$no': {
+      id: '/warehouse/items/$no'
+      path: '/warehouse/items/$no'
+      fullPath: '/warehouse/items/$no'
+      preLoaderRoute: typeof WarehouseItemsNoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -370,6 +410,7 @@ const rootRouteChildren: RootRouteChildren = {
   PurchasingPurchaseReceiptsNoRoute: PurchasingPurchaseReceiptsNoRoute,
   PurchasingVendorsNoRoute: PurchasingVendorsNoRoute,
   SalesCustomersNoRoute: SalesCustomersNoRoute,
+  WarehouseItemsNoRoute: WarehouseItemsNoRoute,
   FinanceChartOfAccountsIndexRoute: FinanceChartOfAccountsIndexRoute,
   PeopleContactsIndexRoute: PeopleContactsIndexRoute,
   PurchasingChargesIndexRoute: PurchasingChargesIndexRoute,
@@ -378,6 +419,7 @@ const rootRouteChildren: RootRouteChildren = {
   PurchasingPurchaseReceiptsIndexRoute: PurchasingPurchaseReceiptsIndexRoute,
   PurchasingVendorsIndexRoute: PurchasingVendorsIndexRoute,
   SalesCustomersIndexRoute: SalesCustomersIndexRoute,
+  WarehouseItemsIndexRoute: WarehouseItemsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

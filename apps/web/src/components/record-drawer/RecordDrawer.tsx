@@ -39,6 +39,8 @@ export interface RecordDrawerProps {
   linesEmptyText?: string
   /** Named fact sections rendered before DETAILS with the same row styling. */
   sections?: DrawerSection[]
+  /** Extra content rendered between sections (or stats/lines) and DETAILS. */
+  beforeFacts?: ReactNode
   facts?: DrawerFact[]
   /** Extra content between the facts and the footer. */
   children?: ReactNode
@@ -83,6 +85,7 @@ export function RecordDrawer({
   lines,
   linesEmptyText = 'Nothing here yet.',
   sections,
+  beforeFacts,
   facts,
   children,
   footer,
@@ -147,6 +150,7 @@ export function RecordDrawer({
           <FactSection key={section.heading} heading={section.heading} rows={section.rows} className="px-[14px] pt-2 pb-1" />
         ))}
 
+        {beforeFacts}
         {facts && <FactSection heading="DETAILS" rows={facts} className="px-[14px] pt-2 pb-[14px]" />}
         {children}
       </div>

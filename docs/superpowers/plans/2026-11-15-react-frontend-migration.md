@@ -66,5 +66,6 @@ same turn a page is ported.**
 | Purchasing ▸ Charges | ported |
 | Finance ▸ Chart of Accounts | ported |
 | People ▸ Contacts | ported |
+| Warehouse ▸ Items (list) | ported (item page pending) |
 | Purchasing ▸ Purchase Prices, Carriers | pending (next) |
 | Every other prototype page | pending |
