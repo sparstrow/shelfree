@@ -90,3 +90,33 @@ user edits). Grid view/column prefs use the generic per-dataset grid storage (da
   landed-cost allocation = variance; reports split it by source.
 - No parent/child account hierarchy, opening balances, or multi-currency yet — add when the
   General Ledger and reports need them.
+
+## React app (2026-11-17)
+
+Ported to `apps/web` at `/finance/chart-of-accounts` (`?sel=5110` opens an account).
+Uses the List template's **editor** option (records edited in the drawer) — see
+`docs/erp-app/README.md` → Page templates.
+
+- **Files:** `features/finance/chart-of-accounts/ChartOfAccountsPage.tsx` (dataset + field list),
+  rules `domain/chart-of-accounts.ts` (+ tests), route `routes/finance/chart-of-accounts/index.tsx`.
+- **Same as the prototype:** columns (Code, Account name, Type, Group, Normal balance, Posting,
+  Source pill, Status pill, hidden Description), views (All accounts, Assets, Liabilities,
+  Expenses, Custom accounts, Inactive), filters, field list, validation messages, system-account
+  locks (code, type, group, posting, status — only name and description editable), auto-proposed
+  next code per type/group while creating until the code is manually edited, duplicate as `CODE`
+  next free slot + `(copy)` name, "Used by charges" fact, and delete/deactivation blocked for
+  system accounts and accounts referenced by charges.
+- **Changed to follow the project rules (deliberate):**
+  - *Edit in place* — editing swaps values for controls in the same rows; the
+    prototype opened a separate form.
+  - *Quiet pages* — field hints moved from under each control into an ⓘ tooltip
+    on the label.
+- **Shortcuts:** N new, E edit, Enter / double-click edit, Ctrl/Cmd+S or
+  Ctrl/Cmd+Enter save, Esc cancel then close.
+- **Persistence:** `shelfree.v2.accounts`; `createdAt` / `updatedAt` stamped on save.
+- **Backend:** `PUT /accounts/{code}` must re-run the same validation (4-digit
+  code + type prefix range + uniqueness, case-insensitive name uniqueness, valid
+  group for type, block deactivation while an active charge uses the account) and
+  reject edits to locked fields of system accounts; `DELETE` rejected for system
+  accounts and accounts referenced by any charge.
+- **Tests:** `apps/web/e2e/chart-of-accounts.spec.ts`, `src/domain/chart-of-accounts.test.ts`.

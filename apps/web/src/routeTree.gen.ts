@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DepartmentsRouteImport } from './routes/departments'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ModulePageRouteImport } from './routes/$module/$page'
+import { Route as FinanceChartOfAccountsIndexRouteImport } from './routes/finance/chart-of-accounts/index'
 import { Route as PurchasingChargesIndexRouteImport } from './routes/purchasing/charges/index'
 import { Route as PurchasingPurchaseLinesIndexRouteImport } from './routes/purchasing/purchase-lines/index'
 import { Route as PurchasingPurchaseOrdersIndexRouteImport } from './routes/purchasing/purchase-orders/index'
@@ -44,6 +45,12 @@ const ModulePageRoute = ModulePageRouteImport.update({
   path: '/$module/$page',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FinanceChartOfAccountsIndexRoute =
+  FinanceChartOfAccountsIndexRouteImport.update({
+    id: '/finance/chart-of-accounts/',
+    path: '/finance/chart-of-accounts/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PurchasingChargesIndexRoute = PurchasingChargesIndexRouteImport.update({
   id: '/purchasing/charges/',
   path: '/purchasing/charges/',
@@ -109,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/purchasing/purchase-receipts/$no': typeof PurchasingPurchaseReceiptsNoRoute
   '/purchasing/vendors/$no': typeof PurchasingVendorsNoRoute
   '/sales/customers/$no': typeof SalesCustomersNoRoute
+  '/finance/chart-of-accounts/': typeof FinanceChartOfAccountsIndexRoute
   '/purchasing/charges/': typeof PurchasingChargesIndexRoute
   '/purchasing/purchase-lines/': typeof PurchasingPurchaseLinesIndexRoute
   '/purchasing/purchase-orders/': typeof PurchasingPurchaseOrdersIndexRoute
@@ -125,6 +133,7 @@ export interface FileRoutesByTo {
   '/purchasing/purchase-receipts/$no': typeof PurchasingPurchaseReceiptsNoRoute
   '/purchasing/vendors/$no': typeof PurchasingVendorsNoRoute
   '/sales/customers/$no': typeof SalesCustomersNoRoute
+  '/finance/chart-of-accounts': typeof FinanceChartOfAccountsIndexRoute
   '/purchasing/charges': typeof PurchasingChargesIndexRoute
   '/purchasing/purchase-lines': typeof PurchasingPurchaseLinesIndexRoute
   '/purchasing/purchase-orders': typeof PurchasingPurchaseOrdersIndexRoute
@@ -142,6 +151,7 @@ export interface FileRoutesById {
   '/purchasing/purchase-receipts/$no': typeof PurchasingPurchaseReceiptsNoRoute
   '/purchasing/vendors/$no': typeof PurchasingVendorsNoRoute
   '/sales/customers/$no': typeof SalesCustomersNoRoute
+  '/finance/chart-of-accounts/': typeof FinanceChartOfAccountsIndexRoute
   '/purchasing/charges/': typeof PurchasingChargesIndexRoute
   '/purchasing/purchase-lines/': typeof PurchasingPurchaseLinesIndexRoute
   '/purchasing/purchase-orders/': typeof PurchasingPurchaseOrdersIndexRoute
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/purchasing/purchase-receipts/$no'
     | '/purchasing/vendors/$no'
     | '/sales/customers/$no'
+    | '/finance/chart-of-accounts/'
     | '/purchasing/charges/'
     | '/purchasing/purchase-lines/'
     | '/purchasing/purchase-orders/'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/purchasing/purchase-receipts/$no'
     | '/purchasing/vendors/$no'
     | '/sales/customers/$no'
+    | '/finance/chart-of-accounts'
     | '/purchasing/charges'
     | '/purchasing/purchase-lines'
     | '/purchasing/purchase-orders'
@@ -192,6 +204,7 @@ export interface FileRouteTypes {
     | '/purchasing/purchase-receipts/$no'
     | '/purchasing/vendors/$no'
     | '/sales/customers/$no'
+    | '/finance/chart-of-accounts/'
     | '/purchasing/charges/'
     | '/purchasing/purchase-lines/'
     | '/purchasing/purchase-orders/'
@@ -209,6 +222,7 @@ export interface RootRouteChildren {
   PurchasingPurchaseReceiptsNoRoute: typeof PurchasingPurchaseReceiptsNoRoute
   PurchasingVendorsNoRoute: typeof PurchasingVendorsNoRoute
   SalesCustomersNoRoute: typeof SalesCustomersNoRoute
+  FinanceChartOfAccountsIndexRoute: typeof FinanceChartOfAccountsIndexRoute
   PurchasingChargesIndexRoute: typeof PurchasingChargesIndexRoute
   PurchasingPurchaseLinesIndexRoute: typeof PurchasingPurchaseLinesIndexRoute
   PurchasingPurchaseOrdersIndexRoute: typeof PurchasingPurchaseOrdersIndexRoute
@@ -245,6 +259,13 @@ declare module '@tanstack/react-router' {
       path: '/$module/$page'
       fullPath: '/$module/$page'
       preLoaderRoute: typeof ModulePageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/finance/chart-of-accounts/': {
+      id: '/finance/chart-of-accounts/'
+      path: '/finance/chart-of-accounts'
+      fullPath: '/finance/chart-of-accounts/'
+      preLoaderRoute: typeof FinanceChartOfAccountsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/purchasing/charges/': {
@@ -329,6 +350,7 @@ const rootRouteChildren: RootRouteChildren = {
   PurchasingPurchaseReceiptsNoRoute: PurchasingPurchaseReceiptsNoRoute,
   PurchasingVendorsNoRoute: PurchasingVendorsNoRoute,
   SalesCustomersNoRoute: SalesCustomersNoRoute,
+  FinanceChartOfAccountsIndexRoute: FinanceChartOfAccountsIndexRoute,
   PurchasingChargesIndexRoute: PurchasingChargesIndexRoute,
   PurchasingPurchaseLinesIndexRoute: PurchasingPurchaseLinesIndexRoute,
   PurchasingPurchaseOrdersIndexRoute: PurchasingPurchaseOrdersIndexRoute,

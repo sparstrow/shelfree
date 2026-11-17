@@ -92,7 +92,7 @@ export interface ListEditor<T> {
   /** A copy of `row` as a new record (omit to hide Duplicate). */
   duplicate?: (row: T, rows: readonly T[]) => T
   /** Dependent-field adjustments after a change (e.g. clear an account when direction changes). */
-  onChange?: (draft: T, key: string) => T
+  onChange?: (draft: T, key: string, mode: 'edit' | 'new') => T
   /** Trim / upper-case before validating and saving. */
   normalize?: (draft: T) => T
   /** Field errors by key; empty when valid. `others` excludes the record being edited. */
@@ -230,7 +230,7 @@ export function ListPage<T>({
     setEditing((cur) => {
       if (!cur || !editor) return cur
       let draft = { ...cur.draft, [key]: value } as T
-      if (editor.onChange) draft = editor.onChange(draft, key)
+      if (editor.onChange) draft = editor.onChange(draft, key, cur.mode)
       const { [key]: _cleared, ...errors } = cur.errors
       return { ...cur, draft, errors, formError: '' }
     })
