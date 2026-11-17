@@ -137,3 +137,23 @@ come from the seed each load and mirrors are recomputed from the stored contacts
   profile with activity (calls, emails) is later CRM scope.
 - Linking from the Contacts page itself (pick a vendor to attach to) is deferred; links are
   made from the owning record, where the role makes sense.
+
+## React app (2026-11-17)
+
+Ported to `apps/web` at `/people/contacts`:
+
+- Domain rules: [`apps/web/src/domain/contacts.ts`](../../apps/web/src/domain/contacts.ts)
+  (numbering `CON00001+`, blank/duplicate defaults, phone normalisation and Indian 5+5/STD formatting,
+  email/phone validation, name+phone duplicate guard, carrier/vendor/customer back-link lookup and
+  delete-block checks) with unit tests in `contacts.test.ts`.
+- PII masking: `maskPhone` and `maskEmail` in [`apps/web/src/lib/privacy.ts`](../../apps/web/src/lib/privacy.ts)
+  mask phone numbers and email local parts in grid cells, search blobs and exports, while the
+  editable drawer shows the full formatted phone and full email.
+- Page & route: [`ContactsPage`](../../apps/web/src/features/people/contacts/ContactsPage.tsx) wired via
+  `/people/contacts/` (`?sel=` deep link support). Read-only `no`, shared-edit `notice` when linked,
+  and a `LINKED TO` view section (rendered via `ListEditor.extra` in `ListPage`) with clickable buttons
+  navigating to `/purchasing/vendors?sel=…`, `/sales/customers?sel=…` or `/purchasing/carriers?sel=…`.
+  Editing a contact also keeps primary flat `contact`/`phone`/`email` mirror fields on linked vendors
+  and customers in sync via `useUpsert`.
+- Tests: unit tests in `privacy.test.ts` and `contacts.test.ts`; end-to-end coverage in
+  [`apps/web/e2e/contacts.spec.ts`](../../apps/web/e2e/contacts.spec.ts).
