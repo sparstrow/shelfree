@@ -34,7 +34,8 @@ export function AppShell() {
           <TabStrip />
           <Outlet />
         </main>
-        <Toaster position="bottom-right" />
+        {/* Bottom-centre: toasts must never cover the drawer's action buttons (right side). */}
+        <Toaster position="bottom-center" />
       </div>
     </TooltipProvider>
   )

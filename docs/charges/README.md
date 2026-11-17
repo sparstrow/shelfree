@@ -94,3 +94,29 @@ Grid prefs use the generic per-dataset grid storage (dataset id `charges`).
 - Landed-cost allocation basis (value / qty / weight) is a workspace setting (task 5), not
   per charge. Actual allocation + postings arrive with vendor bills (step 3).
 - No per-charge default amount or unit — amounts come from freight policies or the line.
+
+## React app (2026-11-17)
+
+Ported to `apps/web` at `/purchasing/charges` (`?sel=FRT-IN` opens a charge).
+First page on the List template's **editor** option (records edited in the
+drawer) — see `docs/erp-app/README.md` → Page templates.
+
+- **Files:** `features/purchasing/charges/ChargesPage.tsx` (dataset + field list),
+  rules `domain/charges.ts` (+ tests), route `routes/purchasing/charges/index.tsx`.
+- **Same as the prototype:** columns, views, filters, field list, validation
+  messages, system-charge locks (code, direction, purchase account, status),
+  dependent fields (direction hides the other account and landed cost),
+  duplicate as `CODE-n`, system charges can't be deleted.
+- **Changed to follow the project rules (deliberate):**
+  - *Edit in place* — editing swaps values for controls in the same rows; the
+    prototype opened a separate form.
+  - *Quiet pages* — field hints moved from under each control into an ⓘ tooltip
+    on the label.
+- **Shortcuts:** N new, E edit, Enter / double-click edit, Ctrl/Cmd+S or
+  Ctrl/Cmd+Enter save, Esc cancel then close.
+- **Persistence:** `shelfree.v2.charges`; `createdAt` / `updatedAt` stamped on save.
+- **Backend:** `PUT /charges/{code}` must re-run the same validation (code
+  pattern + uniqueness, description uniqueness, active posting account of the
+  right type, GST rate list, HSN/SAC 4/6/8 digits) and reject edits to locked
+  fields of system charges; `DELETE` rejected for system charges.
+- **Tests:** `apps/web/e2e/charges.spec.ts`, `src/domain/charges.test.ts`.

@@ -11,7 +11,7 @@
  * add actions, add drawer buttons, add shortcuts). It never copies the template.
  */
 import { useRouter } from '@tanstack/react-router'
-import { Copy, ExternalLink, Eye, type LucideIcon, Trash2 } from 'lucide-react'
+import { Copy, CopyPlus, ExternalLink, Eye, type LucideIcon, Pencil, Trash2 } from 'lucide-react'
 import { type ReactNode, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { TopBar } from '@/app/shell/TopBar'
@@ -19,7 +19,9 @@ import { useUi } from '@/app/stores/ui'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { DataGrid, type GridAction } from '@/components/data-grid/DataGrid'
 import type { Dataset, GridFilter } from '@/components/data-grid/model'
+import { EditableDrawer, type EditorField } from '@/components/record-drawer/EditableDrawer'
 import {
+  type DrawerFact,
   RecordDrawer,
   type RecordDrawerProps,
   drawerDangerIconButton,
@@ -64,6 +66,51 @@ export interface ListDelete<T> {
   undo: (row: T) => void
 }
 
+/** Header and extras of an editable record in view mode. */
+export interface EditorView {
+  no: string
+  status?: string
+  tags?: string[]
+  title: string
+  subtitle?: string
+  /** Warning shown in view mode. */
+  notice?: string
+  /** Read-only facts after the fields (Source, Last changed…). */
+  facts?: DrawerFact[]
+}
+
+/**
+ * Edit records right in the drawer (reference lists). The page describes the
+ * fields and rules; the template owns view ↔ edit, New, Duplicate, Save and the
+ * shortcuts N / E / Ctrl+S / Esc.
+ */
+export interface ListEditor<T> {
+  fields: (draft: T, mode: 'edit' | 'new') => EditorField<T>[]
+  view: (record: T) => EditorView
+  /** A new, empty record. */
+  blank: (rows: readonly T[]) => T
+  /** A copy of `row` as a new record (omit to hide Duplicate). */
+  duplicate?: (row: T, rows: readonly T[]) => T
+  /** Dependent-field adjustments after a change (e.g. clear an account when direction changes). */
+  onChange?: (draft: T, key: string) => T
+  /** Trim / upper-case before validating and saving. */
+  normalize?: (draft: T) => T
+  /** Field errors by key; empty when valid. `others` excludes the record being edited. */
+  validate: (draft: T, others: readonly T[]) => Record<string, string>
+  save: (record: T, mode: 'edit' | 'new') => Promise<unknown>
+  /** `CODE · Name`, for toasts and the edit sub-heading. */
+  label: (record: T) => string
+}
+
+interface Editing<T> {
+  mode: 'edit' | 'new'
+  draft: T
+  /** Id of the record being edited (null for new). */
+  orig: string | null
+  errors: Record<string, string>
+  formError: string
+}
+
 export interface ListPageProps<T> {
   dataset: Dataset<T>
   rows: T[] | undefined
@@ -84,6 +131,8 @@ export interface ListPageProps<T> {
   shortcuts?: ListShortcut<T>[]
   /** Preview drawer contents. Omit for lists without a preview. */
   preview?: (row: T) => ListPreview
+  /** Edit records in the drawer instead of a read-only preview. */
+  editor?: ListEditor<T>
 
   /** Row whose preview is open on arrival (`?sel=` deep links). */
   initialActiveId?: string | null
@@ -107,6 +156,7 @@ export function ListPage<T>({
   actions = [],
   shortcuts = [],
   preview,
+  editor,
   initialActiveId = null,
   initialFilters,
   emptyText,
@@ -117,6 +167,7 @@ export function ListPage<T>({
   const openTab = useUi((s) => s.openTab)
   const [activeId, setActiveId] = useState<string | null>(initialActiveId)
   const [deleting, setDeleting] = useState<T | null>(null)
+  const [editing, setEditing] = useState<Editing<T> | null>(null)
 
   const active = activeId ? (rows ?? []).find((r) => dataset.idOf(r) === activeId) : undefined
   const noun = dataset.noun
@@ -158,6 +209,82 @@ export function ListPage<T>({
     })
   }
 
+  // ── editor (reference lists) ────────────────────────────────────────────────
+  const startNew = () => {
+    if (!editor) return
+    setActiveId(null)
+    setEditing({ mode: 'new', draft: editor.blank(rows ?? []), orig: null, errors: {}, formError: '' })
+  }
+  const startEdit = (row: T) => {
+    if (!editor) return
+    setActiveId(dataset.idOf(row))
+    setEditing({ mode: 'edit', draft: structuredClone(row), orig: dataset.idOf(row), errors: {}, formError: '' })
+  }
+  const startDuplicate = (row: T) => {
+    if (!editor?.duplicate) return
+    setActiveId(null)
+    setEditing({ mode: 'new', draft: editor.duplicate(row, rows ?? []), orig: null, errors: {}, formError: '' })
+  }
+  const cancelEdit = () => setEditing(null)
+  const changeField = (key: string, value: unknown) =>
+    setEditing((cur) => {
+      if (!cur || !editor) return cur
+      let draft = { ...cur.draft, [key]: value } as T
+      if (editor.onChange) draft = editor.onChange(draft, key)
+      const { [key]: _cleared, ...errors } = cur.errors
+      return { ...cur, draft, errors, formError: '' }
+    })
+  const saveEdit = async () => {
+    if (!editing || !editor) return
+    const draft = editor.normalize ? editor.normalize(editing.draft) : editing.draft
+    const others = (rows ?? []).filter((r) => dataset.idOf(r) !== editing.orig)
+    const errors = editor.validate(draft, others)
+    const count = Object.keys(errors).length
+    if (count) {
+      setEditing({ ...editing, draft, errors, formError: `Fix the highlighted ${count === 1 ? 'field' : 'fields'} to save.` })
+      return
+    }
+    try {
+      await editor.save(draft, editing.mode)
+    } catch {
+      setEditing({ ...editing, formError: `Could not save the ${noun}. Check your connection and try again.` })
+      return
+    }
+    toast(`${capNoun} ${editing.mode === 'new' ? 'created' : 'saved'}`, { description: editor.label(draft) })
+    setEditing(null)
+    setActiveId(dataset.idOf(draft))
+  }
+
+  // Editor keys: N new, E edit the active row, Ctrl/Cmd+S or +Enter save, Esc cancel.
+  // Capture phase, so Esc cancels the edit before the grid closes the drawer.
+  useEffect(() => {
+    if (!editor) return
+    const onKey = (e: KeyboardEvent) => {
+      if (editing) {
+        if ((e.metaKey || e.ctrlKey) && (e.key === 'Enter' || e.key.toLowerCase() === 's')) {
+          e.preventDefault()
+          void saveEdit()
+        } else if (e.key === 'Escape') {
+          e.preventDefault()
+          e.stopPropagation()
+          cancelEdit()
+        }
+        return
+      }
+      if (isTypingTarget(e.target) || e.metaKey || e.ctrlKey || e.altKey) return
+      const key = e.key.toLowerCase()
+      if (key === 'n') {
+        e.preventDefault()
+        startNew()
+      } else if (key === 'e' && active) {
+        e.preventDefault()
+        startEdit(active)
+      }
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  })
+
   // Page shortcuts act on the active row.
   useEffect(() => {
     if (!shortcuts.length) return
@@ -176,6 +303,11 @@ export function ListPage<T>({
   // ── row menu: standard actions + page actions, in a fixed order ─────────────
   const gridActions: GridAction<T>[] = []
   if (preview) gridActions.push({ label: 'View', icon: Eye, onSelect: (row) => setActiveId(dataset.idOf(row)) })
+  if (editor) {
+    gridActions.push({ label: 'View', icon: Eye, onSelect: (row) => { setEditing(null); setActiveId(dataset.idOf(row)) } })
+    gridActions.push({ label: 'Edit', icon: Pencil, onSelect: startEdit })
+    if (editor.duplicate) gridActions.push({ label: 'Duplicate', icon: CopyPlus, onSelect: startDuplicate })
+  }
   if (open) gridActions.push({ label: openLabel ?? `Open ${noun}`, icon: ExternalLink, onSelect: open })
   if (openInNewTab) gridActions.push({ label: 'Open in new tab', icon: ExternalLink, onSelect: openInNewTab })
   for (const a of actions) {
@@ -193,7 +325,74 @@ export function ListPage<T>({
   }
 
   let drawer: ReactNode = null
-  if (preview && active) {
+  const editRecord = editing ? editing.draft : active
+  if (editor && editRecord) {
+    const v = editor.view(editRecord)
+    const blocked = !editing && active ? (remove?.blockedReason?.(active) ?? null) : null
+    drawer = (
+      <EditableDrawer
+        ariaLabel={editing ? `${editing.mode === 'new' ? 'New' : 'Edit'} ${noun}` : `${capNoun} ${v.no}`}
+        mode={editing ? editing.mode : 'view'}
+        record={editRecord}
+        no={v.no}
+        status={v.status}
+        tags={v.tags}
+        title={v.title}
+        subtitle={v.subtitle}
+        notice={v.notice}
+        editHeading={editing?.mode === 'new' ? `New ${noun}` : `Edit ${noun}`}
+        editSubheading={editing?.mode === 'edit' ? editor.label(editRecord) : undefined}
+        fields={editor.fields(editRecord, editing?.mode ?? 'edit')}
+        facts={editing?.mode === 'new' ? undefined : v.facts}
+        errors={editing?.errors ?? {}}
+        formError={editing?.formError}
+        onChange={changeField}
+        onClose={() => {
+          setEditing(null)
+          setActiveId(null)
+        }}
+        footer={
+          editing ? (
+            <>
+              <button type="button" onClick={cancelEdit} className={drawerSecondaryButton} title="Cancel (Esc)">
+                Cancel
+              </button>
+              <button type="button" onClick={() => void saveEdit()} className={drawerPrimaryButton} title="Save (Ctrl/Cmd + S)">
+                {editing.mode === 'new' ? `Create ${noun}` : 'Save changes'}
+              </button>
+            </>
+          ) : (
+            active && (
+              <>
+                <button type="button" onClick={() => startEdit(active)} className={drawerPrimaryButton} title="Edit (E)">
+                  <Pencil className="size-[13px]" strokeWidth={2} />
+                  Edit
+                </button>
+                {editor.duplicate && (
+                  <button type="button" onClick={() => startDuplicate(active)} className={drawerSecondaryButton}>
+                    <CopyPlus className="size-[13px]" strokeWidth={2} />
+                    Duplicate
+                  </button>
+                )}
+                {remove && (
+                  <button
+                    type="button"
+                    onClick={() => setDeleting(active)}
+                    disabled={!!blocked}
+                    title={blocked ?? `Delete ${noun}`}
+                    aria-label={`Delete ${noun}`}
+                    className={drawerDangerIconButton}
+                  >
+                    <Trash2 className="size-[14px]" strokeWidth={2} />
+                  </button>
+                )}
+              </>
+            )
+          )
+        }
+      />
+    )
+  } else if (preview && active) {
     const blocked = remove?.blockedReason?.(active) ?? null
     drawer = (
       <RecordDrawer
@@ -238,8 +437,8 @@ export function ListPage<T>({
       <TopBar
         count={rows?.length}
         countTitle={rows ? `${rows.length} ${rows.length === 1 ? noun : dataset.nounPlural}` : undefined}
-        newLabel={create?.label}
-        onNew={create?.run}
+        newLabel={create?.label ?? (editor ? `New ${noun}` : undefined)}
+        onNew={create?.run ?? (editor ? startNew : undefined)}
       />
       <DataGrid
         key={gridKey}
@@ -249,8 +448,12 @@ export function ListPage<T>({
         error={error}
         onRefresh={onRefresh}
         activeId={activeId}
-        onActiveChange={setActiveId}
-        onOpen={open ?? ((row) => setActiveId(dataset.idOf(row)))}
+        onActiveChange={(id) => {
+          // Picking another row abandons an unsaved edit, as in the prototype.
+          setEditing(null)
+          setActiveId(id)
+        }}
+        onOpen={open ?? (editor ? startEdit : (row) => setActiveId(dataset.idOf(row)))}
         actions={gridActions}
         drawer={drawer}
         emptyText={emptyText}
