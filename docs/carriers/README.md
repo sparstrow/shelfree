@@ -8,7 +8,7 @@ method is *Carrier* (or *Own vehicle*) on vendor cards (task 6), purchase orders
 receipts (step 2). It carries the GST treatment of its freight (reverse vs forward charge)
 and a tracking-link template so AWB / LR numbers become clickable.
 Third page on the reference-dataset registry (`carrReg()` in
-`designs/erp/Shelfree App.dc.html`). Sits under Purchasing, in the setup block below the
+`prototype/designs/erp/Shelfree App.dc.html`). Sits under Purchasing, in the setup block below the
 rule; Sales gets the same list when sales shipping lands (step 5). Tier: parked (POC) —
 ungated. Future-pass hint: Starter base; carrier performance analytics → Growth.
 
@@ -40,7 +40,7 @@ ungated. Future-pass hint: Starter base; carrier performance analytics → Growt
 - `contactId` links to People ▸ Contacts (2026-09-24) — replaces the old inline `contact` /
   `phone` text. Legacy stored carriers are migrated on load (matched by name, or a contact is
   created). The person's phone/email are **personal data** owned by the contact record.
-- Seed (`lib/shelfree-data.js → seedCarriers()`): **STC** ST Courier · **PCL** Professional
+- Seed (`prototype/lib/shelfree-data.js → seedCarriers()`): **STC** ST Courier · **PCL** Professional
   Couriers · **DTDC** DTDC Express (couriers) · **ART** Arunachala Road Transport (GTA,
   reverse charge, Tiruvannamalai–Chennai lorry, no link) · **SRL** Sri Ramana Logistics (GTA,
   forward charge) · **OWN** Kanalora van (own vehicle).

@@ -37,7 +37,7 @@ registration ids (`REG-TN`), vendor document numbers, GST invoice-number prefixe
 - Numbers are never reused, even after a record is deleted.
 
 ## Persistence
-- **Migration (2026-10-24)** — `migrateNoFormat()` in `lib/shelfree-data.js`, run once on
+- **Migration (2026-10-24)** — `migrateNoFormat()` in `prototype/lib/shelfree-data.js`, run once on
   app load (flag `shelfree.noFormat.v2`). Rewrites every `PREFIX-n` in all
   `shelfree.*` localStorage stores. Series that stepped by 10 or had gaps
   (V, CUS, SO, INV, GRN, BOM, AO, CP) are renumbered 1, 2, 3… in their original

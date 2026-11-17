@@ -25,13 +25,13 @@ behavior, data-model, or screen change (see root `CLAUDE.md`).
   no hyphen, steps of 1; plus the 2026-10-24 stored-data migration.
 
 - [`notes/`](notes/README.md) — **Notes**, the app-wide append-only notes log
-  (also part of `Shelfree App.dc.html`, plus `designs/erp/SFNotesBlock.dc.html`):
+  (also part of `Shelfree App.dc.html`, plus `prototype/designs/erp/SFNotesBlock.dc.html`):
   a multi-author notes thread on every record (PO, receipt, BOM, assembly order,
   item, vendor, customer) and a top-level **Notes** page listing every note by
   reference. Notes can never be edited or deleted — only marked invalid, with a
   permanent reason. Ungated Starter base.
 
-- [`erp-app/`](erp-app/README.md) — the flagship ERP shell (`designs/erp/Shelfree App.dc.html`):
+- [`erp-app/`](erp-app/README.md) — the flagship ERP shell (`prototype/designs/erp/Shelfree App.dc.html`):
   app chrome, module/page navigation, the three-tier record-navigation pattern,
   Items/Customers/Vendors table pages, People (Users & Employees), Settings
   (Units of measure, Item categories), and the Vendor Purchase Items screen.
@@ -118,6 +118,6 @@ behavior, data-model, or screen change (see root `CLAUDE.md`).
   the My-settings and Configuration surfaces and the Favorites keyboard
   shortcuts. Ungated Starter base.
 - [`locations-warehouses/`](locations-warehouses/README.md) — Locations &
-  warehouses settings page (`designs/erp/SFLocationsWarehouses.dc.html`): site
+  warehouses settings page (`prototype/designs/erp/SFLocationsWarehouses.dc.html`): site
   list, 2D/3D structure designer, zones/aisles/bins. A separate Design
   Component, mounted into `Shelfree App.dc.html`'s Settings via `<dc-import>`.

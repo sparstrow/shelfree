@@ -1,4 +1,4 @@
-# Sales pricing — `designs/erp/Shelfree App.dc.html`
+# Sales pricing — `prototype/designs/erp/Shelfree App.dc.html`
 
 Sales ▸ **Sales Prices** page, Settings ▸ Configuration ▸ **Sales pricing**, and
 the Pricing block on the Customer drawer.
@@ -94,7 +94,7 @@ filtered to that customer. The drawer also gained a **Customer since** fact.
 - `item.price` — list price (existing field, unchanged).
 - `customer.createdAt` (**new**, ISO date) — drives *new customers only*.
 - `customer.pricingEligible` (**new**, boolean) — drives *selected customers*.
-- `customerPrices[]` (**new**, `lib/shelfree-data.js` → `seedCustomerPrices()`):
+- `customerPrices[]` (**new**, `prototype/lib/shelfree-data.js` → `seedCustomerPrices()`):
 
   | field | meaning |
   | --- | --- |

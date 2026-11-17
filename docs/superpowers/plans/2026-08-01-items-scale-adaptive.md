@@ -1,7 +1,7 @@
 # Plan — Items page scale-adaptive wiring
 
 **Spec:** `docs/superpowers/specs/2026-08-01-items-scale-adaptive.md` (approved)
-**Targets:** `designs/erp/Shelfree App.dc.html` (logic + template), `lib/shelfree-data.js` (new item fields), `docs/`
+**Targets:** `prototype/designs/erp/Shelfree App.dc.html` (logic + template), `prototype/lib/shelfree-data.js` (new item fields), `docs/`
 
 ## Tasks
 
@@ -16,7 +16,7 @@
    `locationOptions: ['BLR-Main',…]` in My settings (default is `TVM-Main`).
    Kanalora sites: Main · Assembly · Chennai DC · Returns.
 
-3. **Data model** — `lib/shelfree-data.js`: `tracksLot` / `tracksExpiry` /
+3. **Data model** — `prototype/lib/shelfree-data.js`: `tracksLot` / `tracksExpiry` /
    `tracksSerial` / `barcode` on every seed item (rule-based: ceramics + cones
    are lot-tracked, cones/raw resin carry expiry, sellable SKUs get a GS1-IN
    `890…` barcode); `createItem()` defaults all four off for new items.

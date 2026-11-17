@@ -5,7 +5,7 @@ The business's own GSTINs, **one per state it operates in**. Replaces the single
 Business profile. Each registration files its own returns, keeps its own tax credit and numbers its
 own invoices. Documents will pick the registration from the location (ship-to on purchase, ship-from on
 sales, task 6), so users never choose it by hand. Spec `docs/superpowers/specs/2026-09-25-tax-codes-gst.md`
-§2.3; plan task 3. Code: `designs/erp/Shelfree App.dc.html` → `gstRegs()`, `rg*` methods, `rgVM()`.
+§2.3; plan task 3. Code: `prototype/designs/erp/Shelfree App.dc.html` → `gstRegs()`, `rg*` methods, `rgVM()`.
 Tier: parked (POC). Future-pass hint: single registration = Starter; multiple / casual = Growth.
 
 ## Screens & states

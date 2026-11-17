@@ -37,7 +37,7 @@ retention/export of the full notes log, not the ability to write notes.
 
 ## Screens & states
 
-### Record notes block (`designs/erp/SFNotesBlock.dc.html`)
+### Record notes block (`prototype/designs/erp/SFNotesBlock.dc.html`)
 A shared Design Component mounted via `<dc-import name="SFNotesBlock" nb="…">`;
 the parent app supplies the whole view-model from `notesVM(type, no, opts)`.
 
@@ -98,7 +98,7 @@ audit view; hiding them per-record is only to declutter the working document.
 ## Data model
 
 One global collection, `state.notes` (seeded by `seedNotes()` in
-`lib/shelfree-data.js`), **not** arrays embedded on each record — the Notes page
+`prototype/lib/shelfree-data.js`), **not** arrays embedded on each record — the Notes page
 must list everything without scanning every dataset, and new entity types then
 cost nothing.
 

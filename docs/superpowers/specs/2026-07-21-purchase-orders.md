@@ -68,7 +68,7 @@ field/action is always-on; tier assignment happens later during scale-up.
 
 ## Data model
 
-New entity **PurchaseOrder** (seeded in `lib/shelfree-data.js`, persisted under
+New entity **PurchaseOrder** (seeded in `prototype/lib/shelfree-data.js`, persisted under
 `shelfree.po.v1`):
 
 ```

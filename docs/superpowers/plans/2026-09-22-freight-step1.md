@@ -28,7 +28,7 @@ fraction of the code, and a clean pattern for later master lists.
 | 9 | Shortcuts page, docs, security checklist sweep | all | rolling (each task) |
 
 ## Per-task definition of done
-- Seed data in `lib/shelfree-data.js`; persistence key noted in the page doc.
+- Seed data in `prototype/lib/shelfree-data.js`; persistence key noted in the page doc.
 - Grid: views, filters, search, column picker, export, right-click, keyboard (↑↓, Enter, N, E, Space, Ctrl/Cmd+A/C).
 - Drawer: view + edit + create + validation + empty/locked states; hover + motion on every control.
 - Shortcuts added to `shortcutGroups()` the same turn.

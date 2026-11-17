@@ -1,4 +1,4 @@
-# Purchase Lines — `designs/erp/Shelfree App.dc.html`
+# Purchase Lines — `prototype/designs/erp/Shelfree App.dc.html`
 
 Tier: **Starter base — ungated, always-on.**
 Spec: [`../superpowers/specs/2026-09-20-purchase-lines.md`](../superpowers/specs/2026-09-20-purchase-lines.md)
@@ -86,3 +86,13 @@ None — always recomputed from `purchaseOrders` (`shelfree.po.v2`).
   on final POs are skipped; a qty below the received qty is skipped. Draft POs re-price the line via quantity
   tiers; issued POs keep the agreed unit cost. Persists to `shelfree.po.v2`.
 - Backend: `PATCH /purchase-orders/lines:bulk` with per-line lock + received-qty validation; audit per PO.
+
+## React app (2026-11-16)
+
+Ported to `apps/web`: `/purchasing/purchase-lines`, `?item=RM-LID-PWH` opens it
+filtered to one item. Rows are derived by `domain/purchase-lines.ts`
+(`purchaseLineRows`) from orders, posted receipts and the price list — still
+never stored. Read-only: the row menu offers *Open purchase order* and *View
+order in list*; double-click / Enter opens the order. Backend: a read-only
+`GET /purchase-lines?item=&po=&status=` view over `purchase_order_lines`.
+Tests: `apps/web/e2e/purchase-lines.spec.ts`.

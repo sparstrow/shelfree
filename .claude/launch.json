@@ -2,7 +2,13 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "shelfree",
+      "name": "web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "web", "dev"],
+      "port": 5174
+    },
+    {
+      "name": "prototype",
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "5173", "--bind", "127.0.0.1"],
       "port": 5173

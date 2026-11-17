@@ -1,11 +1,11 @@
-# Locations & warehouses — `designs/erp/SFLocationsWarehouses.dc.html`
+# Locations & warehouses — `prototype/designs/erp/SFLocationsWarehouses.dc.html`
 
 ## Overview
 
 Settings sub-page for managing the physical sites that hold stock, plus a
 visual 2D/3D "Structure Designer" for mapping each site's internal layout
 (zones → aisles/rows → bays/levels → bins). Reached from Settings ▸ Inventory ▸
-**Locations & warehouses** in `designs/erp/Shelfree App.dc.html`.
+**Locations & warehouses** in `prototype/designs/erp/Shelfree App.dc.html`.
 
 Implemented as its **own Design Component**, not inlined into the app shell's
 Component class: the shell mounts it with
@@ -18,7 +18,7 @@ directly as its own page for design-system review; a `unitSystem`
 
 Note for future edits: `<dc-import>` resolves sibling DCs by filename **in the
 same directory** as the importing file, so this file must stay a direct
-sibling of `Shelfree App.dc.html` in `designs/erp/` — it cannot move into a
+sibling of `Shelfree App.dc.html` in `prototype/designs/erp/` — it cannot move into a
 subfolder without breaking the import.
 
 ## Screens & states
@@ -102,7 +102,7 @@ All in component state, persisted as a whole (see Persistence):
   40,000 sq ft DC.
 - **SKU catalog** (`skus()`, fixed): 8 sample items used to populate bin
   "Assigned item" pickers — real Kanalora SKUs (`ASH-*`, `CMB-*`, `SBC-*`,
-  `ASH-STAND-WD`, `PKG-FOAM-INS`) copied from `lib/shelfree-data.js`, but
+  `ASH-STAND-WD`, `PKG-FOAM-INS`) copied from `prototype/lib/shelfree-data.js`, but
   still a local stand-in: this screen is not wired to the app's item master.
 
 ## Interactions & business rules
@@ -143,7 +143,7 @@ and migrated (`migrate()`) from an older single-layout-per-warehouse shape if
 present.
 
 **Seed sites (Kanalora).** Codes match `siteDefs()` in
-`designs/erp/Shelfree App.dc.html` so the settings page and the item stock
+`prototype/designs/erp/Shelfree App.dc.html` so the settings page and the item stock
 buckets speak the same language:
 
 | Code | Site | Type | Status | Layout |
@@ -175,7 +175,7 @@ the list view.
   area types.
 - The bin "assigned item" picker currently points at the 8-item local `skus()`
   stand-in, not the real item master used elsewhere in the app
-  (`lib/shelfree-data.js`) — wire it to the same item source before treating
+  (`prototype/lib/shelfree-data.js`) — wire it to the same item source before treating
   qty-on-hand here as authoritative; today it does not affect any other
   screen's stock figures.
 - No optimistic-locking/concurrency story: two users editing the same
@@ -200,8 +200,8 @@ the list view.
 
 ### What changed
 - **This page is the only source of locations.** The ERP app's hard-coded `siteDefs()` list is retired;
-  `locDefs()` in `designs/erp/Shelfree App.dc.html` reads the same store (`shelfree.wh.v7`, seed
-  `lib/shelfree-data.js → seedWarehouses()`). GST registrations, States & territories, item stock (drawer,
+  `locDefs()` in `prototype/designs/erp/Shelfree App.dc.html` reads the same store (`shelfree.wh.v7`, seed
+  `prototype/lib/shelfree-data.js → seedWarehouses()`). GST registrations, States & territories, item stock (drawer,
   item page, grid Location column + filter, location scope chip), receipt "Received into", PO receiving
   location, assembly-order location, production settings and My settings › Default location all read it.
 - **`TVM-RET` retired.** Returns are the `RET` area inside TVM-MAIN. Item stock is keyed by location id:

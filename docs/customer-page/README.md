@@ -1,4 +1,4 @@
-# Customer profile page — `designs/erp/Shelfree App.dc.html`
+# Customer profile page — `prototype/designs/erp/Shelfree App.dc.html`
 
 In-app full-page screen inside the ERP shell (not a separate file). Tier-3 surface
 of the customer record funnel: **Customers grid → drawer (quick peek) → full-page
@@ -75,7 +75,7 @@ at the account, and credit risk.
 
 ## Data model
 
-New fields on the **Customer** record (`lib/shelfree-data.js` → `seedCustomers()`):
+New fields on the **Customer** record (`prototype/lib/shelfree-data.js` → `seedCustomers()`):
 
 | Field | Shape | Notes |
 |---|---|---|

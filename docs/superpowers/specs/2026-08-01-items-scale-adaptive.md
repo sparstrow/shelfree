@@ -107,7 +107,7 @@ Deltas from the spec, all deliberate:
   those kinds render their empty state pointing at Receipts rather than
   inventing stock history — same reason the `zones` breakdown currently shows
   one `Unassigned · no bin` row per site.
-- **Seed data now carries the new fields** (`lib/shelfree-data.js`): ceramics and
+- **Seed data now carries the new fields** (`prototype/lib/shelfree-data.js`): ceramics and
   cones lot-tracked, cones/raw resin expiry-tracked, sellable SKUs given GS1-IN
   `890…` barcodes, nothing serialised — so each axis has something to show.
 - **`trackingPatch()` guards writes**: a flag whose axis is off is never written,

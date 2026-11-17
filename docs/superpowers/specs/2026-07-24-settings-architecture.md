@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-24
 **Status:** Approved (2026-07-24) · **Shipped** 2026-07-24 — built in
-`designs/erp/Shelfree App.dc.html`; see `docs/settings/README.md`.
+`prototype/designs/erp/Shelfree App.dc.html`; see `docs/settings/README.md`.
 **Topic:** How Shelfree organizes settings into four types, who can edit each, and how they map to plan tiers
 **Related:** `docs/superpowers/specs/2026-07-21-scale-adaptive-product-model.md` (plan tiers, scale axes, gate UX), `docs/erp-app/README.md` (existing gear settings)
 

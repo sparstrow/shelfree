@@ -46,7 +46,7 @@ note = {
 }
 ```
 
-Stored as `state.notes: []` (seed data in `lib/shelfree-data.js`). Migration:
+Stored as `state.notes: []` (seed data in `prototype/lib/shelfree-data.js`). Migration:
 existing free-text `notes` strings on PO/PR/BOM/AO seed records become one
 initial note each (authored by the record's creator, `createdAt` = record's
 creation date), then the string field is dropped from those records. Existing

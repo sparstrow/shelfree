@@ -1,7 +1,7 @@
 # Purchase Receipts — goods-in against a purchase order
 
 Status: built (prototype). Ungated — tiers are parked (see root `CLAUDE.md`).
-Lives in `designs/erp/Shelfree App.dc.html` (app shell).
+Lives in `prototype/designs/erp/Shelfree App.dc.html` (app shell).
 Sits in **Purchasing**, directly after Purchase Orders. There is deliberately no
 "Warehouse Receipts" / "Warehouse Shipments" page: receiving is a *purchasing*
 event, and Kanalora has no shipping operation complex enough to justify a
@@ -65,7 +65,7 @@ order. It is the step that turns an order into stock:
 
 ## Data model
 
-New entity `PurchaseReceipt`, seeded in `lib/shelfree-data.js`
+New entity `PurchaseReceipt`, seeded in `prototype/lib/shelfree-data.js`
 (`seedPurchaseReceipts()`):
 
 ```
@@ -215,3 +215,25 @@ delete — only mark-invalid with a permanent reason). Posting a receipt does no
 close its thread: a posted receipt can still be annotated. The grid's `notes`
 column is now **Latest note**, derived from the notes collection. See
 [`../notes/README.md`](../notes/README.md).
+
+## React app (2026-11-16)
+
+Ported to `apps/web`. URLs: list `/purchasing/purchase-receipts` (`?sel=GRN00005`),
+document `/purchasing/purchase-receipts/GRN00005`, new
+`/purchasing/purchase-receipts/new?po=PO00009`.
+
+- **Files:** `features/purchasing/purchase-receipts/` (`PurchaseReceiptsPage.tsx`,
+  `dataset.ts`, `OrderPicker.tsx`, `PurchaseReceiptEditor.tsx`); rules
+  `domain/purchase-receipt.ts`; posting `data/api/commands.ts` → `postPurchaseReceipt`.
+- **Posting is one command** (future `POST /purchase-receipts/{no}/post`, one
+  transaction): validates (order set, something entered, nothing over the
+  outstanding quantity), marks the receipt Posted with `postedAt`, adds
+  accepted units to `item.locs[<warehouse id>]` for the receiving site, and
+  sets the order to Partially received / Received. Rejected units never enter stock.
+- **Decision (changed from the prototype):** a **posted receipt can't be
+  deleted** — the delete action is disabled with an explanation. This closes
+  the prototype gap where deleting a posted receipt left stock un-reversed.
+  The backend must enforce the same rule; corrections go through a vendor return.
+- **Shortcuts:** `F` fill outstanding, `O` open the order, Ctrl/Cmd+Enter post,
+  Esc leave; `R` on the Purchase Orders list starts a receipt.
+- **Tests:** `apps/web/e2e/purchase-receipts.spec.ts`.

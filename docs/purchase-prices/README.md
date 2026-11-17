@@ -1,4 +1,4 @@
-# Purchase prices — `designs/erp/Shelfree App.dc.html`
+# Purchase prices — `prototype/designs/erp/Shelfree App.dc.html`
 
 Purchasing ▸ **Purchase Prices**. Spec: [`../superpowers/specs/2026-10-17-purchase-prices.md`](../superpowers/specs/2026-10-17-purchase-prices.md) · Plan: [`../superpowers/plans/2026-10-18-purchase-prices.md`](../superpowers/plans/2026-10-18-purchase-prices.md).
 Tier: Starter base, ungated (tiers parked). Phase 1 (register page) and phase 2 (vendor page *Items supplied* + Vendor Purchase Items now read/write this store) shipped 2026-10-18. Phase 3 (PO pricing — vendor-scoped item search, locked cost + tier hint, re-price on qty/vendor/date, below-minimum / no-price line errors blocking Save & Issue, drift pill + Purchase Lines columns) shipped 2026-10-22 — see `../purchase-orders/README.md`. Phase 4 (Configuration ▸ Purchase pricing, terminology, help map, security, existing-PO wrap-up) next.
@@ -43,3 +43,12 @@ Status is derived: Scheduled (starts after today) · Expired (ended) · Expiring
 - Seed derives only from existing POs so current POs stay valid under phase-3 rules; no other prices invented.
 - Phase 3: Save draft is blocked as well as Issue when a line is unpriced or below minimum (spec D7); "Remove unpriced lines" gives a one-click way out with Undo.
 - Phase 3: opening a Draft silently re-prices it in the editor (toast reports the count); stored POs are only rewritten when saved. Bulk rewrite of stored drafts is phase 4.
+
+## React app (2026-11-16)
+
+The price **data and rules** are in `apps/web` (schema `purchasePriceSchema`,
+collection `purchasePrices` → `shelfree.v2.purchasePrices`, rules
+`domain/purchase-prices.ts`: `resolvePrice`, `activePriceRows`,
+`vendorPricedItems`). The demo price list is built from the seeded orders by
+`data/seed/purchase-prices.ts`, as the prototype did. The Purchase Prices
+**page** is not ported yet (placeholder).

@@ -1,7 +1,7 @@
 # Plan: Favorites, saved views & quick access
 
 Implements [`specs/2026-08-03-favorites-quick-access.md`](../specs/2026-08-03-favorites-quick-access.md).
-All work lands in `designs/erp/Shelfree App.dc.html` unless noted.
+All work lands in `prototype/designs/erp/Shelfree App.dc.html` unless noted.
 
 **Live anchors found during exploration (use these, don't re-search):**
 
@@ -186,7 +186,7 @@ filter input; all five appear in Settings → General → Keyboard shortcuts.
 ## Task 11 — Verify & close
 
 - `check_design_system` until clean.
-- `ready_for_verification` on `designs/erp/Shelfree App.dc.html`.
+- `ready_for_verification` on `prototype/designs/erp/Shelfree App.dc.html`.
 - Success criteria from the spec, walked manually: warehouse-lead default view,
   two users with different sidebars, live-pointer rename propagation, delete +
   undo, shortcuts catalogued.

@@ -68,6 +68,17 @@ store secrets in localStorage).
       Phone masked in grid/export; data-subject export + erasure (redact person, keep links);
       audit contact edits and every link / unlink / primary change; link endpoints verify
       both sides are in the caller's tenant.
+- [ ] **Purchasing commands are server-side transactions** (2026-11-16, React app):
+  posting a goods receipt (`POST /purchase-receipts/{no}/post`) must re-validate
+  outstanding quantities, move stock and update the PO status in one transaction,
+  write one audit event, and reject posting twice. Posted receipts can't be deleted
+  (the React UI already blocks it; the API must too). PO issue / reopen / lock /
+  cancel are audit events; line costs on drafts are re-resolved server-side from the
+  price list (never trusted from the client).
+- [ ] **Client storage holds demo data only** (React app): `shelfree.v2.*` keys in
+  localStorage contain seed/business records and UI preferences, no credentials or
+  tokens. When the backend arrives, business records leave localStorage entirely;
+  only `shelfree.v2.ui` (non-sensitive preferences) may stay.
 - [ ] Audit log itself is append-only / tamper-evident.
 - [ ] **Notes are append-only and immutable** (2026-09-20, `docs/notes/README.md`):
       `notes.text / author_id / created_at` must be write-once at the database

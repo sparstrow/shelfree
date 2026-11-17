@@ -1,4 +1,4 @@
-# Item detail page — `designs/erp/Shelfree App.dc.html`
+# Item detail page — `prototype/designs/erp/Shelfree App.dc.html`
 
 In-app full-page screen inside the ERP shell (not a separate file). It is the
 tier-3 surface of the item record-navigation funnel: **grid drawer → full-page
@@ -70,7 +70,7 @@ The item's tracking flags are edited in the Items drawer edit panel's
 ## Data model
 
 No new persisted fields. The page is a read view over the existing **Item**
-record (`lib/shelfree-data.js` → `seedItems()`): `no, desc, category, type, uom,
+record (`prototype/lib/shelfree-data.js` → `seedItems()`): `no, desc, category, type, uom,
 vendor, cost, price, lead, rp, rq, ss, costing, locs{main,assembly,east,returns},
 qtySO, qtySupply, attrs, blocked`. Derived via existing helpers: `onHand`,
 `available`, `committed`, margin, `_status`. The Purchasing tab reads
