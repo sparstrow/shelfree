@@ -51,6 +51,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { int, money } from '@/lib/format'
+import { isTypingTarget } from '@/lib/keyboard'
 import { cn } from '@/lib/utils'
 import { FilterChips } from './FilterChips'
 import {
@@ -131,12 +132,6 @@ function download(filename: string, text: string) {
   URL.revokeObjectURL(url)
 }
 
-function isTyping(target: EventTarget | null): boolean {
-  const el = target as HTMLElement | null
-  if (!el || !el.tagName) return false
-  const tag = el.tagName.toLowerCase()
-  return tag === 'input' || tag === 'textarea' || tag === 'select' || el.isContentEditable
-}
 
 let filterSeq = 0
 const nextFilterId = () => 'f' + ++filterSeq
@@ -304,7 +299,7 @@ export function DataGrid<T>({
   )
 
   const onGridKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (isTyping(e.target)) return
+    if (isTypingTarget(e.target)) return
     if (e.key === 'ArrowDown') {
       e.preventDefault()
       moveActive(1)
@@ -326,7 +321,7 @@ export function DataGrid<T>({
   // Page-level shortcuts: "/" focuses the quick search, Alt+←/→ pages.
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if (isTyping(e.target) || e.metaKey || e.ctrlKey) return
+      if (isTypingTarget(e.target) || e.metaKey || e.ctrlKey) return
       if (e.key === '/' && !e.altKey) {
         e.preventDefault()
         searchRef.current?.focus()
