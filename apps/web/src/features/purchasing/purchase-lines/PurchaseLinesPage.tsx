@@ -1,9 +1,8 @@
 import { getRouteApi, useNavigate } from '@tanstack/react-router'
-import { ExternalLink, Eye } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { TopBar } from '@/app/shell/TopBar'
-import { DataGrid, type GridAction } from '@/components/data-grid/DataGrid'
+import { Eye } from 'lucide-react'
+import { useMemo } from 'react'
 import type { Dataset } from '@/components/data-grid/model'
+import { ListPage } from '@/components/list-page/ListPage'
 import { type Employee, PO_STATUSES, type Vendor } from '@/data/schemas'
 import { useList } from '@/data/queries'
 import { type PurchaseLineRow, driftText, purchaseLineRows } from '@/domain/purchase-lines'
@@ -108,7 +107,11 @@ function purchaseLineDataset(vendors: readonly Vendor[], employees: readonly Emp
   }
 }
 
-/** Purchasing ▸ Purchase Lines — a read-only report of every order line. */
+/**
+ * Purchasing ▸ Purchase Lines — a read-only report of every order line.
+ * Exceptions to the list template: no New, no delete, no preview; a line opens
+ * its purchase order.
+ */
 export function PurchaseLinesPage() {
   const navigate = useNavigate()
   const { item } = route.useSearch()
@@ -117,7 +120,6 @@ export function PurchaseLinesPage() {
   const prices = useList('purchasePrices')
   const vendors = useList('vendors')
   const employees = useList('employees')
-  const [activeId, setActiveId] = useState<string | null>(null)
 
   const loaded = orders.data && receipts.data && prices.data
   const rows = useMemo(
@@ -129,30 +131,22 @@ export function PurchaseLinesPage() {
     [vendors.data, employees.data, rows],
   )
 
-  const openOrder = (r: PurchaseLineRow) => navigate({ to: '/purchasing/purchase-orders/$no', params: { no: r.po } })
-  const actions: GridAction<PurchaseLineRow>[] = [
-    { label: 'Open purchase order', icon: ExternalLink, onSelect: openOrder },
-    { label: 'View order in list', icon: Eye, onSelect: (r) => navigate({ to: '/purchasing/purchase-orders', search: { sel: r.po } }) },
-  ]
-
   return (
-    <>
-      <TopBar count={rows?.length} countTitle={rows ? `${rows.length} purchase lines` : undefined} />
-      <DataGrid
-        // Re-mount when opened for a specific item so the filter starts fresh.
-        key={item ?? 'all'}
-        dataset={dataset}
-        rows={rows}
-        isLoading={!rows && !orders.error}
-        error={orders.error ?? receipts.error ?? prices.error}
-        onRefresh={() => Promise.all([orders.refetch(), receipts.refetch(), prices.refetch()])}
-        activeId={activeId}
-        onActiveChange={setActiveId}
-        onOpen={openOrder}
-        actions={actions}
-        initialFilters={item ? [{ key: 'item', op: 'equals', value: item }] : undefined}
-        emptyText="No purchase order lines yet."
-      />
-    </>
+    <ListPage
+      // Re-mount when opened for a specific item so the filter starts fresh.
+      gridKey={item ?? 'all'}
+      dataset={dataset}
+      rows={rows}
+      isLoading={!rows && !orders.error}
+      error={orders.error ?? receipts.error ?? prices.error}
+      onRefresh={() => Promise.all([orders.refetch(), receipts.refetch(), prices.refetch()])}
+      recordPath={(r) => `/purchasing/purchase-orders/${r.po}`}
+      openLabel="Open purchase order"
+      actions={[
+        { label: 'View order in list', icon: Eye, run: (r) => void navigate({ to: '/purchasing/purchase-orders', search: { sel: r.po } }) },
+      ]}
+      initialFilters={item ? [{ key: 'item', op: 'equals', value: item }] : undefined}
+      emptyText="No purchase order lines yet."
+    />
   )
 }

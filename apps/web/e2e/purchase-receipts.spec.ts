@@ -13,7 +13,7 @@ test.describe('Purchase Receipts', () => {
   test('a posted receipt cannot be deleted', async ({ page }) => {
     await page.goto('/purchasing/purchase-receipts')
     await page.getByRole('row', { name: /GRN00004/ }).click()
-    await expect(page.getByRole('button', { name: 'Delete receipt' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Delete purchase receipt' })).toBeDisabled()
   })
 
   test('starts a receipt from the order picker', async ({ page }) => {

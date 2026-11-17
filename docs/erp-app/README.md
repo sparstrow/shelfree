@@ -555,3 +555,34 @@ transactional endpoint. The zod schemas are the request/response proposal.
 `domain/` rules must be re-applied server-side. UI preferences
 (`shelfree.v2.ui`) may move to a per-user preferences endpoint; nothing in
 them is sensitive.
+
+## Page templates (2026-11-17)
+
+All screens are built from three shared templates so that layout and behaviour
+change in one place. Rule and file map: root `CLAUDE.md` → "Page templates".
+
+| Template | File | Used by |
+|---|---|---|
+| List page | `apps/web/src/components/list-page/ListPage.tsx` | Purchase Orders, Purchase Receipts, Purchase Lines |
+| Document page | `apps/web/src/components/document/DocumentPage.tsx` | Purchase order, Purchase receipt |
+| Line grid (inside documents) | `apps/web/src/components/document/LineGrid.tsx` | PO lines (all features), receipt lines (quantities only) |
+| Record page (profile with tabs) | not built yet — arrives with the Vendor page | — |
+
+**List page standard behaviour:** top bar with count and New button; data grid;
+preview drawer whose footer is always *Open {record}* + page buttons + Delete;
+row menu always *View · Open · Open in new tab · page actions · Copy number ·
+Delete*; delete always asks to confirm and offers Undo; page single-key
+shortcuts act on the active row. Delete rules per page are declared with
+`blockedReason` (drafts-only orders, posted receipts blocked).
+
+**Exceptions in use today:** Purchase Lines has no New, Delete or preview and
+opens the parent order; receipt lines can't be added, removed, reordered or
+selected; receipts start New from an order picker.
+
+**Changed by the move (deliberate, for consistency):** the receipt drawer's
+delete button and the row menu now read "Delete purchase receipt" (the record
+name) like every other list; the PO drawer's Receive button and the receipt
+drawer's Order button are page actions shown in the standard footer.
+
+**Backend notes:** none — this is a frontend structure change; data, rules and
+APIs are unchanged.
