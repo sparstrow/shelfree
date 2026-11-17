@@ -8,6 +8,8 @@
  */
 import {
   accountSchema,
+  assemblyOrderSchema,
+  bomSchema,
   carrierSchema,
   chargeSchema,
   contactSchema,
@@ -110,6 +112,18 @@ export const api = {
     schema: noteSchema,
     seed: seed.seedNotes,
     idOf: (r) => r.id,
+  }),
+  boms: createCollection({
+    key: 'boms',
+    schema: bomSchema,
+    seed: seed.seedBOMs,
+    idOf: (r) => r.no,
+  }),
+  assemblyOrders: createCollection({
+    key: 'assemblyOrders',
+    schema: assemblyOrderSchema,
+    seed: seed.seedAssemblyOrders,
+    idOf: (r) => r.no,
   }),
 } as const
 

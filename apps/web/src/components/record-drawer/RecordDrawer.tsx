@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+import { AlertTriangle, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { StatusPill } from '@/components/StatusPill'
 import { cn } from '@/lib/utils'
@@ -13,6 +13,7 @@ export interface DrawerLine {
   key: string
   left: ReactNode
   right: string
+  rightTone?: 'muted'
 }
 
 export interface DrawerFact {
@@ -33,6 +34,8 @@ export interface RecordDrawerProps {
   title: string
   subtitle?: string
   stats?: DrawerStat[]
+  /** Optional warning/notice banner displayed above the lines section. */
+  notice?: ReactNode
   /** A compact read-only line list (order lines, what arrived…). */
   linesHeading?: string
   lines?: DrawerLine[]
@@ -81,6 +84,7 @@ export function RecordDrawer({
   title,
   subtitle,
   stats,
+  notice,
   linesHeading,
   lines,
   linesEmptyText = 'Nothing here yet.',
@@ -128,6 +132,22 @@ export function RecordDrawer({
           </div>
         )}
 
+        {notice && (
+          <div
+            role="status"
+            className="mx-[14px] mt-3 flex items-center gap-2 rounded-[8px] bg-warn-bg px-3 py-[9px] text-[12px] font-medium text-warn-fg"
+          >
+            {typeof notice === 'string' ? (
+              <>
+                <AlertTriangle className="size-[14px] flex-none" strokeWidth={2} aria-hidden="true" />
+                <span>{notice}</span>
+              </>
+            ) : (
+              notice
+            )}
+          </div>
+        )}
+
         {lines && (
           <div className="px-[14px] pt-[14px] pb-1">
             <div className="mb-[9px] text-[11px] font-semibold tracking-[0.05em] text-muted-foreground">{linesHeading}</div>
@@ -139,7 +159,9 @@ export function RecordDrawer({
                   className="flex justify-between gap-[10px] border-b border-dashed border-border py-[5px] text-[12.5px]"
                 >
                   <span className="min-w-0">{line.left}</span>
-                  <span className="tnum flex-none text-right font-medium">{line.right}</span>
+                  <span className={cn('tnum flex-none text-right font-medium', line.rightTone === 'muted' && 'text-muted-foreground')}>
+                    {line.right}
+                  </span>
                 </div>
               ))}
             </div>
