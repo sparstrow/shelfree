@@ -591,3 +591,5 @@ APIs are unchanged.
 **Toasts (2026-11-17, deliberate change):** shown bottom-centre instead of the
 prototype's bottom-right, because at bottom-right they covered the preview
 drawer's Save / Cancel / Edit buttons for several seconds after every save.
+
+**Shell layout (2026-11-18):** the app shell and `html`/`body` use `overflow: clip`, so focusing a field or opening a popover can never scroll the document or the shell (it used to shift the whole app by up to 80 px). The top bar is a container: below ~670 px wide the New button shows its icon only (label kept as `title` / `aria-label`) and the page search shrinks to 120 px.
