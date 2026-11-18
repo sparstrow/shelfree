@@ -204,3 +204,33 @@ only.
   threads, which land with those documents.
 - **Open:** whether invalidation should ever be reversible; whether adding a
   note should require write (not read) access.
+
+## React app (2026-11-17)
+
+Ported to `apps/web` at `/notes` (and `/notes/notes` for the sidebar module route).
+
+- **Files:** `apps/web/src/features/notes/NotesPage.tsx`,
+  `apps/web/src/features/notes/dataset.ts`, `apps/web/src/routes/notes/index.tsx`,
+  `apps/web/src/routes/notes/notes.tsx`, `apps/web/src/domain/status.ts` (`Valid` / `Invalid` tones),
+  plus optional `pageLabel` prop on `apps/web/src/components/list-page/ListPage.tsx`.
+  Reuses `noteInitials` and `noteWhen` from `apps/web/src/domain/notes.ts`.
+- **URL:** `/notes` (and `/notes/notes`), with optional `?sel=`, `?type=`, `?entity=`, `?status=`.
+- **Same as prototype:** lists every note in the workspace sorted newest-first (`createdAt` desc);
+  columns Reference (`entityNo`, mono, frozen), Record (`entityType` label), Note (`text`),
+  Added by (`authorName`), Date & time (`noteWhen`), and Status (`Valid` / `Invalid` pill), with
+  hidden Invalidation reason and Note ID columns; views (`All notes`, `Valid notes`, `Invalid notes`),
+  filters by Record type, Reference, Added by, Status, Note, and Date & time, plus quick search;
+  append-only (no create, edit, or delete); double-clicking, pressing Enter, or clicking *Open record*
+  navigates to the linked record (`/purchasing/purchase-orders/$no`, `/purchasing/purchase-receipts/$no`,
+  `/purchasing/vendors/$no`, `/warehouse/items/$no`, `/production/bills-of-materials/$no`,
+  `/production/assembly-orders/$no`, `/sales/customers/$no`).
+- **Deliberate changes:** uses the shared `ListPage` + `DataGrid` template (toolbar views, `Add filter`
+  chips, quick search, CSV export, and a preview drawer displaying the full note text and invalidation
+  reason) instead of the prototype's custom chip bar and table.
+- **Persistence:** `shelfree.v2.notes` (read-only here; notes are added and marked invalid from record
+  threads via `NotesBlock`).
+- **Backend rules:** `GET /notes` must be tenant-scoped and filtered server-side by the caller's
+  module read permissions (`perms`), with server-side filtering and pagination; notes remain append-only
+  (`POST /notes`, `POST /notes/:id/invalidate`, no `DELETE`); treat free text as potential PII for
+  export/redaction.
+- **Tests:** `apps/web/e2e/notes-departments-vpi.spec.ts`.
