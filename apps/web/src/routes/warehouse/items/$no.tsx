@@ -1,12 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { z } from 'zod'
 import { PlaceholderPage } from '@/app/shell/PlaceholderPage'
+import { ItemProfilePage } from '@/features/warehouse/items/ItemProfilePage'
 
-/** Item profile placeholder — the full item page is a later task. */
+/** Item profile. `$no` is an item number; `?tab=` is the open tab. */
 export const Route = createFileRoute('/warehouse/items/$no')({
-  component: ItemProfilePlaceholder,
+  validateSearch: z.object({
+    tab: z.string().optional(),
+  }),
+  component: ItemProfileRoute,
 })
 
-function ItemProfilePlaceholder() {
+function ItemProfileRoute() {
   const { no } = Route.useParams()
-  return <PlaceholderPage title={`Item ${no}`} kind="pending" />
+  // Full-page item creation is a later task: `new` keeps the placeholder.
+  if (no === 'new') return <PlaceholderPage title="New item" kind="pending" />
+  return <ItemProfilePage no={no} />
 }

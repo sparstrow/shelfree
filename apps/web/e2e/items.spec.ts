@@ -93,6 +93,8 @@ test.describe('Items list', () => {
   test('opens item route on row double-click', async ({ page }) => {
     await page.getByRole('row', { name: /ASH-TER-18/ }).dblclick()
     await expect(page).toHaveURL(/\/warehouse\/items\/ASH-TER-18$/)
-    await expect(page.getByText('Item ASH-TER-18')).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Arunachala Mountain Sambrani Holder, Terracotta', level: 1 }),
+    ).toBeVisible()
   })
 })
