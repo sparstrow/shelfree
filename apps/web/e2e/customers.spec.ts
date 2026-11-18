@@ -44,7 +44,7 @@ test.describe('Customers list', () => {
   test('opens customer profile route on row double-click', async ({ page }) => {
     await page.getByRole('row', { name: /CUS00002/ }).dblclick()
     await expect(page).toHaveURL(/\/sales\/customers\/CUS00002$/)
-    await expect(page.getByText('Customer CUS00002')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Girivalam Path Handicrafts', level: 1 })).toBeVisible()
   })
 })
 

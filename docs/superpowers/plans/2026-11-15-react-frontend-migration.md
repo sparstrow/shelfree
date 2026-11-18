@@ -63,7 +63,8 @@ same turn a page is ported.**
 | Purchasing ▸ Purchase Lines | ported |
 | Purchasing ▸ Vendors (list) | ported |
 | Purchasing ▸ Vendor profile | Overview ported on the Record page template; other tabs pending |
-| Sales ▸ Customers (list) | ported (profile pending) |
+| Sales ▸ Customers (list) | ported |
+| Sales ▸ Customer profile | 8 tabs ported on the Record page template (Overview, Billing & address, Order history, Statement & aging, Shipping addresses, Notes & activity, Documents, Credit & risk); Sales prices & Contacts pending |
 | Purchasing ▸ Charges | ported |
 | Finance ▸ Chart of Accounts | ported |
 | People ▸ Contacts | ported |
