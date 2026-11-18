@@ -126,3 +126,37 @@ build `docs/tax-settings/README.md` → "Quiet help").
   Keyboard shortcuts → "Settings › Units of measure".
 - **Backend:** none — copy is static UI text. `showSetHelp` is part of the per-user settings record
   (`shelfree.settings.user.v1` → user-preferences table). Security checklist: no new data, PII or audit events.
+
+## React app (2026-11-17) — Settings ▸ Configuration ▸ Units of measure
+
+Route `/settings/uom` (`features/settings/units-of-measure/`), on the Settings template
+(`docs/settings` → "React app"). Rules are pure functions in `src/domain/units-of-measure.ts` (Vitest).
+
+- **Screen:** title with count pill, category chips (All + six), search, one table — Code, Name, Category,
+  GST UQC, Conversion, Symbol, Source (Default with a lock / Custom). ⓘ on Category, GST UQC, Conversion,
+  Source and the title. "New unit" opens a form (Code, Name, Category, GST UQC code, Conversion factor with the
+  base unit beside it, Symbol, live "Stored conversion: 1 X = n BASE"). Delete asks first and the toast has
+  **Undo**. Loading skeleton / error with retry / "No units match."
+- **Data:** the 34 default units are code (`DEFAULT_UNITS`), locked, GST-ready. Units the business adds are the
+  `unitsOfMeasure` collection (`uomSchema`: `code, name, cat, uqc, conv, sym, custom: true`), seeded with
+  Kanalora's PNL (Panel) and RFT (Running Feet), `localStorage` `shelfree.v2.unitsOfMeasure`.
+- **Rules:** code required, letters and numbers, up to 8, unique across defaults and custom (case-insensitive,
+  stored upper-case); name required; factor blank (standalone) or a number above zero; symbol up to 6.
+  Changing the category resets the UQC to that category's suggestion. Default units cannot be edited or
+  deleted. **A unit an item uses cannot be deleted** (the message says how many items) **and its code is
+  fixed** (items refer to units by code). Editing a code on an unused unit removes the old record and saves
+  the new one.
+- **Keys:** N new, `/` search, ↑ / ↓ move, E / Enter / double-click edit, Delete delete, right-click row menu
+  (Edit, Delete — disabled with the reason as tooltip), Ctrl/Cmd+Enter or Ctrl/Cmd+S saves the form, Esc closes
+  an open description, then the form. Listed in Settings ▸ Keyboard shortcuts.
+- **Settings surfaces:** this page *is* the configuration surface for units; workspace/terminology/user-level:
+  none needed yet (no per-user preference; unit names are data, not labels).
+- **Backend:** `GET/POST /units-of-measure`, `PATCH/DELETE /units-of-measure/{code}`; entity
+  `uom(code PK, name, measurement_category, uqc, fixed_factor, symbol, is_system, tenant_id)` (the frontend keeps
+  the text form `1 PNL = 12 NOS` for parity — the real API should store `fixed_factor` as a number). Enforce
+  server-side: defaults immutable; `DELETE` refused with 409 while any item or document line references the unit
+  (deactivate instead); `code` immutable once referenced; `uqc` ∈ the GST UQC list; audit events for create /
+  update / delete (actor, old → new). Admin-only. Security checklist: no PII, tenant-scoped master data.
+- **Deliberate difference from the prototype:** the unit form is a dialog on a plain table, not the data grid
+  (the settings frame already provides the header); delete is blocked for in-use units, which the prototype did
+  not check.
