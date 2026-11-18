@@ -17,6 +17,7 @@ import {
   customerSchema,
   employeeSchema,
   itemSchema,
+  itemUnitSetSchema,
   noteSchema,
   purchaseOrderSchema,
   purchasePriceSchema,
@@ -28,6 +29,7 @@ import {
   vendorSchema,
   warehouseSchema,
 } from '@/data/schemas'
+import { seedItemUnits } from '@/data/seed/item-units'
 import { seedPurchasePrices } from '@/data/seed/purchase-prices'
 import { seedUnitsOfMeasure } from '@/data/seed/units-of-measure'
 import * as seed from '@/data/seed/seed-data.js'
@@ -153,6 +155,12 @@ export const api = {
     schema: uomSchema,
     seed: seedUnitsOfMeasure,
     idOf: (r) => r.code,
+  }),
+  itemUnits: createCollection({
+    key: 'itemUnits',
+    schema: itemUnitSetSchema,
+    seed: seedItemUnits,
+    idOf: (r) => r.itemNo,
   }),
 } as const
 

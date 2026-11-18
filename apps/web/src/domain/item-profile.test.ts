@@ -183,6 +183,7 @@ describe('per-item units of measure and auto master pack', () => {
   it('handles metric fixed pairs and base promotion on removal', () => {
     let state = addItemUom(defaultItemUomState('KGS'), 'GMS')
     let summary = buildItemUomSummary(state)
+    expect(summary.pack).toBe('')
     expect(summary.rows.find((r) => r.code === 'GMS')).toMatchObject({
       isFixed: true,
       qtyInBase: 0.001,

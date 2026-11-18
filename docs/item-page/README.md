@@ -175,7 +175,8 @@ Item profile `/warehouse/items/$no`
   `features/warehouse/items/ItemCard.tsx`; routes
   `routes/warehouse/items/index.tsx`, `$no.tsx` + `$no_.edit.tsx`; rules
   `domain/item.ts` + `item.test.ts`, `domain/item-profile.ts` +
-  `item-profile.test.ts`, `domain/item-card.ts` + `item-card.test.ts`; shared
+  `item-profile.test.ts`, `domain/item-card.ts` + `item-card.test.ts`,
+  `domain/units-of-measure.ts` + `units-of-measure.test.ts`; shared
   template additions `rowFlag` on `components/data-grid/model.ts` +
   `DataGrid.tsx`, `beforeFacts` on `components/record-drawer/RecordDrawer.tsx`,
   and optional `onEdit` on `components/record-page/RecordPage.tsx`.
@@ -198,8 +199,11 @@ Item profile `/warehouse/items/$no`
     (active components linking to component items and BOM `/production/bills-of-materials/<no>`,
     rolled-up cost & cost delta, versions list, where-used table, and assembly
     orders linking to `/production/assembly-orders/<no>`); **Units of measure**
-    (base UoM selector, auto-derived master pack, fixed/manual conversions, inline
-    unit picker & removal); **Notes** (`NotesBlock` for `entityType: 'item'`).
+    (persisted in `shelfree.v2.itemUnits`, reading global defaults + custom units from
+    `shelfree.v2.unitsOfMeasure`: base UoM selector synced with `item.uom`, auto-derived
+    master pack, fixed/manual conversions, inline unit picker & removal with undo, and
+    explanatory copy moved behind ⓘ via `HelpTarget` per Quiet pages); **Notes**
+    (`NotesBlock` for `entityType: 'item'`).
   - *Item card:* `DocumentPage` full-page layout with sections in prototype order
     (**IDENTIFICATION**: Item no. locked on edit + *Use next in sequence* via
     `itemNextNo`, Description, Category, Item type `Inventory`/`Non-inventory`/`Service`,
@@ -237,16 +241,22 @@ Item profile `/warehouse/items/$no`
   - *Edit handoff:* no in-place edit on the profile — clicking *Edit* or pressing
     `E` invokes optional `RecordPageProps.onEdit` to open the full-page Item card at
     `/warehouse/items/$no/edit`.
-  - *Duplicate / Units persistence:* header *Duplicate* is not wired yet; *Delete* uses
-    `itemDeleteBlockedReason` and `ConfirmDialog`. Per-item *Units of measure* state
-    initializes from `item.uom` in component state until `shelfree.v2.itemUom` /
-    Settings UoM stores are migrated (changes in that tab do not persist across reload yet).
+  - *Duplicate:* header *Duplicate* is not wired yet; *Delete* uses
+    `itemDeleteBlockedReason` and `ConfirmDialog`.
+  - *Units persistence:* the Units of measure tab reads and writes the item's stored
+    unit set (`shelfree.v2.itemUnits`); `syncItemBaseUnit` / `saveItemWithUnits` keep
+    `item.uom` equal to the set's base.
+  - *Units tab quiet help (2026-11-18):* inline explanatory text on the Units of measure
+    tab (base unit note, master-pack hint, empty-state explainer, conversion footnote)
+    now lives behind ⓘ (`components/help/HelpTarget`), leaving only state and validation
+    text inline.
   - *List minor gaps:* *Unit price / Unit cost* omit footer averages (`GridColumn.agg`
     supports `'sum' | null` only); *Base UoM* reads `item.uom` and *Master Pack UoM*
     shows `—` in the list grid; *Category* hierarchy uses a default parent table in
     `domain/item.ts`; *STOCK BY LOCATION* renders through `RecordDrawerProps.beforeFacts`;
     Actions-menu shortcuts for unported pages are omitted.
 - **Persistence (`localStorage` today):** collections `shelfree.v2.items`,
+  `shelfree.v2.itemUnits`, `shelfree.v2.unitsOfMeasure`,
   `shelfree.v2.warehouses`, `shelfree.v2.vendors`, `shelfree.v2.purchaseOrders`,
   `shelfree.v2.purchaseReceipts`, `shelfree.v2.boms`, `shelfree.v2.assemblyOrders`,
   `shelfree.v2.notes`; grid column widths / UI state in `shelfree.v2.ui`.
@@ -261,7 +271,8 @@ Item profile `/warehouse/items/$no`
   audit event; axis-off tracking fields (`tracksLot`, `tracksExpiry`,
   `tracksSerial`, `barcode`) are soft-hidden only and preserved/validated on write per
   `docs/security/README.md`; per-item UoM conversions (`qty_in_base > 0`, one
-  base in list) and Master pack derivation belong server-side.
+  base in list, `base = items.uom`) and Master pack derivation belong server-side
+  in `item_units(item_no, unit_code, role, qty_in_base)` (see `docs/units-of-measure/README.md`).
 - **Tests:** `apps/web/src/domain/item.test.ts` + `item-profile.test.ts` +
-  `item-card.test.ts` (unit), `apps/web/e2e/items.spec.ts` + `item-profile.spec.ts` +
-  `item-card.spec.ts` (Playwright).
+  `item-card.test.ts` + `units-of-measure.test.ts` (unit), `apps/web/e2e/items.spec.ts` +
+  `item-profile.spec.ts` + `item-card.spec.ts` + `item-units.spec.ts` (Playwright).

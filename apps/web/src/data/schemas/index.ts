@@ -583,3 +583,14 @@ export const uomSchema = z.object({
   custom: z.literal(true),
 })
 export type CustomUom = z.infer<typeof uomSchema>
+
+// ── Warehouse ▸ Units of Measure (per-item unit sets) ────────────────────────
+/** Per-item unit set: attached unit codes, base unit, auto-derived master pack, and manual conversions. */
+export const itemUnitSetSchema = z.object({
+  itemNo: z.string(),
+  list: z.array(z.string()),
+  base: z.string(),
+  pack: z.string(),
+  qty: z.record(z.string(), z.number()),
+})
+export type ItemUnitSet = z.infer<typeof itemUnitSetSchema>

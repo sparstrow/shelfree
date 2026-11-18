@@ -17,13 +17,15 @@ import { EM_DASH, int, money, pct } from '@/lib/format'
 export interface ItemLookups {
   items: readonly Item[]
   warehouses: readonly Warehouse[]
+  /** Master pack unit of an item (from its stored unit set); blank when it has none. */
+  masterPackOf?: (itemNo: string) => string
 }
 
 /**
  * Warehouse ▸ Items grid definition (columns, default visibility, widths,
  * views, filters, search and low-stock row flag).
  */
-export function itemDataset({ items, warehouses }: ItemLookups): Dataset<Item> {
+export function itemDataset({ items, warehouses, masterPackOf = () => '' }: ItemLookups): Dataset<Item> {
   const categories = [...new Set(items.map((it) => itemCategoryParent(it.category)).filter(Boolean))].sort()
   const subCategories = [...new Set(items.map((it) => itemCategorySub(it.category)).filter(Boolean))].sort()
   const warehouseNames = warehouses.map((w) => w.name).filter(Boolean)
@@ -66,7 +68,7 @@ export function itemDataset({ items, warehouses }: ItemLookups): Dataset<Item> {
         case 'baseUom':
           return it.uom || ''
         case 'masterPack':
-          return ''
+          return masterPackOf(it.no)
         case 'vendor':
           return it.vendor || ''
         case 'onHand':
@@ -108,7 +110,7 @@ export function itemDataset({ items, warehouses }: ItemLookups): Dataset<Item> {
         case 'baseUom':
           return it.uom || EM_DASH
         case 'masterPack':
-          return EM_DASH
+          return masterPackOf(it.no) || EM_DASH
         case 'onHand':
           return int(itemOnHand(it))
         case 'available':
