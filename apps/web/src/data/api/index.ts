@@ -20,6 +20,8 @@ import {
   purchaseOrderSchema,
   purchasePriceSchema,
   purchaseReceiptSchema,
+  salesInvoiceSchema,
+  salesOrderSchema,
   userSchema,
   vendorSchema,
   warehouseSchema,
@@ -45,6 +47,18 @@ export const api = {
     key: 'customers',
     schema: customerSchema,
     seed: seed.seedCustomers,
+    idOf: (r) => r.no,
+  }),
+  salesOrders: createCollection({
+    key: 'salesOrders',
+    schema: salesOrderSchema,
+    seed: seed.seedOrders,
+    idOf: (r) => r.no,
+  }),
+  salesInvoices: createCollection({
+    key: 'salesInvoices',
+    schema: salesInvoiceSchema,
+    seed: seed.seedInvoices,
     idOf: (r) => r.no,
   }),
   purchaseOrders: createCollection({

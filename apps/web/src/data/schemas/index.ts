@@ -412,6 +412,42 @@ export const customerSchema = z.object({
 })
 export type Customer = z.infer<typeof customerSchema>
 
+// ── Sales ▸ Sales Orders & Sales Invoices ────────────────────────────────────
+export const SALES_ORDER_STATUSES = ['Open', 'Released', 'Shipped', 'Invoiced'] as const
+export const salesOrderStatusSchema = z.enum(SALES_ORDER_STATUSES)
+export type SalesOrderStatus = z.infer<typeof salesOrderStatusSchema>
+
+/** Seed order line tuple: `[itemNo, qty]`. */
+export const salesOrderLineSchema = z.tuple([z.string(), z.number()])
+export type SalesOrderLine = z.infer<typeof salesOrderLineSchema>
+
+export const salesOrderSchema = z.object({
+  no: z.string(),
+  /** Customer name (seed shape; future backend uses customer id). */
+  customer: z.string(),
+  orderDate: isoDate,
+  shipDate: isoDate,
+  location: z.string(),
+  status: salesOrderStatusSchema,
+  lines: z.array(salesOrderLineSchema),
+})
+export type SalesOrder = z.infer<typeof salesOrderSchema>
+
+export const SALES_INVOICE_STATUSES = ['Draft', 'Open', 'Overdue', 'Paid'] as const
+export const salesInvoiceStatusSchema = z.enum(SALES_INVOICE_STATUSES)
+export type SalesInvoiceStatus = z.infer<typeof salesInvoiceStatusSchema>
+
+export const salesInvoiceSchema = z.object({
+  no: z.string(),
+  /** Customer name (seed shape; future backend uses customer id). */
+  customer: z.string(),
+  invDate: isoDate,
+  dueDate: isoDate,
+  amount: z.number(),
+  status: salesInvoiceStatusSchema,
+})
+export type SalesInvoice = z.infer<typeof salesInvoiceSchema>
+
 // ── Production ▸ Bills of Materials ──────────────────────────────────────────
 export const BOM_STATUSES = ['draft', 'active', 'archived'] as const
 export const bomStatusSchema = z.enum(BOM_STATUSES)
