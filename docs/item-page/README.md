@@ -161,22 +161,25 @@ or delete — only mark-invalid with a permanent reason). Keyed by
 
 ## React app (2026-11-17)
 
-Warehouse ▸ Items list and Item profile ported to `apps/web`. URLs: list
-`/warehouse/items` (`?sel=<no>` opens that item's preview drawer); Item profile
-`/warehouse/items/$no` (`?tab=overview|stock|purchasing|bom|units|notes`);
-`/warehouse/items/$no/edit` and `/warehouse/items/new` render
-`<PlaceholderPage kind="pending" />` until the full-page Item card is ported.
+Warehouse ▸ Items list, Item profile, and full-page Item card ported to
+`apps/web`. URLs: list `/warehouse/items` (`?sel=<no>` opens that item's
+preview drawer); new item `/warehouse/items/new` (`$no.tsx` when `$no === 'new'`);
+Item profile `/warehouse/items/$no`
+(`?tab=overview|stock|purchasing|bom|units|notes`); edit item
+`/warehouse/items/$no/edit` (`$no_.edit.tsx`).
 
 - **Files:** list `features/warehouse/items/ItemsPage.tsx` + `dataset.ts`;
   profile `features/warehouse/items/ItemProfilePage.tsx` + `item-tabs/*.tsx`
   (`ItemOverviewTab`, `ItemStockTab`, `ItemPurchasingTab`, `ItemBomTab`,
-  `ItemUnitsTab`, `ItemNotesTab`); routes `routes/warehouse/items/index.tsx`,
-  `$no.tsx` + `$no_.edit.tsx`; rules `domain/item.ts` + `item.test.ts`,
-  `domain/item-profile.ts` + `item-profile.test.ts`,
-  `domain/units-of-measure.ts` + `units-of-measure.test.ts`; shared template additions
-  `rowFlag` on `components/data-grid/model.ts` + `DataGrid.tsx`, `beforeFacts`
-  on `components/record-drawer/RecordDrawer.tsx`, and optional `onEdit` on
-  `components/record-page/RecordPage.tsx`.
+  `ItemUnitsTab`, `ItemNotesTab`); item card
+  `features/warehouse/items/ItemCard.tsx`; routes
+  `routes/warehouse/items/index.tsx`, `$no.tsx` + `$no_.edit.tsx`; rules
+  `domain/item.ts` + `item.test.ts`, `domain/item-profile.ts` +
+  `item-profile.test.ts`, `domain/item-card.ts` + `item-card.test.ts`,
+  `domain/units-of-measure.ts` + `units-of-measure.test.ts`; shared
+  template additions `rowFlag` on `components/data-grid/model.ts` +
+  `DataGrid.tsx`, `beforeFacts` on `components/record-drawer/RecordDrawer.tsx`,
+  and optional `onEdit` on `components/record-page/RecordPage.tsx`.
 - **Same as prototype:**
   - *List + drawer:* columns, widths, default visibility (`committed`, `cost`,
     `margin`, `vendor`, `lead` hidden by default; `location`, `expiry`, `barcode`
@@ -201,16 +204,48 @@ Warehouse ▸ Items list and Item profile ported to `apps/web`. URLs: list
     master pack, fixed/manual conversions, inline unit picker & removal with undo, and
     explanatory copy moved behind ⓘ via `HelpTarget` per Quiet pages); **Notes**
     (`NotesBlock` for `entityType: 'item'`).
+  - *Item card:* `DocumentPage` full-page layout with sections in prototype order
+    (**IDENTIFICATION**: Item no. locked on edit + *Use next in sequence* via
+    `itemNextNo`, Description, Category, Item type `Inventory`/`Non-inventory`/`Service`,
+    Unit of measure defaulting to `NOS`; **AVAILABILITY**: `Sellable` & `Blocked`
+    switches plus read-only *Stock by Location* note; **PRICING & COSTING**: Unit
+    price, Unit cost, Costing method defaulting to `FIFO`, live `Margin` % and per-unit
+    readout; **PURCHASING & REPLENISHMENT**: Preferred vendor, Lead time, Reorder point,
+    Reorder qty, Safety stock + live reorder suggestion hint; **TRACKING**: `Tracks
+    lot / batch`, `Tracks expiry dates`, `Tracks serial numbers`, `Barcode`). Required-field
+    and duplicate-number validation errors match prototype strings, stock `locs` are
+    never editable here, `Ctrl/Cmd+S` (`Ctrl/Cmd+Enter`) saves via `useUpsert('items')`,
+    and `Esc` / *Discard* returns without saving (blurring an active text input first).
 - **Deliberate differences:**
+  - *Quiet help (2026-11-18):* the card's descriptive text sits behind ⓘ (shared
+    `components/help/HelpTarget`, help map `HELP` in `ItemCard.tsx`): Item no.,
+    Description, Availability (the stock note), Sellable, Blocked and Reorder point (its
+    text follows the current value, `itemCardReorderHint`). The header subtitle and the
+    footer keyboard hint are gone; Ctrl/Cmd+S and Esc are in Keyboard shortcuts. The
+    document `Field` part gained an optional `help` prop for this.
+  - *Category, UoM, and Vendor inputs:* Category uses a native grouped `<select>`
+    backed by `itemCardCategoryGroups` + `itemCategoryPathNames` instead of the
+    prototype's custom searchable category-tree dropdown (no `itemCategories` store
+    in `apps/web` yet); Unit of measure reads `SYSTEM_UOMS` from `domain/item-profile.ts`;
+    Preferred vendor reads `useList('vendors')`.
+  - *Item card numbering, return navigation & validation:* `/warehouse/items/new`
+    prefills `itemNextNo(items)` on open (keeping *Use next in sequence* to re-suggest)
+    and initializes `locs: {}` (instead of legacy `{ main, assembly, east, returns }` keys);
+    validation also blocks negative numeric inputs (`price`, `cost`, `lead`, `rp`, `rq`,
+    `ss`); creating navigates to `/warehouse/items?sel=<no>` (*Discard* / `Esc` returns
+    to `/warehouse/items`), and editing returns to `/warehouse/items/$no`. Header status
+    badge shows `Draft` / `Saved record` using `DocumentHeader`'s default pill styling.
   - *Status pill:* profile header shows `Blocked` / `Out of stock` / `Low stock` /
     `Healthy` to match `ItemsPage` and `domain/status.ts` (prototype used `In stock`
     for healthy stock).
   - *Edit handoff:* no in-place edit on the profile — clicking *Edit* or pressing
-    `E` invokes optional `RecordPageProps.onEdit` to navigate to
-    `/warehouse/items/$no/edit` (`$no_.edit.tsx` non-nested placeholder).
-  - *Duplicate / Item card:* header *Duplicate* is omitted until the
-    `/warehouse/items/new` Item card lands (`syncItemBaseUnit` and `saveItemWithUnits`
-    are ready for the card); *Delete* uses `itemDeleteBlockedReason` and `ConfirmDialog`.
+    `E` invokes optional `RecordPageProps.onEdit` to open the full-page Item card at
+    `/warehouse/items/$no/edit`.
+  - *Duplicate:* header *Duplicate* is not wired yet; *Delete* uses
+    `itemDeleteBlockedReason` and `ConfirmDialog`.
+  - *Units persistence:* the Units of measure tab reads and writes the item's stored
+    unit set (`shelfree.v2.itemUnits`); `syncItemBaseUnit` / `saveItemWithUnits` keep
+    `item.uom` equal to the set's base.
   - *Units tab quiet help (2026-11-18):* inline explanatory text on the Units of measure
     tab (base unit note, master-pack hint, empty-state explainer, conversion footnote)
     now lives behind ⓘ (`components/help/HelpTarget`), leaving only state and validation
@@ -226,15 +261,18 @@ Warehouse ▸ Items list and Item profile ported to `apps/web`. URLs: list
   `shelfree.v2.purchaseReceipts`, `shelfree.v2.boms`, `shelfree.v2.assemblyOrders`,
   `shelfree.v2.notes`; grid column widths / UI state in `shelfree.v2.ui`.
 - **Backend & security rules:** server enforces tenant scoping and
-  `warehouse.items.read` / `warehouse.items.write` RBAC; item deletes must be
-  rejected server-side (`409`) whenever stock on hand `> 0` or the item
-  appears on any purchase order or purchase receipt line (`'This item has
+  `warehouse.items.read` / `warehouse.items.write` RBAC; item creates normalize unique
+  uppercase `no` and treat `no` as immutable on updates; `price`/`cost` and
+  replenishment integers (`lead`/`rp`/`rq`/`ss`) must be `>= 0` and `locs` /
+  `qtySO` / `qtySupply` must be server-managed (ignored/rejected on item-master
+  writes); item deletes must be rejected server-side (`409`) whenever stock on hand `> 0`
+  or the item appears on any purchase order or purchase receipt line (`'This item has
   stock or is on purchase documents — block it instead'`) and must emit an
   audit event; axis-off tracking fields (`tracksLot`, `tracksExpiry`,
-  `tracksSerial`, `barcode`) are soft-hidden only and validated on write per
+  `tracksSerial`, `barcode`) are soft-hidden only and preserved/validated on write per
   `docs/security/README.md`; per-item UoM conversions (`qty_in_base > 0`, one
   base in list, `base = items.uom`) and Master pack derivation belong server-side
   in `item_units(item_no, unit_code, role, qty_in_base)` (see `docs/units-of-measure/README.md`).
 - **Tests:** `apps/web/src/domain/item.test.ts` + `item-profile.test.ts` +
-  `units-of-measure.test.ts` (unit), `apps/web/e2e/items.spec.ts` +
-  `item-profile.spec.ts` + `item-units.spec.ts` (Playwright).
+  `item-card.test.ts` + `units-of-measure.test.ts` (unit), `apps/web/e2e/items.spec.ts` +
+  `item-profile.spec.ts` + `item-card.spec.ts` + `item-units.spec.ts` (Playwright).
