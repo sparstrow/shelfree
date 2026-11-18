@@ -330,3 +330,34 @@ Pending: tabs 2–10 (Address & payment, Items supplied, Purchase orders, Purcha
 - **Backend**: `GET /vendors/:no/items`, `/orders?group=`, `/receipts?status=`, `/performance`
   should be computed server-side (paged, tenant-scoped, `vendors.view` + `purchasing.view`);
   the client-side derivations here are the reference implementation.
+
+## React app (2026-11-17)
+
+Ported four more Vendor profile tabs: **Address & payment** (`details`), **Payables & blocking** (`payables`), **Notes & activity** (`notes`), and **Documents** (`docs`).
+
+- **URLs**: `/purchasing/vendors/$no?tab=details` (key `2`), `?tab=payables` (key `6`), `?tab=notes` (key `8`), `?tab=docs` (key `9`).
+- **Files**:
+  - `apps/web/src/features/purchasing/vendors/tabs/VendorDetailsTab.tsx` — Address & payment card using `RecordCard` + `FieldRows` in place (`Address line 1`, `Address line 2`, `City`, `State`, `PIN code`, `Country`, `Payment terms`, `Payment method`, plus read-only `Currency` and `Vendor since`).
+  - `apps/web/src/features/purchasing/vendors/tabs/VendorPayablesTab.tsx` — **Payables** card (aging bars `Not yet due` / `Due now` / `Overdue`, `Balance`, `Received, not yet billed` GRNI, `Payment terms`, `Payment method`, `Currency`, note), **Blocking** radiogroup (`Not blocked` / `Block payments` / `Block all transactions`, saving via `useUpsert('vendors')` with prototype toast copy), and **Purchase budget** card (committed vs budget bar).
+  - `apps/web/src/features/purchasing/vendors/tabs/VendorNotesTab.tsx` — full `NotesBlock` (`entityType="vendor"`) + **Activity** card (`vendorActivity` + backend audit-trail note).
+  - `apps/web/src/features/purchasing/vendors/tabs/VendorDocsTab.tsx` — prototype empty state (`No documents attached`).
+  - `apps/web/src/features/purchasing/vendors/VendorProfilePage.tsx` — added the four tab branches and updated `tabOfField` so address validation errors keep or jump focus to `Address & payment`.
+  - `apps/web/src/domain/vendor.ts` + `vendor.test.ts` — extended `VendorForm`/`vendorToForm`/`normalizeVendorForm`/`validateVendorForm`/`applyVendorForm` with address fields + PIN code check, and added `vendorPayables`, `vendorStateOptions`, `VENDOR_BLOCK_OPTIONS`, `vendorBlocked`, `applyVendorBlocked`, `vendorBlockToast`.
+  - `apps/web/e2e/vendor-tabs-a.spec.ts` — e2e coverage for tab navigation (click + number keys), Address & payment in-place edit / validation / persistence, blocking / unblocking, and adding a note.
+- **Same as prototype**:
+  - Address & payment shares the page's single edit draft (`E` / `Ctrl+S` / `Esc`), uses the current-GST-states dropdown (`Select state…`, sorted A–Z, legacy and `Foreign country` omitted, unrecognised saved values kept as `X (not a GST state)`), and keeps `Currency` (`Workspace default`) and `Vendor since` as read-only text rows.
+  - Payables & blocking computes `Not yet due = max(0, balance - balanceDue)`, `Due now = max(0, balanceDue - overdue)`, `Overdue = overdue`, GRNI (`prValue` sum of posted receipts on non-Closed POs), and `Committed` (`poSubtotal` sum of non-Draft, non-Cancelled POs). Blocking writes `blocked: '' | 'Payment' | 'All'` immediately and shows the prototype toast (`Vendor blocked` / `Payments blocked` / `Vendor unblocked`).
+  - Notes & activity uses the append-only `NotesBlock` (`Ctrl/Cmd+Enter` adds, `Enter`/`Esc` in the invalidate reason field) alongside the derived activity timeline.
+  - Documents renders the prototype's empty state with no upload control.
+- **Deliberate changes**:
+  - Added client-side 6-digit PIN code validation (`A PIN code has 6 digits.`) when `country` is India (or blank), matching `Shelfree App.dc.html` GST registration postal validation while allowing non-Indian postal codes.
+  - `validateVendorForm` validates `country` from the live edit draft rather than the saved vendor so changing `country` on Address & payment and `gstRegType: 'overseas'` on Overview works in a single edit session; `tabOfField` routes address field errors to `details`.
+  - `Currency` on Address & payment displays `Workspace default` directly because the `multiCurrency` workspace axis is not yet in `apps/web/src/data/api/settings.ts` (whereas the Payables card still displays `vendor.currency || 'INR'`, matching the prototype).
+  - Vendor bills and payment runs do not exist yet, so payables aging uses the vendor record's running `balance` / `balanceDue` / `overdue` fields and GRNI uses posted receipts on non-`Closed` POs, as noted inline on the card.
+- **Persistence**: `shelfree.v2.vendors` (address/payment fields and `blocked` state via `useUpsert('vendors')`) and `shelfree.v2.notes` (via `NotesBlock`); payables/budget figures read `shelfree.v2.purchaseOrders` and `shelfree.v2.purchaseReceipts`.
+- **Backend rules & security gate (`docs/security/README.md`)**:
+  - `PATCH /vendors/:no` must accept `addr1`, `addr2`, `city`, `state`, `zip`, `country`, re-validate the 6-digit PIN for India (`IN`) and valid non-retired GST state, reject direct writes to `contact`/`phone`/`email`, and emit `vendor.updated`.
+  - Blocking updates (`PATCH /vendors/:no` or `POST /vendors/:no/block`) require `vendors.block` / `vendors.edit`, must emit `vendor.blocked.updated` (before/after, actor, timestamp), and must be enforced server-side (`All` rejects PO issue, receipt posting, and payment runs; `Payment` rejects payment runs).
+  - `GET /vendors/:no/payables` must compute aging buckets from vendor bills/payments/debit notes, GRNI from the clearing ledger, and budget commitment server-side once purchase finance lands.
+  - Notes remain append-only (`POST /notes`, one-way `POST /notes/:id/invalidate`, no `DELETE`); free-text notes and vendor addresses are covered under tenant isolation and data-subject export.
+- **Tests**: Vitest (`apps/web/src/domain/vendor.test.ts`); Playwright (`apps/web/e2e/vendor-tabs-a.spec.ts`).

@@ -4,9 +4,9 @@
  */
 import type { Item, PurchaseOrder, PurchasePrice, PurchaseReceipt, TaxCalc, Vendor, VendorGstRegType } from '@/data/schemas'
 import { int } from '@/lib/format'
-import { gstStateByCode, vendorGstType, vendorGstTypeInfo, vendorTaxCalc } from './gst'
-import { poOverdue, poReceiptProgress, poReceivable } from './purchase-order'
-import { prQtyRejected } from './purchase-receipt'
+import { GST_STATES, gstStateByCode, gstStateByName, vendorGstType, vendorGstTypeInfo, vendorTaxCalc } from './gst'
+import { poOverdue, poReceiptProgress, poReceivable, poSubtotal } from './purchase-order'
+import { prQtyRejected, prValue } from './purchase-receipt'
 
 export type VendorStatus = 'Active' | 'Blocked'
 
@@ -191,14 +191,131 @@ export function vendorGstEffect(type: VendorGstRegType): string {
   return 'Import — tax paid at customs'
 }
 
+// ── Profile page: payables & blocking ────────────────────────────────────────
+
+export interface VendorPayables {
+  balance: number
+  notYetDue: number
+  dueNow: number
+  overdue: number
+  /** Posted receipts on orders that are not Closed (Closed = invoiced). */
+  grni: number
+  /** Subtotal of issued, received and closed orders (excludes Draft and Cancelled). */
+  committed: number
+  budget: number
+  /** Committed / budget percentage (rounded), or 0 when no budget is set. */
+  budgetPct: number
+}
+
+/** Payables aging buckets, GRNI and purchase-budget commitment for one vendor. */
+export function vendorPayables(
+  vendor: Pick<Vendor, 'no' | 'balance' | 'balanceDue' | 'overdue' | 'budgetedAmount'>,
+  allOrders: readonly PurchaseOrder[],
+  allReceipts: readonly PurchaseReceipt[],
+): VendorPayables {
+  const orders = allOrders.filter((p) => p.vendor === vendor.no)
+  const receipts = allReceipts.filter((r) => r.vendor === vendor.no)
+  const poByNo = new Map(orders.map((p) => [p.no, p]))
+  const grni = receipts
+    .filter((r) => {
+      if (r.status !== 'Posted') return false
+      const po = poByNo.get(r.po)
+      return !po || po.status !== 'Closed'
+    })
+    .reduce((sum, r) => sum + prValue(r), 0)
+  const committed = orders
+    .filter((p) => p.status !== 'Cancelled' && p.status !== 'Draft')
+    .reduce((sum, p) => sum + poSubtotal(p), 0)
+  const balance = vendor.balance || 0
+  const due = vendor.balanceDue || 0
+  const overdue = vendor.overdue || 0
+  const budget = vendor.budgetedAmount || 0
+  return {
+    balance,
+    notYetDue: Math.max(0, balance - due),
+    dueNow: Math.max(0, due - overdue),
+    overdue,
+    grni,
+    committed,
+    budget,
+    budgetPct: budget ? Math.round((committed / budget) * 100) : 0,
+  }
+}
+
+export type VendorBlocked = '' | 'Payment' | 'All'
+
+export interface VendorBlockOption {
+  value: VendorBlocked
+  label: string
+  desc: string
+}
+
+export const VENDOR_BLOCK_OPTIONS: readonly VendorBlockOption[] = [
+  { value: '', label: 'Not blocked', desc: 'Orders, receipts and payments all allowed.' },
+  {
+    value: 'Payment',
+    label: 'Block payments',
+    desc: 'Keep ordering and receiving, but hold payments — e.g. while a quality dispute is open.',
+  },
+  {
+    value: 'All',
+    label: 'Block all transactions',
+    desc: 'No new purchase orders, receipts or payments with this vendor.',
+  },
+]
+
+/** Normalised blocked state (`'' | 'Payment' | 'All'`). */
+export function vendorBlocked(v: Partial<Pick<Vendor, 'blocked'>> | null | undefined): VendorBlocked {
+  if (v?.blocked === 'All' || v?.blocked === 'Payment') return v.blocked
+  return ''
+}
+
+/** Vendor record with an updated blocked state. */
+export function applyVendorBlocked(vendor: Vendor, blocked: VendorBlocked): Vendor {
+  return { ...vendor, blocked }
+}
+
+/** Toast copy after changing a vendor's blocked state (matches prototype `vendSetBlocked`). */
+export function vendorBlockToast(vendorNo: string, blocked: VendorBlocked): { title: string; description: string } {
+  if (blocked === 'All') {
+    return { title: 'Vendor blocked', description: `${vendorNo} · no new orders, receipts or payments` }
+  }
+  if (blocked === 'Payment') {
+    return { title: 'Payments blocked', description: `${vendorNo} · orders and receipts still allowed` }
+  }
+  return { title: 'Vendor unblocked', description: `${vendorNo} · all transactions allowed` }
+}
+
+/** State <select> options (current GST states A–Z; preserves an unrecognised saved value). */
+export function vendorStateOptions(current: string): { value: string; label: string }[] {
+  const v = String(current || '').trim()
+  const hit = gstStateByName(v)
+  const names = GST_STATES.filter((s) => !s.legacy && s.code !== '96')
+    .map((s) => s.name)
+    .sort((a, b) => a.localeCompare(b))
+  const opts = names.map((n) => ({ value: n, label: n }))
+  if (v && !hit) {
+    opts.unshift({ value: v, label: `${v} (not a GST state)` })
+  } else if (v && hit && !names.includes(v)) {
+    opts.unshift({ value: v, label: `${v} (${hit.name})` })
+  }
+  return [{ value: '', label: 'Select state…' }, ...opts]
+}
+
 // ── Profile page: editing (form values, validation, save) ────────────────────
 
 export const VENDOR_PAYMENT_METHODS = ['EFT', 'NEFT', 'RTGS', 'UPI', 'Cheque', 'Cash'] as const
 
-/** Values the Overview tab edits. Everything is a string so inputs can hold partial text. */
+/** Values the Overview and Address & payment tabs edit. Everything is a string so inputs can hold partial text. */
 export interface VendorForm {
   name: string
   category: string
+  addr1: string
+  addr2: string
+  city: string
+  state: string
+  zip: string
+  country: string
   paymentTerms: string
   paymentMethod: string
   /** Employee id, '' = unassigned. */
@@ -222,6 +339,12 @@ export function vendorToForm(v: Vendor, ws: WorkspaceTax): VendorForm {
   return {
     name: v.name,
     category: v.category,
+    addr1: v.addr1,
+    addr2: v.addr2,
+    city: v.city,
+    state: v.state,
+    zip: v.zip,
+    country: v.country,
     paymentTerms: v.paymentTerms,
     paymentMethod: v.paymentMethod,
     purchasePerson: v.purchasePerson ?? '',
@@ -241,6 +364,12 @@ export function normalizeVendorForm<T extends VendorForm>(form: T): T {
     ...form,
     name: form.name.trim(),
     category: form.category.trim(),
+    addr1: form.addr1.trim(),
+    addr2: form.addr2.trim(),
+    city: form.city.trim(),
+    state: form.state.trim(),
+    zip: form.zip.trim(),
+    country: form.country.trim(),
     paymentTerms: form.paymentTerms.trim(),
     gstin,
   }
@@ -258,13 +387,17 @@ export function gstinFormatError(gstin: string): string {
 }
 
 /** Blocking problems, by field key. Empty = saveable. */
-export function validateVendorForm(form: VendorForm, vendor: Pick<Vendor, 'country'>): Record<string, string> {
+export function validateVendorForm(form: VendorForm, _vendor?: Pick<Vendor, 'country'>): Record<string, string> {
   const errors: Record<string, string> = {}
   if (!form.name.trim()) errors.name = 'Vendor name is required.'
   const budget = form.budgetedAmount.trim()
   if (budget && !(Number(budget) >= 0)) errors.budgetedAmount = 'Enter an amount of 0 or more.'
-  const country = vendor.country.trim().toLowerCase()
+  const country = form.country.trim().toLowerCase()
   const india = !country || country === 'india' || country === 'in'
+  const zip = form.zip.trim()
+  if (zip && india && !/^\d{6}$/.test(zip)) {
+    errors.zip = 'A PIN code has 6 digits.'
+  }
   if (form.gstRegType === 'overseas' && india) {
     errors.gstRegType =
       'An overseas vendor’s country can’t be India — change the country on Address & payment, or pick another type.'
@@ -307,6 +440,12 @@ export function applyVendorForm(vendor: Vendor, form: VendorForm, ctx: VendorSav
     ...vendor,
     name: form.name,
     category: form.category,
+    addr1: form.addr1,
+    addr2: form.addr2,
+    city: form.city,
+    state: form.state,
+    zip: form.zip,
+    country: form.country,
     paymentTerms: form.paymentTerms,
     paymentMethod: form.paymentMethod,
     purchasePerson: form.purchasePerson,

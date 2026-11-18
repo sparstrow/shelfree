@@ -62,7 +62,7 @@ same turn a page is ported.**
 | Purchasing ▸ Purchase Receipts (list + document) | ported |
 | Purchasing ▸ Purchase Lines | ported |
 | Purchasing ▸ Vendors (list) | ported |
-| Purchasing ▸ Vendor profile | Overview ported on the Record page template; other tabs pending |
+| Purchasing ▸ Vendor profile | ported — all 10 tabs on the Record page template |
 | Sales ▸ Customers (list) | ported |
 | Sales ▸ Customer profile | 8 tabs ported on the Record page template (Overview, Billing & address, Order history, Statement & aging, Shipping addresses, Notes & activity, Documents, Credit & risk); Sales prices & Contacts pending |
 | Purchasing ▸ Charges | ported |
@@ -71,5 +71,6 @@ same turn a page is ported.**
 | Warehouse ▸ Items (list) | ported (item page pending) |
 | Production ▸ Bills of Materials (list) | ported (document pending) |
 | Production ▸ Assembly Orders (list + document) | ported (full/partial Finish command, shortage guard, FinishDialog) |
-| Purchasing ▸ Purchase Prices, Carriers | pending (next) |
+| Purchasing ▸ Carriers | ported (contact picker shared) |
+| Purchasing ▸ Purchase Prices | pending (next) |
 | Every other prototype page | pending |
