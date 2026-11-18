@@ -73,3 +73,28 @@ is just a read-through cache of that per vendor.
   vendor, no per-item price history yet).
 - Add an edit-price interaction and price history before treating this as a
   real costing source.
+
+## React app (2026-11-17)
+
+Ported to `apps/web` at `/purchasing/vendors/$no/items`.
+
+- **Files:** `apps/web/src/features/purchasing/vendor-purchase-items/VendorPurchaseItemsPage.tsx`,
+  `apps/web/src/routes/purchasing/vendors/$no_.items.tsx`,
+  `apps/web/src/features/purchasing/vendors/tabs/VendorItemsTab.tsx` (*Manage prices* navigates here),
+  and `vendorPriceRows` in `apps/web/src/domain/purchase-prices.ts` (+ `purchase-prices.test.ts`).
+- **URL:** `/purchasing/vendors/$no/items`.
+- **Same as prototype (Phase 2):** vendor-filtered view over `purchasePrices` sorted by item, from qty,
+  and start date; header with back button, `Purchase prices — <vendor name>`, vendor no. pill, price
+  count, *Open in Purchase prices* (`/purchasing/purchase-prices?vendor=<no>`), and *Add price*;
+  inline add row with type-ahead item search (`no` / `desc` dropdown with click and ↑/↓/Enter),
+  from qty, price ₹, starts (defaults to today), ends, `Enter` saves / `Esc` cancels, validated by
+  `validatePrice` (`domain/purchase-prices.ts`); per-row remove with Undo toast; empty state when the
+  vendor has no price rows and no add row open; loading, error, and vendor-not-found states.
+- **Deliberate changes:** back button returns to the vendor's profile (`/purchasing/vendors/$no`) rather
+  than the Vendors list, and `VendorItemsTab`'s *Manage prices* button links here (which in turn offers
+  *Open in Purchase prices* to jump to the full register).
+- **Persistence:** `shelfree.v2.purchasePrices`.
+- **Backend rules:** `GET /purchase-prices?vendor=:no`, `POST /purchase-prices`, `DELETE /purchase-prices/:no`
+  must enforce the same validation and date-overlap exclusion rules as `docs/purchase-prices/README.md`,
+  emit audit events on create/delete, and gate writes with `purchasing.prices.edit`; no PII.
+- **Tests:** `apps/web/src/domain/purchase-prices.test.ts`, `apps/web/e2e/notes-departments-vpi.spec.ts`.

@@ -32,6 +32,8 @@ const TONES: Record<string, Tone> = {
   Assembly: 'info',
   Production: 'warn',
   System: 'info',
+  Valid: 'ok',
+  Invalid: 'bad',
 }
 
 export function statusTone(label: string): Tone {

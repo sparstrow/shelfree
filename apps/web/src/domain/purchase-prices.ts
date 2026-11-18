@@ -63,6 +63,18 @@ export function vendorPricedItems(prices: readonly PurchasePrice[], vendor: stri
   return new Set(prices.filter((r) => r.vendor === vendor && r.price != null && isActiveOn(r, date)).map((r) => r.item))
 }
 
+/** Price rows for one vendor, sorted by item code, from-quantity tier, and start date. */
+export function vendorPriceRows(prices: readonly PurchasePrice[], vendorNo: string): PurchasePrice[] {
+  return prices
+    .filter((r) => r.vendor === vendorNo)
+    .sort(
+      (a, b) =>
+        String(a.item).localeCompare(String(b.item)) ||
+        (Number(a.minQty) || 1) - (Number(b.minQty) || 1) ||
+        String(a.effFrom || '').localeCompare(String(b.effFrom || '')),
+    )
+}
+
 export function purchasePriceNextNo(prices: readonly Pick<PurchasePrice, 'no'>[]): string {
   return nextNo(
     'PP',

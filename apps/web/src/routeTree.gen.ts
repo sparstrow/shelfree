@@ -12,6 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DepartmentsRouteImport } from './routes/departments'
 import { Route as ModulePageRouteImport } from './routes/$module/$page'
+import { Route as DepartmentsIndexRouteImport } from './routes/departments/index'
+import { Route as NotesIndexRouteImport } from './routes/notes/index'
+import { Route as NotesNotesRouteImport } from './routes/notes/notes'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SettingsSectionRouteImport } from './routes/settings/$section'
 import { Route as FinanceChartOfAccountsIndexRouteImport } from './routes/finance/chart-of-accounts/index'
@@ -34,6 +37,7 @@ import { Route as SalesCustomersIndexRouteImport } from './routes/sales/customer
 import { Route as SalesCustomersNoRouteImport } from './routes/sales/customers/$no'
 import { Route as WarehouseItemsIndexRouteImport } from './routes/warehouse/items/index'
 import { Route as WarehouseItemsNoRouteImport } from './routes/warehouse/items/$no'
+import { Route as PurchasingVendorsNoItemsRouteImport } from './routes/purchasing/vendors/$no_.items'
 import { Route as WarehouseItemsNoEditRouteImport } from './routes/warehouse/items/$no_.edit'
 
 const IndexRoute = IndexRouteImport.update({
@@ -49,6 +53,21 @@ const DepartmentsRoute = DepartmentsRouteImport.update({
 const ModulePageRoute = ModulePageRouteImport.update({
   id: '/$module/$page',
   path: '/$module/$page',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DepartmentsIndexRoute = DepartmentsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DepartmentsRoute,
+} as any)
+const NotesIndexRoute = NotesIndexRouteImport.update({
+  id: '/notes/',
+  path: '/notes/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotesNotesRoute = NotesNotesRouteImport.update({
+  id: '/notes/notes',
+  path: '/notes/notes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
@@ -172,6 +191,12 @@ const WarehouseItemsNoRoute = WarehouseItemsNoRouteImport.update({
   path: '/warehouse/items/$no',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PurchasingVendorsNoItemsRoute =
+  PurchasingVendorsNoItemsRouteImport.update({
+    id: '/purchasing/vendors/$no_/items',
+    path: '/purchasing/vendors/$no/items',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const WarehouseItemsNoEditRoute = WarehouseItemsNoEditRouteImport.update({
   id: '/warehouse/items/$no_/edit',
   path: '/warehouse/items/$no/edit',
@@ -180,9 +205,12 @@ const WarehouseItemsNoEditRoute = WarehouseItemsNoEditRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/departments': typeof DepartmentsRoute
+  '/departments': typeof DepartmentsRouteWithChildren
   '/$module/$page': typeof ModulePageRoute
+  '/notes/notes': typeof NotesNotesRoute
   '/settings/$section': typeof SettingsSectionRoute
+  '/departments/': typeof DepartmentsIndexRoute
+  '/notes/': typeof NotesIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/production/assembly-orders/$no': typeof ProductionAssemblyOrdersNoRoute
   '/production/bills-of-materials/$no': typeof ProductionBillsOfMaterialsNoRoute
@@ -204,13 +232,16 @@ export interface FileRoutesByFullPath {
   '/purchasing/vendors/': typeof PurchasingVendorsIndexRoute
   '/sales/customers/': typeof SalesCustomersIndexRoute
   '/warehouse/items/': typeof WarehouseItemsIndexRoute
+  '/purchasing/vendors/$no/items': typeof PurchasingVendorsNoItemsRoute
   '/warehouse/items/$no/edit': typeof WarehouseItemsNoEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/departments': typeof DepartmentsRoute
   '/$module/$page': typeof ModulePageRoute
+  '/notes/notes': typeof NotesNotesRoute
   '/settings/$section': typeof SettingsSectionRoute
+  '/departments': typeof DepartmentsIndexRoute
+  '/notes': typeof NotesIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/production/assembly-orders/$no': typeof ProductionAssemblyOrdersNoRoute
   '/production/bills-of-materials/$no': typeof ProductionBillsOfMaterialsNoRoute
@@ -232,14 +263,18 @@ export interface FileRoutesByTo {
   '/purchasing/vendors': typeof PurchasingVendorsIndexRoute
   '/sales/customers': typeof SalesCustomersIndexRoute
   '/warehouse/items': typeof WarehouseItemsIndexRoute
+  '/purchasing/vendors/$no/items': typeof PurchasingVendorsNoItemsRoute
   '/warehouse/items/$no/edit': typeof WarehouseItemsNoEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/departments': typeof DepartmentsRoute
+  '/departments': typeof DepartmentsRouteWithChildren
   '/$module/$page': typeof ModulePageRoute
+  '/notes/notes': typeof NotesNotesRoute
   '/settings/$section': typeof SettingsSectionRoute
+  '/departments/': typeof DepartmentsIndexRoute
+  '/notes/': typeof NotesIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/production/assembly-orders/$no': typeof ProductionAssemblyOrdersNoRoute
   '/production/bills-of-materials/$no': typeof ProductionBillsOfMaterialsNoRoute
@@ -261,6 +296,7 @@ export interface FileRoutesById {
   '/purchasing/vendors/': typeof PurchasingVendorsIndexRoute
   '/sales/customers/': typeof SalesCustomersIndexRoute
   '/warehouse/items/': typeof WarehouseItemsIndexRoute
+  '/purchasing/vendors/$no_/items': typeof PurchasingVendorsNoItemsRoute
   '/warehouse/items/$no_/edit': typeof WarehouseItemsNoEditRoute
 }
 export interface FileRouteTypes {
@@ -269,7 +305,10 @@ export interface FileRouteTypes {
     | '/'
     | '/departments'
     | '/$module/$page'
+    | '/notes/notes'
     | '/settings/$section'
+    | '/departments/'
+    | '/notes/'
     | '/settings/'
     | '/production/assembly-orders/$no'
     | '/production/bills-of-materials/$no'
@@ -291,13 +330,16 @@ export interface FileRouteTypes {
     | '/purchasing/vendors/'
     | '/sales/customers/'
     | '/warehouse/items/'
+    | '/purchasing/vendors/$no/items'
     | '/warehouse/items/$no/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/departments'
     | '/$module/$page'
+    | '/notes/notes'
     | '/settings/$section'
+    | '/departments'
+    | '/notes'
     | '/settings'
     | '/production/assembly-orders/$no'
     | '/production/bills-of-materials/$no'
@@ -319,13 +361,17 @@ export interface FileRouteTypes {
     | '/purchasing/vendors'
     | '/sales/customers'
     | '/warehouse/items'
+    | '/purchasing/vendors/$no/items'
     | '/warehouse/items/$no/edit'
   id:
     | '__root__'
     | '/'
     | '/departments'
     | '/$module/$page'
+    | '/notes/notes'
     | '/settings/$section'
+    | '/departments/'
+    | '/notes/'
     | '/settings/'
     | '/production/assembly-orders/$no'
     | '/production/bills-of-materials/$no'
@@ -347,14 +393,17 @@ export interface FileRouteTypes {
     | '/purchasing/vendors/'
     | '/sales/customers/'
     | '/warehouse/items/'
+    | '/purchasing/vendors/$no_/items'
     | '/warehouse/items/$no_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DepartmentsRoute: typeof DepartmentsRoute
+  DepartmentsRoute: typeof DepartmentsRouteWithChildren
   ModulePageRoute: typeof ModulePageRoute
+  NotesNotesRoute: typeof NotesNotesRoute
   SettingsSectionRoute: typeof SettingsSectionRoute
+  NotesIndexRoute: typeof NotesIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
   ProductionAssemblyOrdersNoRoute: typeof ProductionAssemblyOrdersNoRoute
   ProductionBillsOfMaterialsNoRoute: typeof ProductionBillsOfMaterialsNoRoute
@@ -376,6 +425,7 @@ export interface RootRouteChildren {
   PurchasingVendorsIndexRoute: typeof PurchasingVendorsIndexRoute
   SalesCustomersIndexRoute: typeof SalesCustomersIndexRoute
   WarehouseItemsIndexRoute: typeof WarehouseItemsIndexRoute
+  PurchasingVendorsNoItemsRoute: typeof PurchasingVendorsNoItemsRoute
   WarehouseItemsNoEditRoute: typeof WarehouseItemsNoEditRoute
 }
 
@@ -400,6 +450,27 @@ declare module '@tanstack/react-router' {
       path: '/$module/$page'
       fullPath: '/$module/$page'
       preLoaderRoute: typeof ModulePageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/departments/': {
+      id: '/departments/'
+      path: '/'
+      fullPath: '/departments/'
+      preLoaderRoute: typeof DepartmentsIndexRouteImport
+      parentRoute: typeof DepartmentsRoute
+    }
+    '/notes/': {
+      id: '/notes/'
+      path: '/notes'
+      fullPath: '/notes/'
+      preLoaderRoute: typeof NotesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notes/notes': {
+      id: '/notes/notes'
+      path: '/notes/notes'
+      fullPath: '/notes/notes'
+      preLoaderRoute: typeof NotesNotesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/': {
@@ -556,6 +627,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WarehouseItemsNoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/purchasing/vendors/$no_/items': {
+      id: '/purchasing/vendors/$no_/items'
+      path: '/purchasing/vendors/$no/items'
+      fullPath: '/purchasing/vendors/$no/items'
+      preLoaderRoute: typeof PurchasingVendorsNoItemsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/warehouse/items/$no_/edit': {
       id: '/warehouse/items/$no_/edit'
       path: '/warehouse/items/$no/edit'
@@ -566,11 +644,25 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface DepartmentsRouteChildren {
+  DepartmentsIndexRoute: typeof DepartmentsIndexRoute
+}
+
+const DepartmentsRouteChildren: DepartmentsRouteChildren = {
+  DepartmentsIndexRoute: DepartmentsIndexRoute,
+}
+
+const DepartmentsRouteWithChildren = DepartmentsRoute._addFileChildren(
+  DepartmentsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DepartmentsRoute: DepartmentsRoute,
+  DepartmentsRoute: DepartmentsRouteWithChildren,
   ModulePageRoute: ModulePageRoute,
+  NotesNotesRoute: NotesNotesRoute,
   SettingsSectionRoute: SettingsSectionRoute,
+  NotesIndexRoute: NotesIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
   ProductionAssemblyOrdersNoRoute: ProductionAssemblyOrdersNoRoute,
   ProductionBillsOfMaterialsNoRoute: ProductionBillsOfMaterialsNoRoute,
@@ -592,6 +684,7 @@ const rootRouteChildren: RootRouteChildren = {
   PurchasingVendorsIndexRoute: PurchasingVendorsIndexRoute,
   SalesCustomersIndexRoute: SalesCustomersIndexRoute,
   WarehouseItemsIndexRoute: WarehouseItemsIndexRoute,
+  PurchasingVendorsNoItemsRoute: PurchasingVendorsNoItemsRoute,
   WarehouseItemsNoEditRoute: WarehouseItemsNoEditRoute,
 }
 export const routeTree = rootRouteImport
