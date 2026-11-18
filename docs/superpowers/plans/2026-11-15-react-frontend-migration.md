@@ -72,5 +72,5 @@ same turn a page is ported.**
 | Production ▸ Bills of Materials (list) | ported (document pending) |
 | Production ▸ Assembly Orders (list) | ported (document pending) |
 | Purchasing ▸ Carriers | ported (contact picker shared) |
-| Purchasing ▸ Purchase Prices | pending (next) |
+| Purchasing ▸ Purchase Prices | ported (list on the editor template + in-grid cell editing + "Items with no vendor price" tab) |
 | Every other prototype page | pending |

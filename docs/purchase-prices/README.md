@@ -52,3 +52,61 @@ collection `purchasePrices` → `shelfree.v2.purchasePrices`, rules
 `vendorPricedItems`). The demo price list is built from the seeded orders by
 `data/seed/purchase-prices.ts`, as the prototype did. The Purchase Prices
 **page** is not ported yet (placeholder).
+
+## React app (2026-11-17)
+
+Ported to `apps/web` at `/purchasing/purchase-prices` (`?sel=PP00001` opens a
+price's drawer; `?vendor=V00001` filters to one vendor — used by the vendor
+page's **Manage prices**). Built on the List template's **editor** option, plus
+opt-in **in-grid cell editing**.
+
+- **Files:** `features/purchasing/purchase-prices/PurchasePricesPage.tsx` (page,
+  fields, actions, "Items with no vendor price" tab), `…/dataset.ts` (columns,
+  views, filters, search), rules `domain/purchase-prices.ts` (+
+  `purchase-prices.test.ts`: status, validation, overlap, change price, tiers,
+  resolve, unpriced items, cell commit), route
+  `routes/purchasing/purchase-prices/index.tsx`. Template additions:
+  `components/data-grid/CellEditor.tsx`, `column.edit`, `view.sorts`,
+  `ListPage` `initialDraft` / `topBarExtra` / `run(row, ctx)` / shortcut `shift`
+  (see CLAUDE.md → Page templates).
+- **Same as the prototype:** columns (Vendor no. + Vendor pinned; UoM and Price
+  no. hidden), views, filters, search, field list and every validation message,
+  status (Active / Expiring in 30 days / Scheduled / Expired), view-mode facts
+  (vs item cost, last changed) and the "replaces PPnnnnn" notice, Change price
+  (new row from today, old row ends the day before, vendor + item locked, refused
+  for ended rows, scheduled rows go to edit), Add quantity tier (10, then
+  doubling), Duplicate (vendor, code, note cleared), Open vendor / Open item
+  (new tab), delete always allowed (Undo), items-with-no-vendor-price panel
+  (items without an active BOM and without a current or scheduled price) with
+  **Add price** pre-filling item, preferred vendor and the item's lead time.
+  Editable cells: vendor item code, from qty, price, lead time, starts, ends, note.
+- **Changed on purpose:**
+  - *Edit in place / quiet pages* — field hints in an ⓘ tooltip; vendor and item
+    are selects in the drawer (no shared lookup picker yet).
+  - A cell edit starts with a **click** (or Enter / F2 on the focused cell) and
+    does not change the row selection; the prototype used always-on inputs.
+    Shift / Ctrl-click still select rows.
+  - "By vendor" sorts by vendor then item; the grid has no group headers yet.
+  - The 30-day expiring window is a constant (`PRICE_EXPIRING_DAYS`); the
+    prototype's `ppExpiringDays` setting UI is not ported.
+  - Seed prices are all open-ended Active rows, so expired / scheduled / expiring
+    rows are exercised by the e2e test creating them.
+- **Shortcuts** (list page): N new · E edit · Shift+P change price · T add
+  quantity tier · Enter / double-click row edit · Ctrl/Cmd+S save · Esc cancel,
+  then close · / search · in a cell: Enter or blur saves, Esc cancels, Tab /
+  Shift+Tab save and move to the next / previous editable cell. Not yet in a
+  Keyboard shortcuts settings page (not ported).
+- **Persistence:** `shelfree.v2.purchasePrices` (key `no`); `createdAt` /
+  `updatedAt` stamped on save. Change price writes two rows (new + ended old).
+- **Backend must enforce:** vendor and item exist; from qty integer ≥ 1; price ≥ 0
+  (0 allowed); lead time integer ≥ 0 or empty; ends ≥ starts; **no overlapping
+  validity for the same vendor + item + from qty** (exclusion constraint,
+  inclusive dates, empty = unbounded); change price is **one atomic call** (insert
+  new row + set old `effTo` = new `effFrom` − 1 day; new start must be after the
+  old start; refuse if the old row already ended); price resolution
+  (`GET /purchase-prices/resolve?vendor&item&qty&date`) = the row with the largest
+  from qty ≤ qty among rows valid on the date, `belowMoq` when every tier is
+  higher, `noPrice` when none; status derived server-side from dates; audit every
+  create / edit / change / delete; permission `purchasing.prices.edit`.
+- **Tests:** `apps/web/e2e/purchase-prices.spec.ts`,
+  `src/domain/purchase-prices.test.ts`.

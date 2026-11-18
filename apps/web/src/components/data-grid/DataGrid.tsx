@@ -805,15 +805,19 @@ export function DataGrid<T>({
                             : undefined
                         }
                         tabIndex={c.edit && !editing ? 0 : undefined}
-                        title={c.edit && !editing ? 'Double-click or press Enter to edit' : undefined}
-                        onDoubleClick={
+                        title={c.edit && !editing ? 'Click or press Enter to edit' : undefined}
+                        // A plain click edits the cell and leaves the row selection alone (the layout must not
+                        // jump under the pointer); Shift / Ctrl / Cmd-click still select as usual.
+                        onClick={
                           c.edit
                             ? (e) => {
+                                if (e.shiftKey || e.ctrlKey || e.metaKey) return
                                 e.stopPropagation()
-                                setCell({ id, key: c.key })
+                                if (!editing) setCell({ id, key: c.key })
                               }
                             : undefined
                         }
+                        onDoubleClick={c.edit ? (e) => e.stopPropagation() : undefined}
                         onKeyDown={
                           c.edit && !editing
                             ? (e) => {

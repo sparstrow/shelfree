@@ -322,7 +322,7 @@ export function ListPage<T>({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [shortcuts, active])
+  })
 
   // ── row menu: standard actions + page actions, in a fixed order ─────────────
   const gridActions: GridAction<T>[] = []
