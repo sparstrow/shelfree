@@ -43,7 +43,7 @@ same turn a page is ported.**
   bulk edit / bulk delete, in-cell editing.
 - Sidebar: favourite views, drag-reorder / rename favourites, sidebar right-click menu.
 - Theme switch in the account menu is temporary until My settings ▸ Appearance is ported.
-- Keyboard shortcuts page not ported yet — the grid shortcuts above must be listed there.
+- Keyboard shortcuts page ported (`/settings/shortcuts`); a new page adds its keys to `src/app/shortcuts.ts` in the same turn.
 - Grid bulk actions (bulk edit, multi-row issue/cancel/close/duplicate/delete) not ported.
 - `scripts/shots.mjs` takes side-by-side screenshots against the prototype.
 
@@ -74,4 +74,8 @@ same turn a page is ported.**
 | Production ▸ Assembly Orders (list + document) | ported (full/partial Finish command, shortage guard, FinishDialog) |
 | Purchasing ▸ Carriers | ported (contact picker shared) |
 | Purchasing ▸ Purchase Prices | ported (list on the editor template + in-grid cell editing + "Items with no vendor price" tab) |
+| Settings ▸ frame, quiet help, Keyboard shortcuts | ported — Settings template (`components/settings/`), shared help (`components/help/`), catalogue `src/app/shortcuts.ts` |
+| Settings ▸ Business profile | ported (first user of `SettingsSection`) |
+| Settings ▸ Units of measure | ported (custom units collection, rules in `domain/units-of-measure.ts`) |
+| Settings ▸ every other section | frame + navigation live; body shows "not moved yet" until ported (add one line to `features/settings/sections.ts`) |
 | Every other prototype page | pending |
