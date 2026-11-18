@@ -233,3 +233,40 @@ Primary contact / Phone / Email were removed from *Contact & billing* (now **Bil
   - **Referential/balance integrity on delete (decision)**: the prototype allowed deleting any customer; the React UI blocks deleting any customer with `openOrders > 0` or non-zero `balance` (`'This customer has open orders or a balance — put it on hold instead'`). Backend `DELETE /customers/:no` must enforce this check (rejecting deletion when open orders or a non-zero balance exist) and emit an audit event on delete. Idle customers use confirm + Undo.
   - **Out of scope for this slice**: drawer inline Edit mode, the customer profile page, customer-specific sales prices in the drawer, and sales orders.
 - **Tests**: Vitest unit tests in `apps/web/src/domain/customer.test.ts` and `apps/web/src/data/schemas/seed.test.ts`; Playwright e2e tests in `apps/web/e2e/customers.spec.ts` (seed count, masked phone in grid vs full phone in drawer, *On hold* view, blocked vs undoable delete, double-click navigation, and notes thread in preview).
+
+## React app (2026-11-17)
+
+The Customer profile is built on the shared **Record page** template (`apps/web/src/components/record-page/RecordPage.tsx`) with all 10 prototype tabs in prototype order. Eight tabs are ported; *Sales prices* and *Contacts* render `RecordTabPending` ("This tab has not been moved yet").
+
+- **URL**: `/sales/customers/$no?tab=<id>` (tab ids in order: `overview` (default, omitted from URL), `details` (*Billing & address*), `prices` (*Sales prices*, pending), `orders` (*Order history*), `statement` (*Statement & aging*), `shipping` (*Shipping addresses*), `notes` (*Notes & activity*), `docs` (*Documents*), `contacts` (*Contacts*, pending), `credit` (*Credit & risk*)). `/sales/customers/new` remains `PlaceholderPage` ("New customer").
+- **Files**:
+  - `apps/web/src/data/schemas/index.ts` — `SALES_ORDER_STATUSES` (`Open | Released | Shipped | Invoiced`), `salesOrderLineSchema` (`[itemNo, qty]`), `salesOrderSchema`, `SALES_INVOICE_STATUSES` (`Draft | Open | Overdue | Paid`), `salesInvoiceSchema`.
+  - `apps/web/src/data/api/index.ts` — `salesOrders` and `salesInvoices` read collections (for this profile page; Sales lists come later).
+  - `apps/web/src/domain/customer.ts` + `customer.test.ts` — pure helpers: `customerKpis`, `customerActivity`, `customerOrderTotal`, `customerDocuments`, `customerDocStatusTone`, `customerAging`, `customerToForm`, `normalizeCustomerForm`, `validateCustomerForm`, `applyCustomerForm`, `validateCustomerShipTo`, `upsertCustomerShipTo`, `deleteCustomerShipTo`, `setDefaultCustomerShipTo`, `toggleCustomerCreditHold`.
+  - `apps/web/src/features/sales/customers/CustomerProfilePage.tsx` + `customer-tabs/CustomerOverviewTab.tsx`, `CustomerDetailsTab.tsx`, `CustomerOrdersTab.tsx`, `CustomerStatementTab.tsx`, `CustomerShippingTab.tsx`, `CustomerNotesTab.tsx`, `CustomerDocumentsTab.tsx`, `CustomerCreditTab.tsx`.
+  - `apps/web/src/routes/sales/customers/$no.tsx` — `validateSearch` with `tab`, renders `CustomerProfilePage` (or `PlaceholderPage` for `new`).
+  - `apps/web/e2e/customer-profile.spec.ts` + `apps/web/e2e/customers.spec.ts` (double-click assertion updated from placeholder to customer heading).
+- **Same as prototype**:
+  - Header: back button (`Esc` / Back returns to `/sales/customers?sel=<no>`), customer no. mono pill, inline-editable name (`titleField="name"`), status pill, `Credit hold` badge when held, meta line `contact · city · terms`, mode-stable Edit / Cancel / Save cell.
+  - All 10 sub-tabs in exact prototype order with keyboard shortcuts (`[` / `]`, `1`–`9` / `0`, `E`, `Ctrl/Cmd+S`, `Esc`).
+  - Overview KPI strip (Balance, Credit limit, Overdue, Open orders — Overview tab only), Details card (`terms`, `creditLimit`, `salesRep` editable; `lastOrder`, `openOrders`, `createdAt` locked), Pricing summary card, and Recent activity.
+  - Billing & address (`details` tab) edits `city`, `state` (active `GST_STATES`), `gstin` (mono, copyable in view), `terms`, with read-only `currency` (`Workspace default`). People remain managed solely on the Contacts tab ("One home for people").
+  - Statement & aging buckets (`Current`, `1–30 days`, `31–60 days`, `61–90 days`, `90+ days`) from unpaid invoices (`status !== 'Paid'`) relative to `todayLocal()`, plus unpaid total and invoice count.
+  - Shipping addresses: add, edit, delete (auto-promoting the first remaining address to default if the default is deleted), and make default; `Esc` closes the inline draft form before returning to the list.
+  - Notes & activity embeds `NotesBlock` (`entityType="customer"`) alongside the derived activity feed.
+  - Documents shows the prototype's empty state (no upload).
+  - Credit & risk shows credit facts (limit, balance, headroom, overdue, terms), risk note, and an immediate `Credit hold` switch (`role="switch"`).
+- **Deliberate changes & deferred rules**:
+  - **Order totals use item list price (deferred rule)**: the prototype resolved order line unit prices via `cpResolve` (agreed customer price if any, else `item.price`). Agreed prices (`customerPrices`) are not in React yet, so `customerOrderTotal` sums `item.price * qty`. Once Sales prices is ported, wire `cpResolve` before `item.price` fallback.
+  - **Order history rows are plain (not linked)**: Sales Orders and Sales Invoices list/document pages are not built in React yet, so rows in *Order history* are read-only with no click navigation.
+  - **Chronological sort**: *Order history* sorts by raw ISO `date` (`YYYY-MM-DD`) before formatting with `fmtDate`, fixing alphabetical month sorting in the prototype.
+  - **GSTIN validation**: optional on customers (blank allowed); when non-empty, 15-character GSTIN format and valid GST state code are enforced on save (`gstinFormatError`).
+  - **Pending header Delete action**: omitted from the header in this pass (matching `VendorProfilePage`; delete remains in the Customers list/drawer).
+  - **Pending tabs**: *Sales prices* (`prices`) and *Contacts* (`contacts`) use `RecordTabPending`.
+- **Persistence**: `shelfree.v2.customers` (profile edits, `shipTo[]`, `creditHold`), `shelfree.v2.notes` (via `NotesBlock`), `shelfree.v2.salesOrders`, `shelfree.v2.salesInvoices`, `shelfree.v2.items`, `shelfree.v2.employees` (all via `@/data/queries` → `api`).
+- **Backend rules & security gate (`docs/security/README.md`)**:
+  - `PATCH /customers/:no` must re-validate required `name`, `creditLimit >= 0`, and optional 15-char GSTIN format + state code; reject direct writes to flat `contact` / `phone` / `email` (derived from primary contact link); emit audit events for customer edits, `creditHold` toggles, and `shipTo` changes.
+  - `GET /customers/:no/documents` and `/aging` must query by `customer_id` scoped to the authenticated tenant (never client-side name matching or unscoped scans).
+  - `Credit hold` enforcement (`creditHold === true` blocking order confirmation) must run server-side when Sales Orders confirmation is implemented.
+  - PII / localStorage check: no new personal-data fields introduced; phone/email are not masked on the customer record itself (per PII policy: masked in grids/exports, full on the record); no secrets in client storage (`shelfree.v2.*` holds demo data only).
+- **Tests**: Vitest unit tests in `apps/web/src/domain/customer.test.ts` and `apps/web/src/data/schemas/seed.test.ts`; Playwright e2e tests in `apps/web/e2e/customer-profile.spec.ts` and `apps/web/e2e/customers.spec.ts`.
