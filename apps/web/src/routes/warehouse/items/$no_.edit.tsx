@@ -1,12 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { PlaceholderPage } from '@/app/shell/PlaceholderPage'
+import { ItemCard } from '@/features/warehouse/items/ItemCard'
 
-/** Full-page Item card placeholder — editing fields on an item is a later task. */
+/** Full-page Item card (`/warehouse/items/$no/edit`). */
 export const Route = createFileRoute('/warehouse/items/$no_/edit')({
-  component: ItemEditPlaceholder,
+  component: ItemEditRoute,
 })
 
-function ItemEditPlaceholder() {
+function ItemEditRoute() {
   const { no } = Route.useParams()
-  return <PlaceholderPage title={`Edit item ${no}`} kind="pending" />
+  return <ItemCard mode="edit" routeNo={no} />
 }

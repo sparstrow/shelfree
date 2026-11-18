@@ -220,6 +220,7 @@ Ported to `apps/web` at `/departments`.
   page, `Ctrl/Cmd+Enter` opening in a new workspace tab, `Shift+S` toggling favorite, typing any letter
   or digit anywhere to focus and filter, `Esc` clearing the filter).
 - **Deliberate changes:** `BUILT_REACT_PAGES` reflects pages ported to React rather than the prototype's
+  The header description ("Every page in …") moved behind an ⓘ on the title (Quiet pages, 2026-11-18).
   `deptBuiltPages()`; Settings toggles (`deptPage`, `deptRecents`, `deptShowUnbuilt`) and the global
   `Ctrl/Cmd+Shift+D` shortcut are deferred until Settings ▸ Configuration ▸ Navigation and Keyboard
   shortcuts are ported.

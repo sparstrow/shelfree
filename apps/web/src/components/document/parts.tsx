@@ -1,6 +1,8 @@
 /** Shared building blocks for full-page document screens (purchase order, receipt, BOM…). */
 import { ChevronLeft, CircleAlert } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { HelpTarget } from '@/components/help/HelpTarget'
+import type { HelpEntry } from '@/components/help/types'
 import { StatusPill } from '@/components/StatusPill'
 import { cn } from '@/lib/utils'
 
@@ -13,12 +15,26 @@ export const primaryButton =
 export const numberInputClass =
   'h-8 w-full rounded-[7px] border border-input bg-transparent px-2 text-right text-[13px] text-foreground outline-none tnum focus:border-ring disabled:cursor-not-allowed disabled:opacity-60'
 
-export function Field({ label, htmlFor, children }: { label: string; htmlFor: string; children: ReactNode }) {
+/** A labelled document field. `help` (optional) puts the description behind ⓘ — quiet pages. */
+export function Field({
+  label,
+  htmlFor,
+  help,
+  children,
+}: {
+  label: string
+  htmlFor: string
+  help?: HelpEntry
+  children: ReactNode
+}) {
+  const text = (
+    <label htmlFor={htmlFor} className="block text-xs font-medium text-muted-foreground">
+      {label}
+    </label>
+  )
   return (
     <div>
-      <label htmlFor={htmlFor} className="mb-[5px] block text-xs font-medium text-muted-foreground">
-        {label}
-      </label>
+      <div className="mb-[5px]">{help ? <HelpTarget help={help} label={label}>{text}</HelpTarget> : text}</div>
       {children}
     </div>
   )
