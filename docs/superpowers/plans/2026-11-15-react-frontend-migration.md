@@ -74,7 +74,7 @@ same turn a page is ported.**
 | People ▸ Contacts | ported |
 | People ▸ Users | ported (in-place drawer with module permissions matrix, bulk actions, protected delete) |
 | People ▸ Employees | ported (in-place drawer, masked grid & export PII, bulk actions, reference-safe delete) |
-| Warehouse ▸ Items (list + item profile) | ported (`/warehouse/items/$no/edit` card pending) |
+| Warehouse ▸ Items (list + item profile + item card) | ported |
 | Warehouse ▸ Units of Measure (item units) | ported (`/warehouse/units-of-measure` on `ListPage`, derived from `items` + `unitsOfMeasure`) |
 | Production ▸ Bills of Materials (list + document) | ported |
 | Production ▸ Assembly Orders (list + document) | ported (full/partial Finish command, shortage guard, FinishDialog) |

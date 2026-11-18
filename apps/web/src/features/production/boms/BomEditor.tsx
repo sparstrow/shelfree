@@ -297,7 +297,6 @@ function Editor({
         title: isNew ? 'New bill of materials' : 'Bill of materials',
         no: draft.no,
         status: bomStatusLabel(draft.status),
-        subtitle: 'What this item is made of — assembly orders explode their components from the active version.',
         backLabel: BACK_LABEL,
         actions: canOrder && (
           <button

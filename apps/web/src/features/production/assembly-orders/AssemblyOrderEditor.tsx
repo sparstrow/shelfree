@@ -520,7 +520,6 @@ function Editor({ initial, isNew, data }: { initial: AssemblyOrder; isNew: boole
           no: draft.no,
           status: aoStatusLabel(draft.status),
           statusIcon: STATUS_ICONS[draft.status],
-          subtitle: 'Components leave stock and finished goods arrive when the order is finished.',
           backLabel: BACK_LABEL,
           actions: draft.bomId ? (
             <Link
