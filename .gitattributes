@@ -1,0 +1,12 @@
+# Store text files with LF line endings; agents on Windows sometimes write CRLF,
+# which turned ordinary merges into whole-file conflicts.
+* text=auto eol=lf
+
+# The frozen Claude Design prototype is never edited — leave its bytes alone.
+prototype/** -text
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary
