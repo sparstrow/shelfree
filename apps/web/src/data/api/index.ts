@@ -13,6 +13,7 @@ import {
   carrierSchema,
   chargeSchema,
   contactSchema,
+  customerPriceSchema,
   customerSchema,
   employeeSchema,
   itemSchema,
@@ -50,6 +51,12 @@ export const api = {
     schema: customerSchema,
     seed: seed.seedCustomers,
     idOf: (r) => r.no,
+  }),
+  customerPrices: createCollection({
+    key: 'customerPrices',
+    schema: customerPriceSchema,
+    seed: seed.seedCustomerPrices,
+    idOf: (r) => r.id,
   }),
   salesOrders: createCollection({
     key: 'salesOrders',

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { toast } from 'sonner'
-import { RecordPage, type RecordPageState, type RecordTab, RecordTabPending } from '@/components/record-page/RecordPage'
+import { RecordPage, type RecordPageState, type RecordTab } from '@/components/record-page/RecordPage'
 import { useList, useUpsert } from '@/data/queries'
 import type { Customer, CustomerShipTo } from '@/data/schemas'
 import {
@@ -16,12 +16,14 @@ import {
   validateCustomerForm,
 } from '@/domain/customer'
 import { fmtDate, int, todayLocal } from '@/lib/format'
+import { CustomerContactsTab } from './customer-tabs/CustomerContactsTab'
 import { CustomerCreditTab } from './customer-tabs/CustomerCreditTab'
 import { CustomerDetailsTab } from './customer-tabs/CustomerDetailsTab'
 import { CustomerDocumentsTab } from './customer-tabs/CustomerDocumentsTab'
 import { CustomerNotesTab } from './customer-tabs/CustomerNotesTab'
 import { CustomerOrdersTab } from './customer-tabs/CustomerOrdersTab'
 import { CustomerOverviewTab } from './customer-tabs/CustomerOverviewTab'
+import { CustomerPricesTab } from './customer-tabs/CustomerPricesTab'
 import { CustomerShippingTab } from './customer-tabs/CustomerShippingTab'
 import { CustomerStatementTab } from './customer-tabs/CustomerStatementTab'
 
@@ -68,8 +70,9 @@ export function CustomerProfilePage({ no }: { no: string }) {
   const orders = useList('salesOrders')
   const invoices = useList('salesInvoices')
   const items = useList('items')
+  const customerPrices = useList('customerPrices')
   const upsert = useUpsert('customers')
-  const queries = [customers, employees, orders, invoices, items]
+  const queries = [customers, employees, orders, invoices, items, customerPrices]
 
   const today = todayLocal()
   const record = customers.data?.find((c) => c.no === no) ?? null
@@ -79,8 +82,11 @@ export function CustomerProfilePage({ no }: { no: string }) {
     [record, orders.data],
   )
   const documents = useMemo(
-    () => (record ? customerDocuments(record, orders.data ?? [], invoices.data ?? [], items.data ?? []) : []),
-    [record, orders.data, invoices.data, items.data],
+    () =>
+      record
+        ? customerDocuments(record, orders.data ?? [], invoices.data ?? [], items.data ?? [], customerPrices.data ?? [])
+        : [],
+    [record, orders.data, invoices.data, items.data, customerPrices.data],
   )
   const aging = useMemo(
     () => (record ? customerAging(record, invoices.data ?? [], today) : null),
@@ -166,6 +172,8 @@ export function CustomerProfilePage({ no }: { no: string }) {
             return <CustomerOverviewTab ctx={ctx} activity={activity} salesRepOptions={salesRepOptions} />
           case 'details':
             return <CustomerDetailsTab ctx={ctx} />
+          case 'prices':
+            return <CustomerPricesTab customer={ctx.record} />
           case 'orders':
             return <CustomerOrdersTab documents={documents} />
           case 'statement':
@@ -181,6 +189,8 @@ export function CustomerProfilePage({ no }: { no: string }) {
             return <CustomerNotesTab customerNo={ctx.record.no} activity={activity} />
           case 'docs':
             return <CustomerDocumentsTab />
+          case 'contacts':
+            return <CustomerContactsTab customer={ctx.record} />
           case 'credit':
             return (
               <CustomerCreditTab
@@ -190,7 +200,7 @@ export function CustomerProfilePage({ no }: { no: string }) {
               />
             )
           default:
-            return <RecordTabPending label={tab.label} />
+            return null
         }
       }}
     </RecordPage>
