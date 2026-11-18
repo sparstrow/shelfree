@@ -467,7 +467,7 @@ export function Sidebar() {
               </span>
             </div>
             <DropdownMenuItem asChild className="gap-[10px] text-[12.5px] font-medium">
-              <Link to="/settings">
+              <Link to="/settings/$section" params={{ section: 'me-profile' }}>
                 <ModuleIcon id="settings" size={15} />
                 My settings
               </Link>

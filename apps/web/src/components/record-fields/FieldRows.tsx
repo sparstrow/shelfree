@@ -8,10 +8,10 @@
  * for the control in that box. Locked fields stay text. Field help lives in a
  * tooltip on the label ("Quiet pages"). Errors show under the value.
  */
-import { Check, Copy, Info } from 'lucide-react'
+import { Check, Copy } from 'lucide-react'
 import { useState } from 'react'
 import { ContactPicker } from '@/components/lookup/ContactPicker'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { HelpTarget } from '@/components/help/HelpTarget'
 import { useList } from '@/data/queries'
 import { formatContactPhone } from '@/domain/contacts'
 import { EM_DASH } from '@/lib/format'
@@ -37,6 +37,7 @@ export interface FieldRowsProps<T> {
   /** Unique per mounted group — input ids are `${idPrefix}-${key}`. */
   idPrefix?: string
   layout?: keyof typeof LAYOUTS
+  /** @deprecated The shared help popover places itself; kept so callers need no change. */
   hintSide?: 'left' | 'right'
 }
 
@@ -155,7 +156,6 @@ export function FieldRows<T>({
   onChange,
   idPrefix = 'ed',
   layout = 'compact',
-  hintSide = 'left',
 }: FieldRowsProps<T>) {
   return (
     <>
@@ -173,23 +173,14 @@ export function FieldRows<T>({
             data-field={field.key}
             className={cn('grid items-start gap-x-2 border-b border-dashed border-border py-1', LAYOUTS[layout])}
           >
-            <span className="flex min-h-8 items-center gap-1 text-[12.5px] text-muted-foreground">
-              <label htmlFor={live ? id : undefined}>{field.label}</label>
-              {field.hint && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      aria-label={`About ${field.label}`}
-                      className="inline-flex size-4 items-center justify-center rounded-full border-0 bg-transparent p-0 text-muted-foreground opacity-60 transition-opacity duration-[140ms] hover:opacity-100 focus-visible:opacity-100"
-                    >
-                      <Info className="size-3" strokeWidth={2} />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side={hintSide} className="max-w-[260px] text-xs leading-normal">
-                    {field.hint}
-                  </TooltipContent>
-                </Tooltip>
+            <span className="flex min-h-8 items-center text-[12.5px] text-muted-foreground">
+              {field.hint ? (
+                // Quiet help: the shared ⓘ (hover / pin popover, touch sheet).
+                <HelpTarget help={{ title: field.label, body: field.hint }} label={field.label} reveal="always" noInline>
+                  <label htmlFor={live ? id : undefined}>{field.label}</label>
+                </HelpTarget>
+              ) : (
+                <label htmlFor={live ? id : undefined}>{field.label}</label>
               )}
             </span>
             <div className="min-w-0">
