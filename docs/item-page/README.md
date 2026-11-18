@@ -161,37 +161,63 @@ or delete — only mark-invalid with a permanent reason). Keyed by
 
 ## React app (2026-11-17)
 
-Warehouse ▸ Items list ported to `apps/web`. URLs: list `/warehouse/items`
-(`?sel=<no>` opens that item's preview drawer); `/warehouse/items/$no` shows
-`<PlaceholderPage kind="pending" />` until the full item profile is ported.
+Warehouse ▸ Items list and Item profile ported to `apps/web`. URLs: list
+`/warehouse/items` (`?sel=<no>` opens that item's preview drawer); Item profile
+`/warehouse/items/$no` (`?tab=overview|stock|purchasing|bom|units|notes`);
+`/warehouse/items/$no/edit` and `/warehouse/items/new` render
+`<PlaceholderPage kind="pending" />` until the full-page Item card is ported.
 
-- **Files:** list `features/warehouse/items/ItemsPage.tsx` + `dataset.ts`; routes
-  `routes/warehouse/items/index.tsx` + `routes/warehouse/items/$no.tsx`; rules
-  `domain/item.ts` + `item.test.ts`; shared template additions `rowFlag` on
-  `components/data-grid/model.ts` + `DataGrid.tsx` and `beforeFacts` on
-  `components/record-drawer/RecordDrawer.tsx`.
-- **Same as prototype:** columns, widths, default visibility (`committed`,
-  `cost`, `margin`, `vendor`, `lead` hidden by default; `location`, `expiry`,
-  `barcode` visible per default axes), *All items* / *Low stock* views,
-  filters, quick search, 6 px `bg-warn-fg` low-stock dot before `no` (`onHand
-  <= rp`), stats (`On hand`, `Committed`, `Available` red when `<= 0`),
-  reorder banner + `STOCK BY LOCATION` horizontal bars (`bg-primary` on
-  `bg-muted`), `DETAILS` facts, and the `NotesBlock` (`entityType: 'item'`).
+- **Files:** list `features/warehouse/items/ItemsPage.tsx` + `dataset.ts`;
+  profile `features/warehouse/items/ItemProfilePage.tsx` + `item-tabs/*.tsx`
+  (`ItemOverviewTab`, `ItemStockTab`, `ItemPurchasingTab`, `ItemBomTab`,
+  `ItemUnitsTab`, `ItemNotesTab`); routes `routes/warehouse/items/index.tsx`,
+  `$no.tsx` + `$no_.edit.tsx`; rules `domain/item.ts` + `item.test.ts`,
+  `domain/item-profile.ts` + `item-profile.test.ts`; shared template additions
+  `rowFlag` on `components/data-grid/model.ts` + `DataGrid.tsx`, `beforeFacts`
+  on `components/record-drawer/RecordDrawer.tsx`, and optional `onEdit` on
+  `components/record-page/RecordPage.tsx`.
+- **Same as prototype:**
+  - *List + drawer:* columns, widths, default visibility (`committed`, `cost`,
+    `margin`, `vendor`, `lead` hidden by default; `location`, `expiry`, `barcode`
+    visible per default axes), *All items* / *Low stock* views, filters, quick
+    search, 6 px `bg-warn-fg` low-stock dot before `no` (`onHand <= rp`), stats
+    (`On hand`, `Committed`, `Available` red when `<= 0`), reorder banner +
+    `STOCK BY LOCATION` horizontal bars (`bg-primary` on `bg-muted`), `DETAILS`
+    facts, and the `NotesBlock` (`entityType: 'item'`).
+  - *Item profile:* `RecordPage` shell (`Esc` returns to `/warehouse/items?sel=<no>`,
+    `1`–`6` and `[` `]` switch tabs synced with `?tab=`); 4 KPI cards (`On hand`,
+    `Available`, `Committed`, `Incoming`); **Overview** (details, clickable preferred
+    vendor link, tracking flags, attributes); **Stock & locations** (site bars
+    labelled by warehouse short name, tracking empty-state cards, reorder callout,
+    replenishment & valuation); **Purchasing** (sourcing, PO table linking to
+    `/purchasing/purchase-orders/<no>` and `/purchasing/vendors/<no>`, *View all
+    lines* → `/purchasing/purchase-lines?item=<no>`); **Bill of materials**
+    (active components linking to component items and BOM `/production/bills-of-materials/<no>`,
+    rolled-up cost & cost delta, versions list, where-used table, and assembly
+    orders linking to `/production/assembly-orders/<no>`); **Units of measure**
+    (base UoM selector, auto-derived master pack, fixed/manual conversions, inline
+    unit picker & removal); **Notes** (`NotesBlock` for `entityType: 'item'`).
 - **Deliberate differences:**
-  - *Unit price / Unit cost* omit footer averages (`GridColumn.agg` in React
-    supports `'sum' | null` only so far).
-  - *Base UoM* reads `item.uom` and *Master Pack UoM* shows `—` until the
-    `itemUom` store lands; *Category* / *Sub-category* hierarchy resolves via a
-    default parent table in `domain/item.ts` until `itemCategories` lands.
-  - *STOCK BY LOCATION* (plus optional reorder banner) renders through the new
-    optional `RecordDrawerProps.beforeFacts` slot so it sits above `DETAILS`
-    while `NotesBlock` stays in `children` below `DETAILS`.
-  - Out-of-scope Actions-menu shortcuts (*Sales prices*, *Stock by location*,
-    *Unit of measure*) are omitted until those target pages are ported.
+  - *Status pill:* profile header shows `Blocked` / `Out of stock` / `Low stock` /
+    `Healthy` to match `ItemsPage` and `domain/status.ts` (prototype used `In stock`
+    for healthy stock).
+  - *Edit handoff:* no in-place edit on the profile — clicking *Edit* or pressing
+    `E` invokes optional `RecordPageProps.onEdit` to navigate to
+    `/warehouse/items/$no/edit` (`$no_.edit.tsx` non-nested placeholder).
+  - *Duplicate / Units persistence:* header *Duplicate* is omitted until the
+    `/warehouse/items/new` Item card lands; *Delete* uses `itemDeleteBlockedReason`
+    and `ConfirmDialog`. Per-item *Units of measure* state initializes from
+    `item.uom` in component state until `shelfree.v2.itemUom` / Settings UoM
+    stores are migrated (changes in that tab do not persist across reload yet).
+  - *List minor gaps:* *Unit price / Unit cost* omit footer averages (`GridColumn.agg`
+    supports `'sum' | null` only); *Base UoM* reads `item.uom` and *Master Pack UoM*
+    shows `—` in the list grid; *Category* hierarchy uses a default parent table in
+    `domain/item.ts`; *STOCK BY LOCATION* renders through `RecordDrawerProps.beforeFacts`;
+    Actions-menu shortcuts for unported pages are omitted.
 - **Persistence (`localStorage` today):** collections `shelfree.v2.items`,
-  `shelfree.v2.warehouses`, `shelfree.v2.purchaseOrders`,
-  `shelfree.v2.purchaseReceipts`, `shelfree.v2.notes`; grid column widths / UI
-  state in `shelfree.v2.ui`.
+  `shelfree.v2.warehouses`, `shelfree.v2.vendors`, `shelfree.v2.purchaseOrders`,
+  `shelfree.v2.purchaseReceipts`, `shelfree.v2.boms`, `shelfree.v2.assemblyOrders`,
+  `shelfree.v2.notes`; grid column widths / UI state in `shelfree.v2.ui`.
 - **Backend & security rules:** server enforces tenant scoping and
   `warehouse.items.read` / `warehouse.items.write` RBAC; item deletes must be
   rejected server-side (`409`) whenever stock on hand `> 0` or the item
@@ -199,6 +225,7 @@ Warehouse ▸ Items list ported to `apps/web`. URLs: list `/warehouse/items`
   stock or is on purchase documents — block it instead'`) and must emit an
   audit event; axis-off tracking fields (`tracksLot`, `tracksExpiry`,
   `tracksSerial`, `barcode`) are soft-hidden only and validated on write per
-  `docs/security/README.md`.
-- **Tests:** `apps/web/src/domain/item.test.ts` (unit),
-  `apps/web/e2e/items.spec.ts` (Playwright).
+  `docs/security/README.md`; per-item UoM conversions (`qty_in_base > 0`, one
+  base in list) and Master pack derivation belong server-side.
+- **Tests:** `apps/web/src/domain/item.test.ts` + `item-profile.test.ts` (unit),
+  `apps/web/e2e/items.spec.ts` + `item-profile.spec.ts` (Playwright).
