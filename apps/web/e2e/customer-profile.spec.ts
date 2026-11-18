@@ -40,7 +40,7 @@ test.describe('Customer profile', () => {
 
     await page.getByRole('tab', { name: 'Sales prices' }).click()
     await expect(page).toHaveURL(/\?tab=prices$/)
-    await expect(page.getByRole('tabpanel')).toContainText('This tab has not been moved yet')
+    await expect(page.getByRole('tabpanel')).toContainText('Agreed prices')
 
     await page.keyboard.press('4')
     await expect(page).toHaveURL(/\?tab=orders$/)
@@ -58,7 +58,7 @@ test.describe('Customer profile', () => {
 
     await page.keyboard.press('9')
     await expect(page).toHaveURL(/\?tab=contacts$/)
-    await expect(page.getByRole('tabpanel')).toContainText('This tab has not been moved yet')
+    await expect(page.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', 'rp-tab-contacts')
 
     await page.keyboard.press('0')
     await expect(page).toHaveURL(/\?tab=credit$/)
