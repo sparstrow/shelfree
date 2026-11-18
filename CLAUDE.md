@@ -87,6 +87,12 @@ page that uses it — that is the point, so put shared behaviour in the template
   add/remove/reorder are off). Comment the exception where it is declared. If
   the option you need doesn't exist, add it to the template (so other pages can
   use it too) rather than forking the template into a page.
+- **List template options added for Purchase Prices** (all opt-in, other lists
+  unchanged): `column.edit` (in-grid cell editing — click / Enter opens an
+  input, Enter or blur saves, Esc cancels, Tab → next editable cell; `commit`
+  returns an error string to refuse), `view.sorts`, `initialDraft` (open New
+  pre-filled), `topBarExtra`, action/shortcut `run(row, { startNew, startEdit })`,
+  shortcut `shift`, editor field type `date` and `step`.
 - Never build a list, document or line table from scratch in a feature folder.
 
 ## Tokens & colour

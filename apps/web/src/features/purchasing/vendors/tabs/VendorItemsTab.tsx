@@ -28,7 +28,7 @@ export function VendorItemsTab({ vendor, items, prices, orders, today }: VendorI
 
   const openItem = (itemNo: string) => void navigate({ to: '/warehouse/items/$no', params: { no: itemNo } })
   const openPriceList = () =>
-    void navigate({ to: '/$module/$page', params: { module: 'purchasing', page: 'purchase-prices' } })
+    void navigate({ to: '/purchasing/purchase-prices', search: { vendor: vendor.no } })
 
   return (
     <div className="animate-sf-fade">
