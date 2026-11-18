@@ -38,10 +38,13 @@ same turn a page is ported.**
 
 ## Known gaps in what is done (fix next)
 
-- Grid features still to port: user-saved views, filter side panel, column
-  reorder / resize / pin menu, grouping, find-in-view, footer aggregate chooser,
-  bulk edit / bulk delete, in-cell editing.
-- Sidebar: favourite views, drag-reorder / rename favourites, sidebar right-click menu.
+- Grid features still to port: filter side panel, column reorder / resize / pin
+  menu, grouping, find-in-view, footer aggregate chooser, bulk edit / bulk delete,
+  in-cell editing. (User-saved views and sidebar favourites — views, rename, drag
+  reorder, right-click menu — are ported, 2026-11-18. A saved view stores grouping
+  and column width / order / pin too, but the grid does not use them yet. The
+  favourites cap, the "Favorites" label and the Settings ▸ Favorites & views page
+  wait for the Settings redesign.)
 - Theme switch in the account menu is temporary until My settings ▸ Appearance is ported.
 - Keyboard shortcuts page ported (`/settings/shortcuts`); a new page adds its keys to `src/app/shortcuts.ts` in the same turn.
 - Grid bulk actions (bulk edit, multi-row issue/cancel/close/duplicate/delete) not ported.

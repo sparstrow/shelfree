@@ -6,6 +6,7 @@ import { ICON_STAR, MODULES } from '@/app/nav'
 import { TopBar } from '@/app/shell/TopBar'
 import { describePath } from '@/app/shell/use-active-page'
 import { useUi } from '@/app/stores/ui'
+import { useFavoriteActions } from '@/components/saved-views/use-favorite-actions'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -54,8 +55,7 @@ interface RecentPageChip {
 export function DepartmentsPage() {
   const router = useRouter()
   const workspace = useWorkspace().data
-  const favorites = useUi((s) => s.favorites)
-  const toggleFavorite = useUi((s) => s.toggleFavorite)
+  const favoriteActions = useFavoriteActions()
   const recents = useUi((s) => s.recents)
   const openTab = useUi((s) => s.openTab)
 
@@ -87,7 +87,7 @@ export function DepartmentsPage() {
   }
 
   const isFav = (entry: DepartmentPageEntry) =>
-    favorites.some((f) => f.moduleId === entry.moduleId && f.slug === entry.slug)
+    !!favoriteActions.pageFavorite(entry.moduleId, entry.slug)
 
   const moveFocus = (nextIdx: number) => {
     setFocusIdx(nextIdx)
@@ -127,7 +127,7 @@ export function DepartmentsPage() {
       const target = flat[activeFocusIdx]
       if (!target) return
       e.preventDefault()
-      toggleFavorite({ moduleId: target.moduleId, slug: target.slug })
+      favoriteActions.togglePage(target.moduleId, target.slug, target.label)
       return
     }
     if (e.key === 'Escape' && query.trim()) {
@@ -158,7 +158,7 @@ export function DepartmentsPage() {
     const focused = entry.key === focusedKey
     const onStar = (e: MouseEvent) => {
       e.stopPropagation()
-      toggleFavorite({ moduleId: entry.moduleId, slug: entry.slug })
+      favoriteActions.togglePage(entry.moduleId, entry.slug, entry.label)
     }
     return (
       <ContextMenu key={entry.key}>
@@ -228,7 +228,7 @@ export function DepartmentsPage() {
           <ContextMenuSeparator />
           <ContextMenuItem
             className="gap-[9px] text-[12.5px]"
-            onSelect={() => toggleFavorite({ moduleId: entry.moduleId, slug: entry.slug })}
+            onSelect={() => favoriteActions.togglePage(entry.moduleId, entry.slug, entry.label)}
           >
             <Star className="size-[14px]" strokeWidth={2} />
             {fav ? 'Remove from favorites' : 'Add to favorites'}

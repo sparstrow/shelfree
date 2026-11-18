@@ -1,16 +1,28 @@
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { Check, LogOut, Moon, Sun } from 'lucide-react'
-import { type MouseEvent, type ReactNode, useRef, useState } from 'react'
+import { type DragEvent, type MouseEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { ModuleIcon, PathIcon } from '@/app/icons'
 import {
   ICON_STAR,
+  ICON_VIEW,
   MODULES,
   type ModuleDef,
   type ModuleId,
   type PageDef,
   findPage,
 } from '@/app/nav'
+import { useGridViews } from '@/app/stores/grid-views'
 import { type DemoRole, useUi } from '@/app/stores/ui'
+import { useFavoriteActions } from '@/components/saved-views/use-favorite-actions'
+import { pageIdentityOf } from '@/components/saved-views/use-page-identity'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +32,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useList } from '@/data/queries'
+import type { Favorite } from '@/data/schemas'
+import { DEFAULT_FAVORITES_CAP, capFavorites, overflowLabel } from '@/domain/favorites'
 import { useMe, useWorkspace } from '@/data/queries/session'
+import { isTypingTarget } from '@/lib/keyboard'
 import { cn } from '@/lib/utils'
 import { useActivePage } from './use-active-page'
 
@@ -145,57 +160,120 @@ function useNavBadges(): Record<string, string | undefined> {
   }
 }
 
+const ctxItem = 'gap-2 text-[12.5px] font-medium'
+
 function PageLink({
   module,
   page,
   active,
   badge,
+  fav,
+  onToggleFav,
+  onOpenInTab,
 }: {
   module: ModuleDef
   page: PageDef
   active: boolean
   badge?: string
+  fav: boolean
+  onToggleFav: () => void
+  onOpenInTab: () => void
 }) {
-  const fav = useUi((s) => s.favorites.some((f) => f.moduleId === module.id && f.slug === page.slug))
-  const toggleFavorite = useUi((s) => s.toggleFavorite)
   const onStar = (e: MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    toggleFavorite({ moduleId: module.id, slug: page.slug })
+    onToggleFav()
   }
   return (
-    <div className="group/page relative">
-      <Link
-        to="/$module/$page"
-        params={{ module: module.id, page: page.slug }}
-        className={pageClass(active)}
-        aria-current={active ? 'page' : undefined}
-      >
-        <span className="flex size-[15px] flex-none items-center justify-center opacity-80">
-          <PathIcon d={page.icon} />
-        </span>
-        <span className="min-w-0 flex-1 truncate text-left">{page.label}</span>
-        {badge && <Badge>{badge}</Badge>}
-        {/* room for the star, which sits beside the link (not inside it) */}
-        <span className="w-[15px] flex-none" />
-      </Link>
-      <button
-        type="button"
-        onClick={onStar}
-        title={fav ? 'Remove from favorites' : 'Add to favorites'}
-        aria-label={fav ? `Remove ${page.label} from favorites` : `Add ${page.label} to favorites`}
-        aria-pressed={fav}
-        className={cn(
-          'absolute top-1/2 right-[10px] flex size-[15px] -translate-y-1/2 items-center justify-center border-0 bg-transparent p-0 transition-[opacity,scale] duration-[140ms] hover:scale-[1.18] hover:opacity-100 focus-visible:opacity-100',
-          fav
-            ? 'text-primary opacity-95'
-            : cn('opacity-0 group-hover/page:opacity-50', active ? 'text-primary' : 'text-muted-foreground'),
-        )}
-      >
-        <StarGlyph on={fav} />
-      </button>
-    </div>
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div className="group/page relative">
+          <Link
+            to="/$module/$page"
+            params={{ module: module.id, page: page.slug }}
+            className={pageClass(active)}
+            aria-current={active ? 'page' : undefined}
+          >
+            <span className="flex size-[15px] flex-none items-center justify-center opacity-80">
+              <PathIcon d={page.icon} />
+            </span>
+            <span className="min-w-0 flex-1 truncate text-left">{page.label}</span>
+            {badge && <Badge>{badge}</Badge>}
+            {/* room for the star, which sits beside the link (not inside it) */}
+            <span className="w-[15px] flex-none" />
+          </Link>
+          <button
+            type="button"
+            onClick={onStar}
+            title={fav ? 'Remove from favorites' : 'Add to favorites'}
+            aria-label={fav ? `Remove ${page.label} from favorites` : `Add ${page.label} to favorites`}
+            aria-pressed={fav}
+            className={cn(
+              'absolute top-1/2 right-[10px] flex size-[15px] -translate-y-1/2 items-center justify-center border-0 bg-transparent p-0 transition-[opacity,scale] duration-[140ms] hover:scale-[1.18] hover:opacity-100 focus-visible:opacity-100',
+              fav
+                ? 'text-primary opacity-95'
+                : cn('opacity-0 group-hover/page:opacity-50', active ? 'text-primary' : 'text-muted-foreground'),
+            )}
+          >
+            <StarGlyph on={fav} />
+          </button>
+        </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="min-w-[196px]">
+        <ContextMenuLabel className="truncate text-[11px] font-semibold text-muted-foreground">{page.label}</ContextMenuLabel>
+        <ContextMenuItem className={ctxItem} onSelect={onToggleFav}>
+          {fav ? 'Remove from favorites' : 'Add to favorites'}
+        </ContextMenuItem>
+        <ContextMenuItem className={ctxItem} onSelect={onOpenInTab}>
+          Open in new tab
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   )
+}
+
+/** The name box of a view favourite being renamed in place: Enter / click away saves, Esc cancels. */
+function RenameInput({ initial, onCommit, onCancel }: { initial: string; onCommit: (name: string) => void; onCancel: () => void }) {
+  const [value, setValue] = useState(initial)
+  const done = useRef(false)
+  const finish = (save: boolean) => {
+    if (done.current) return
+    done.current = true
+    if (save) onCommit(value)
+    else onCancel()
+  }
+  return (
+    <input
+      autoFocus
+      aria-label="Rename view"
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onFocus={(e) => e.currentTarget.select()}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          finish(true)
+        } else if (e.key === 'Escape') {
+          e.preventDefault()
+          e.stopPropagation()
+          finish(false)
+        }
+      }}
+      onBlur={() => finish(true)}
+      className="h-[30px] w-full rounded-lg border border-primary bg-input px-[9px] text-[13px] text-foreground outline-none"
+    />
+  )
+}
+
+/** One resolved row of the Favorites section. */
+interface FavRow {
+  fav: Favorite
+  isView: boolean
+  label: string
+  sub: string
+  icon: string
+  title: string
+  active: boolean
 }
 
 interface Flyout {
@@ -216,14 +294,22 @@ export function Sidebar() {
   const setNavExpanded = useUi((s) => s.setNavExpanded)
   const favOpen = useUi((s) => s.favOpen)
   const toggleFavOpen = useUi((s) => s.toggleFavOpen)
-  const favorites = useUi((s) => s.favorites)
-  const toggleFavorite = useUi((s) => s.toggleFavorite)
+  const setFavOpen = useUi((s) => s.setFavOpen)
+  const openTab = useUi((s) => s.openTab)
+  const router = useRouter()
+  const favoriteActions = useFavoriteActions()
+  const gridActiveView = useGridViews((s) => s.active)
+  const renamingId = useGridViews((s) => s.renamingFavoriteId)
+  const setRenamingFavorite = useGridViews((s) => s.setRenamingFavorite)
   const theme = useUi((s) => s.theme)
   const setTheme = useUi((s) => s.setTheme)
   const demoRole = useUi((s) => s.demoRole)
   const setDemoRole = useUi((s) => s.setDemoRole)
 
   const [flyout, setFlyout] = useState<Flyout | null>(null)
+  const [showAll, setShowAll] = useState(false)
+  const [dropId, setDropId] = useState<string | null>(null)
+  const dragId = useRef<string | null>(null)
   const flyoutTimer = useRef<number | undefined>(undefined)
 
   const activeModuleId = active.kind === 'page' ? active.module.id : null
@@ -254,13 +340,90 @@ export function Sidebar() {
   }
   const keepFlyout = () => window.clearTimeout(flyoutTimer.current)
 
-  const favRows = favorites
-    .map((f) => findPage(f.moduleId, f.slug))
-    .filter((hit): hit is NonNullable<typeof hit> => !!hit)
-  const flyoutModule = flyout ? MODULES.find((m) => m.id === flyout.id) : undefined
-  const roleLabel = ROLES.find((r) => r.id === demoRole)?.label ?? ''
+  const activePageKey = active.kind === 'page' ? pageIdentityOf(active.pathname).pageKey : null
   const isActivePage = (moduleId: string, slug: string) =>
     active.kind === 'page' && active.module.id === moduleId && active.page.slug === slug
+  const allFavRows: FavRow[] = []
+  for (const fav of favoriteActions.list) {
+    if (fav.kind === 'view') {
+      const view = favoriteActions.viewById(fav.viewId)
+      if (!view) continue
+      allFavRows.push({
+        fav,
+        isView: true,
+        label: view.name,
+        sub: view.pageLabel,
+        icon: ICON_VIEW,
+        title: `${view.pageLabel} · ${view.name}`,
+        active: activePageKey === view.pageKey && gridActiveView[view.pageKey] === view.id,
+      })
+      continue
+    }
+    const hit = findPage(fav.module, fav.page)
+    if (!hit) continue // a page the user can no longer reach is hidden, not broken
+    allFavRows.push({
+      fav,
+      isView: false,
+      label: hit.page.label,
+      sub: '',
+      icon: hit.page.icon,
+      title: `${hit.module.name} › ${hit.page.label}`,
+      active: isActivePage(hit.module.id, hit.page.slug),
+    })
+  }
+  const { shown: favRows, overflow: favOverflow } = capFavorites(allFavRows, DEFAULT_FAVORITES_CAP, showAll)
+  const flyoutModule = flyout ? MODULES.find((m) => m.id === flyout.id) : undefined
+  const roleLabel = ROLES.find((r) => r.id === demoRole)?.label ?? ''
+
+  const openPageInTab = (moduleId: string, slug: string) => {
+    const path = `/${moduleId}/${slug}`
+    openTab(path)
+    router.history.push(path)
+  }
+
+  // Ctrl+Alt+F focuses the first favourite; Ctrl+1…9 opens the Nth.
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || isTypingTarget(e.target)) return
+      if (e.altKey && e.key.toLowerCase() === 'f') {
+        e.preventDefault()
+        setCollapsed(false)
+        setFavOpen(true)
+        window.setTimeout(() => document.querySelector<HTMLElement>('[data-fav-row]')?.focus(), 60)
+      } else if (!e.altKey && /^[1-9]$/.test(e.key)) {
+        const row = allFavRows[Number(e.key) - 1]
+        if (!row) return
+        e.preventDefault()
+        favoriteActions.open(row.fav)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
+  const dragProps = (id: string) => ({
+    draggable: true,
+    onDragStart: (e: DragEvent) => {
+      dragId.current = id
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/plain', id)
+    },
+    onDragOver: (e: DragEvent) => {
+      e.preventDefault()
+      if (dropId !== id) setDropId(id)
+    },
+    onDrop: (e: DragEvent) => {
+      e.preventDefault()
+      const from = dragId.current
+      dragId.current = null
+      setDropId(null)
+      if (from) favoriteActions.dropOn(from, id)
+    },
+    onDragEnd: () => {
+      dragId.current = null
+      setDropId(null)
+    },
+  })
 
   return (
     <aside
@@ -347,40 +510,105 @@ export function Sidebar() {
             </svg>
           </span>
           <span className={textClass(collapsed)}>Favorites</span>
-          {favRows.length > 0 && !collapsed && <Badge>{favRows.length}</Badge>}
+          {allFavRows.length > 0 && !collapsed && <Badge>{allFavRows.length}</Badge>}
           <Chevron open={favOpen} collapsed={collapsed} />
         </button>
         <Collapsible open={favOpen && !collapsed}>
-          {favRows.length === 0 && (
+          {allFavRows.length === 0 && (
             <div className="px-[10px] pt-1 pb-2 text-[11.5px] leading-[1.45] text-pretty text-muted-foreground">
               Star a page or view to pin it here.
             </div>
           )}
-          {favRows.map(({ module, page }) => (
-            <div key={module.id + '/' + page.slug} className="relative">
-              <Link
-                to="/$module/$page"
-                params={{ module: module.id, page: page.slug }}
-                title={`${module.name} › ${page.label}`}
-                className={pageClass(isActivePage(module.id, page.slug))}
-              >
-                <span className="flex size-[14px] flex-none items-center justify-center opacity-70">
-                  <PathIcon d={page.icon} size={13} strokeWidth={1.8} />
-                </span>
-                <span className="min-w-0 flex-1 truncate text-left">{page.label}</span>
-                <span className="w-[15px] flex-none" />
-              </Link>
-              <button
-                type="button"
-                title="Unpin"
-                aria-label={`Unpin ${page.label}`}
-                onClick={() => toggleFavorite({ moduleId: module.id, slug: page.slug })}
-                className="absolute top-1/2 right-[10px] flex size-[15px] -translate-y-1/2 items-center justify-center border-0 bg-transparent p-0 text-primary opacity-80 transition-[opacity,scale] duration-[140ms] hover:scale-[1.18] hover:opacity-100"
-              >
-                <StarGlyph on />
-              </button>
-            </div>
-          ))}
+          {favRows.map((row) => {
+            const { fav } = row
+            if (renamingId === fav.id && row.isView) {
+              return (
+                <RenameInput
+                  key={fav.id}
+                  initial={row.label}
+                  onCancel={() => setRenamingFavorite(null)}
+                  onCommit={(name) => {
+                    setRenamingFavorite(null)
+                    const view = favoriteActions.viewById(fav.viewId)
+                    if (view) favoriteActions.renameView(view, name)
+                  }}
+                />
+              )
+            }
+            return (
+              <ContextMenu key={fav.id}>
+                <ContextMenuTrigger asChild>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      data-fav-row
+                      title={row.title}
+                      onClick={() => favoriteActions.open(fav)}
+                      {...dragProps(fav.id)}
+                      className={cn(
+                        pageClass(row.active),
+                        'border-t-2 text-left',
+                        dropId === fav.id ? 'border-t-primary' : 'border-t-transparent',
+                      )}
+                    >
+                      <span className="flex size-[14px] flex-none items-center justify-center opacity-70">
+                        <PathIcon d={row.icon} size={13} strokeWidth={1.8} />
+                      </span>
+                      <span className="min-w-0 flex-1 text-left">
+                        <span className="block truncate">{row.label}</span>
+                        {row.isView && (
+                          <span className="block truncate text-[10.5px] font-medium text-muted-foreground">{row.sub}</span>
+                        )}
+                      </span>
+                      <span className="w-[15px] flex-none" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Unpin"
+                      aria-label={`Unpin ${row.label}`}
+                      onClick={() => favoriteActions.removeFavorite(fav, row.label)}
+                      className="absolute top-1/2 right-[10px] flex size-[15px] -translate-y-1/2 items-center justify-center border-0 bg-transparent p-0 text-primary opacity-80 transition-[opacity,scale] duration-[140ms] hover:scale-[1.18] hover:opacity-100 focus-visible:opacity-100"
+                    >
+                      <StarGlyph on />
+                    </button>
+                  </div>
+                </ContextMenuTrigger>
+                <ContextMenuContent className="min-w-[196px]">
+                  <ContextMenuLabel className="truncate text-[11px] font-semibold text-muted-foreground">{row.label}</ContextMenuLabel>
+                  {row.isView && (
+                    <ContextMenuItem className={ctxItem} onSelect={() => setRenamingFavorite(fav.id)}>
+                      Rename
+                    </ContextMenuItem>
+                  )}
+                  <ContextMenuItem className={ctxItem} onSelect={() => favoriteActions.open(fav, true)}>
+                    Open in new tab
+                  </ContextMenuItem>
+                  <ContextMenuItem className={ctxItem} onSelect={() => favoriteActions.move(fav.id, -1)}>
+                    Move up
+                  </ContextMenuItem>
+                  <ContextMenuItem className={ctxItem} onSelect={() => favoriteActions.move(fav.id, 1)}>
+                    Move down
+                  </ContextMenuItem>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem
+                    className={cn(ctxItem, 'text-bad-fg focus:bg-bad-bg focus:text-bad-fg')}
+                    onSelect={() => favoriteActions.removeFavorite(fav, row.label)}
+                  >
+                    Remove
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
+            )
+          })}
+          {favOverflow && (
+            <button
+              type="button"
+              onClick={() => setShowAll((v) => !v)}
+              className="flex w-full items-center gap-1.5 rounded-lg border-0 bg-transparent px-[10px] py-[5px] text-left text-[11.5px] font-semibold text-muted-foreground transition-colors duration-[140ms] hover:text-foreground"
+            >
+              {overflowLabel(allFavRows.length, showAll)}
+            </button>
+          )}
         </Collapsible>
 
         {MODULES.map((module) => {
@@ -412,6 +640,9 @@ export function Sidebar() {
                     page={page}
                     active={isActivePage(module.id, page.slug)}
                     badge={badges[module.id + '/' + page.slug]}
+                    fav={!!favoriteActions.pageFavorite(module.id, page.slug)}
+                    onToggleFav={() => favoriteActions.togglePage(module.id, page.slug, page.label)}
+                    onOpenInTab={() => openPageInTab(module.id, page.slug)}
                   />
                 ))}
               </Collapsible>

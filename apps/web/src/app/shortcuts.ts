@@ -8,6 +8,7 @@
  *   - `DataGrid`           → `components/data-grid/shortcut-meta.ts`
  *   - `RecordPage`         → `components/record-page/shortcut-meta.ts`
  *   - `LineGrid`           → `components/document/shortcut-meta.ts`
+ *   - saved views & favourites → `components/saved-views/shortcut-meta.ts`
  *   - a page's own keys    → `features/<module>/<page>/shortcuts.ts` (`ShortcutMeta`,
  *                            spread into `ListPage`'s `shortcuts` prop)
  * To add a page: give it a `shortcuts.ts` (or list its keys inline below when
@@ -17,6 +18,7 @@ import { DATA_GRID_SHORTCUTS } from '@/components/data-grid/shortcut-meta'
 import { LINE_GRID_SHORTCUTS } from '@/components/document/shortcut-meta'
 import { LIST_EDITOR_SHORTCUTS, LIST_PAGE_SHORTCUTS } from '@/components/list-page/shortcut-meta'
 import { RECORD_PAGE_SHORTCUTS } from '@/components/record-page/shortcut-meta'
+import { FAVORITES_VIEWS_SHORTCUTS } from '@/components/saved-views/shortcut-meta'
 import { PO_RECEIVE_SHORTCUT } from '@/features/purchasing/purchase-orders/shortcuts'
 import { PRICE_CHANGE_SHORTCUT, PRICE_TIER_SHORTCUT } from '@/features/purchasing/purchase-prices/shortcuts'
 import { type ShortcutEntry, shortcutEntry } from '@/lib/shortcuts'
@@ -49,6 +51,7 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
   ]),
   group('data-grid', 'Data grid — every list page', DATA_GRID_SHORTCUTS),
   group('list-page', 'List pages — open and row menu', LIST_PAGE_SHORTCUTS),
+  group('favorites-views', 'Favorites & saved views', FAVORITES_VIEWS_SHORTCUTS),
   group('record-page', 'Record pages — Vendor, Customer profile', RECORD_PAGE_SHORTCUTS),
   group('purchase-orders', 'Purchase orders', [
     shortcutEntry(PO_RECEIVE_SHORTCUT),

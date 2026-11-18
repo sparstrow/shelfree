@@ -1,11 +1,12 @@
 /**
  * UI-only state that should survive a reload: theme, sidebar, workspace tabs,
- * favourites, recent pages. This is per-browser preference data, not business
- * data — business records live behind `data/api`.
+ * recent pages. This is per-browser preference data, not business data —
+ * business records live behind `data/api`. Favourites and saved views are
+ * per-user data, not UI flags: they live in the `favorites` / `savedViews`
+ * collections (`data/queries/favorites.ts`).
  */
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { ModuleId } from '@/app/nav'
 
 export type Theme = 'dark' | 'light'
 export type DemoRole = 'owner' | 'admin' | 'member'
@@ -16,18 +17,12 @@ export interface WorkspaceTab {
   path: string
 }
 
-export interface FavoritePage {
-  moduleId: ModuleId
-  slug: string
-}
-
 interface UiState {
   theme: Theme
   navCollapsed: boolean
   /** Accordion state per module id (`settings` included). Unset = follow the active module. */
   navExpanded: Record<string, boolean>
   favOpen: boolean
-  favorites: FavoritePage[]
   /** Most-recent-first page paths for the page search. */
   recents: string[]
   tabs: WorkspaceTab[]
@@ -42,7 +37,7 @@ interface UiState {
   setNavCollapsed: (collapsed: boolean) => void
   setNavExpanded: (id: string, open: boolean) => void
   toggleFavOpen: () => void
-  toggleFavorite: (page: FavoritePage) => void
+  setFavOpen: (open: boolean) => void
   pushRecent: (path: string) => void
   clearRecents: () => void
   setDemoRole: (role: DemoRole) => void
@@ -56,8 +51,6 @@ interface UiState {
   closeTab: (id: number) => string | null
 }
 
-const sameFav = (a: FavoritePage, b: FavoritePage) => a.moduleId === b.moduleId && a.slug === b.slug
-
 export const useUi = create<UiState>()(
   persist(
     (set, get) => ({
@@ -65,7 +58,6 @@ export const useUi = create<UiState>()(
       navCollapsed: false,
       navExpanded: {},
       favOpen: true,
-      favorites: [],
       recents: [],
       tabs: [{ id: 1, path: '/' }],
       activeTabId: 1,
@@ -77,12 +69,7 @@ export const useUi = create<UiState>()(
       setNavCollapsed: (navCollapsed) => set({ navCollapsed }),
       setNavExpanded: (id, open) => set((s) => ({ navExpanded: { ...s.navExpanded, [id]: open } })),
       toggleFavOpen: () => set((s) => ({ favOpen: !s.favOpen })),
-      toggleFavorite: (page) =>
-        set((s) => ({
-          favorites: s.favorites.some((f) => sameFav(f, page))
-            ? s.favorites.filter((f) => !sameFav(f, page))
-            : [...s.favorites, page],
-        })),
+      setFavOpen: (favOpen) => set({ favOpen }),
       pushRecent: (path) =>
         set((s) => ({ recents: [path, ...s.recents.filter((p) => p !== path)].slice(0, 10) })),
       clearRecents: () => set({ recents: [] }),
@@ -115,6 +102,16 @@ export const useUi = create<UiState>()(
         return target.path
       },
     }),
-    { name: 'shelfree.v2.ui', version: 1 },
+    {
+      name: 'shelfree.v2.ui',
+      version: 1,
+      // The first build kept favourites here. They move to the `favorites` collection
+      // (`data/api/favorites.ts`); never carry the old list into memory, or it would be
+      // written back and moved a second time.
+      merge: (persisted, current) => {
+        const { favorites: _moved, ...rest } = (persisted ?? {}) as Partial<UiState> & { favorites?: unknown }
+        return { ...current, ...rest }
+      },
+    },
   ),
 )

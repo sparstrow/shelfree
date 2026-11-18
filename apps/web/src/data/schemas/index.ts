@@ -563,3 +563,65 @@ export const uomSchema = z.object({
   custom: z.literal(true),
 })
 export type CustomUom = z.infer<typeof uomSchema>
+
+// ── Per-user: saved grid views and sidebar favourites ────────────────────────
+// Both belong to one user (`userId`); the backend scopes them to the session.
+export const savedViewSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  name: z.string(),
+  /** Sidebar module / page slug the view belongs to ('' when the page is not in the sidebar). */
+  module: z.string(),
+  page: z.string(),
+  /** `module/page`, or the URL path for pages outside the sidebar. Names are unique per page. */
+  pageKey: z.string(),
+  /** Where the view opens. */
+  path: z.string(),
+  /** Page name for the favourite's second line. */
+  pageLabel: z.string(),
+  scope: z.literal('private'),
+  filters: z.array(
+    z.object({
+      key: z.string(),
+      op: z.string(),
+      value: z.union([z.string(), z.array(z.string())]).optional(),
+      value2: z.string().optional(),
+    }),
+  ),
+  sorts: z.array(z.object({ key: z.string(), dir: z.enum(['asc', 'desc']) })),
+  columns: z.array(
+    z.object({
+      key: z.string(),
+      width: z.number(),
+      visible: z.boolean(),
+      frozen: z.enum(['left', 'right']).nullable(),
+    }),
+  ),
+  density: z.enum(['default', 'compact']),
+  groupBy: z.string().nullable(),
+  collapsed: z.array(z.string()),
+  /** At most one per user and page. Applied when the page opens. */
+  isDefaultFor: z.boolean(),
+  /** Born from pinning an unsaved state (the user has not named it yet). */
+  autoCreated: z.boolean(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+  deletedAt: z.number().nullable(),
+})
+export type SavedView = z.infer<typeof savedViewSchema>
+
+/** A sidebar favourite: a live pointer to a page, or to a saved view. */
+export const favoriteSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  kind: z.enum(['page', 'view']),
+  /** `kind: 'page'` — module id and page slug. */
+  module: z.string().optional(),
+  page: z.string().optional(),
+  /** `kind: 'view'` — the saved view it points to. */
+  viewId: z.string().optional(),
+  /** User-controlled sequence, 0…n-1. */
+  order: z.number(),
+  createdAt: z.number(),
+})
+export type Favorite = z.infer<typeof favoriteSchema>

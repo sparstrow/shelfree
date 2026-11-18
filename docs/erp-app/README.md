@@ -591,3 +591,20 @@ APIs are unchanged.
 **Toasts (2026-11-17, deliberate change):** shown bottom-centre instead of the
 prototype's bottom-right, because at bottom-right they covered the preview
 drawer's Save / Cancel / Edit buttons for several seconds after every save.
+
+
+## React app - saved views and sidebar favourites (2026-11-18)
+
+The grid's **Views** menu now keeps the user's own saved views (save, update, rename, duplicate, default,
+delete, dirty marker) and the sidebar **Favorites** section holds pages and views (rename, drag reorder, cap +
+*Show all*, open, right-click menu). Both live in the shared `DataGrid` and `Sidebar`, so every list page has
+them. Full behaviour, files, persistence and backend notes:
+[`../favorites-views/README.md`](../favorites-views/README.md#react-app-2026-11-18).
+
+- Files: `apps/web/src/components/saved-views/`, `src/domain/saved-views.ts`, `src/domain/favorites.ts`,
+  `src/data/api/{index,commands,favorites}.ts`, `src/data/queries/favorites.ts`, `src/app/shell/Sidebar.tsx`.
+- Persistence: `shelfree.v2.savedViews`, `shelfree.v2.favorites` (per-user data). `shelfree.v2.ui` no longer
+  holds favourites; the old list is moved once on start.
+- Backend: `/me/views` and `/me/favorites` (per user, session-scoped); see the favourites doc.
+- `useUi` lost `favorites` / `toggleFavorite` and gained `setFavOpen`. The Departments page uses the same
+  favourites hook as the sidebar.
