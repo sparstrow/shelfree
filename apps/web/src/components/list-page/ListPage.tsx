@@ -30,6 +30,7 @@ import {
   drawerSecondaryButton,
 } from '@/components/record-drawer/RecordDrawer'
 import { isTypingTarget } from '@/lib/keyboard'
+import type { ShortcutMeta } from '@/lib/shortcuts'
 
 /** What the preview drawer shows for a row (the template adds the close button and footer). */
 export type ListPreview = Omit<RecordDrawerProps, 'onClose' | 'footer'>
@@ -56,13 +57,13 @@ export interface ListAction<T> {
   title?: string
 }
 
-export interface ListShortcut<T> {
-  /** Single key, e.g. `r`. Fires on the active row when not typing. */
-  key: string
-  /** `true` = needs Shift (⇧P), `false` = only without Shift; omit to ignore Shift. */
-  shift?: boolean
-  /** Shown on the Keyboard shortcuts page. */
-  description: string
+/**
+ * A single-key page shortcut. Fires on the active row when not typing. Declare
+ * `key` / `shift` / `description` as a `ShortcutMeta` in the page's own
+ * `shortcuts.ts` and spread it here, so the Keyboard shortcuts page
+ * (`app/shortcuts.ts`) reads the same data.
+ */
+export interface ListShortcut<T> extends ShortcutMeta {
   when?: (row: T) => boolean
   run: (row: T, list: ListContext<T>) => void
 }

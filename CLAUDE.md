@@ -81,6 +81,23 @@ page that uses it — that is the point, so put shared behaviour in the template
   (`components/record-fields/` — the same rows the editable drawer uses, so
   view ↔ edit never moves a field). Reference build:
   `features/purchasing/vendors/VendorProfilePage.tsx`.
+- **Settings section** → `components/settings/` (`SettingsFrame` = navigation +
+  breadcrumb, `SettingsPage` = title row with quiet help, loading / error, save
+  bar, keys Ctrl+S / Esc / `?`). A section made of label | control rows is a
+  `SettingsSection`: give it `saved` + `onSave` (a `useUpdate…` mutation), `groups`
+  of `rows` (key, label, control, default, validate / warn / hidden) and a **help
+  map** (pure `HelpMap` data, `components/help/`); the template owns dirty
+  tracking, the unsaved-changes guard and Save / Discard. A section with its own
+  body (a table, a catalogue) uses `SettingsPage` directly. Register a ported
+  section with one line in `features/settings/sections.ts`; ids and nav are in
+  `components/settings/nav.ts`. **Quiet help is `components/help/HelpTarget`** —
+  wrap any label or title in it (hover 400 ms, click pins, touch = sheet); never
+  build another tooltip. **Keyboard shortcut catalogue = `src/app/shortcuts.ts`**
+  (feeds Settings ▸ Keyboard shortcuts): templates expose their keys as data
+  (`shortcut-meta.ts` beside `ListPage`, `DataGrid`, `RecordPage`, `LineGrid`); a
+  page's own keys are a `ShortcutMeta` in its `shortcuts.ts`, spread into
+  `ListPage`'s `shortcuts` prop; add the page's group to the catalogue in the same
+  turn.
 - **Exceptions are options, never copies.** A page that must differ switches a
   standard part off or adds its own through the template's props (e.g. Purchase
   Lines omits `remove`/`create`/`preview`; receipt lines pass no `onChange`, so

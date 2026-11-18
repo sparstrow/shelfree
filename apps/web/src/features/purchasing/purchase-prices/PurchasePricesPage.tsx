@@ -31,6 +31,7 @@ import { EM_DASH, fmtDate, int, money, todayLocal } from '@/lib/format'
 import { useLatestCallback } from '@/lib/use-latest-callback'
 import { cn } from '@/lib/utils'
 import { dataset as buildDataset } from './dataset'
+import { PRICE_CHANGE_SHORTCUT, PRICE_TIER_SHORTCUT } from './shortcuts'
 
 const route = getRouteApi('/purchasing/purchase-prices/')
 
@@ -235,8 +236,8 @@ export function PurchasePricesPage() {
     { label: 'Open item', run: (r) => openIn(`/warehouse/items/${r.item}`) },
   ]
   const shortcuts: ListShortcut<PriceRow>[] = [
-    { key: 'p', shift: true, description: 'Change the active price (a new row replaces it from today)', run: changePrice },
-    { key: 't', shift: false, description: 'Add a quantity tier for the active price’s vendor and item', run: addTier },
+    { ...PRICE_CHANGE_SHORTCUT, run: changePrice },
+    { ...PRICE_TIER_SHORTCUT, run: addTier },
   ]
 
   const goTab = (next: Tab) => {

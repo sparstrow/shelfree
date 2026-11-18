@@ -8,6 +8,7 @@ import { useList } from '@/data/queries'
 import { poLineCount, poLineTotal, poReceivable, poSubtotal } from '@/domain/purchase-order'
 import { EM_DASH, fmtDate, int, money } from '@/lib/format'
 import { purchaseOrderDataset } from './dataset'
+import { PO_RECEIVE_SHORTCUT } from './shortcuts'
 
 const route = getRouteApi('/purchasing/purchase-orders/')
 
@@ -102,7 +103,7 @@ export function PurchaseOrdersPage() {
         },
       ]}
       shortcuts={[
-        { key: 'r', description: 'Start a goods-in receipt against the active order', when: poReceivable, run: receive },
+        { ...PO_RECEIVE_SHORTCUT, when: poReceivable, run: receive },
       ]}
       preview={preview}
       initialActiveId={sel ?? null}

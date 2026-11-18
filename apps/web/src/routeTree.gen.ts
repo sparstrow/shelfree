@@ -11,8 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DepartmentsRouteImport } from './routes/departments'
-import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ModulePageRouteImport } from './routes/$module/$page'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
+import { Route as SettingsSectionRouteImport } from './routes/settings/$section'
 import { Route as FinanceChartOfAccountsIndexRouteImport } from './routes/finance/chart-of-accounts/index'
 import { Route as PeopleContactsIndexRouteImport } from './routes/people/contacts/index'
 import { Route as PeopleEmployeesIndexRouteImport } from './routes/people/employees/index'
@@ -47,14 +48,19 @@ const DepartmentsRoute = DepartmentsRouteImport.update({
   path: '/departments',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ModulePageRoute = ModulePageRouteImport.update({
   id: '/$module/$page',
   path: '/$module/$page',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsSectionRoute = SettingsSectionRouteImport.update({
+  id: '/settings/$section',
+  path: '/settings/$section',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FinanceChartOfAccountsIndexRoute =
@@ -187,8 +193,9 @@ const WarehouseItemsNoEditRoute = WarehouseItemsNoEditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/departments': typeof DepartmentsRoute
-  '/settings': typeof SettingsRoute
   '/$module/$page': typeof ModulePageRoute
+  '/settings/$section': typeof SettingsSectionRoute
+  '/settings/': typeof SettingsIndexRoute
   '/production/assembly-orders/$no': typeof ProductionAssemblyOrdersNoRoute
   '/production/bills-of-materials/$no': typeof ProductionBillsOfMaterialsNoRoute
   '/purchasing/purchase-orders/$no': typeof PurchasingPurchaseOrdersNoRoute
@@ -216,8 +223,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/departments': typeof DepartmentsRoute
-  '/settings': typeof SettingsRoute
   '/$module/$page': typeof ModulePageRoute
+  '/settings/$section': typeof SettingsSectionRoute
+  '/settings': typeof SettingsIndexRoute
   '/production/assembly-orders/$no': typeof ProductionAssemblyOrdersNoRoute
   '/production/bills-of-materials/$no': typeof ProductionBillsOfMaterialsNoRoute
   '/purchasing/purchase-orders/$no': typeof PurchasingPurchaseOrdersNoRoute
@@ -246,8 +254,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/departments': typeof DepartmentsRoute
-  '/settings': typeof SettingsRoute
   '/$module/$page': typeof ModulePageRoute
+  '/settings/$section': typeof SettingsSectionRoute
+  '/settings/': typeof SettingsIndexRoute
   '/production/assembly-orders/$no': typeof ProductionAssemblyOrdersNoRoute
   '/production/bills-of-materials/$no': typeof ProductionBillsOfMaterialsNoRoute
   '/purchasing/purchase-orders/$no': typeof PurchasingPurchaseOrdersNoRoute
@@ -277,8 +286,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/departments'
-    | '/settings'
     | '/$module/$page'
+    | '/settings/$section'
+    | '/settings/'
     | '/production/assembly-orders/$no'
     | '/production/bills-of-materials/$no'
     | '/purchasing/purchase-orders/$no'
@@ -306,8 +316,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/departments'
-    | '/settings'
     | '/$module/$page'
+    | '/settings/$section'
+    | '/settings'
     | '/production/assembly-orders/$no'
     | '/production/bills-of-materials/$no'
     | '/purchasing/purchase-orders/$no'
@@ -335,8 +346,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/departments'
-    | '/settings'
     | '/$module/$page'
+    | '/settings/$section'
+    | '/settings/'
     | '/production/assembly-orders/$no'
     | '/production/bills-of-materials/$no'
     | '/purchasing/purchase-orders/$no'
@@ -365,8 +377,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DepartmentsRoute: typeof DepartmentsRoute
-  SettingsRoute: typeof SettingsRoute
   ModulePageRoute: typeof ModulePageRoute
+  SettingsSectionRoute: typeof SettingsSectionRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
   ProductionAssemblyOrdersNoRoute: typeof ProductionAssemblyOrdersNoRoute
   ProductionBillsOfMaterialsNoRoute: typeof ProductionBillsOfMaterialsNoRoute
   PurchasingPurchaseOrdersNoRoute: typeof PurchasingPurchaseOrdersNoRoute
@@ -408,18 +421,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DepartmentsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/$module/$page': {
       id: '/$module/$page'
       path: '/$module/$page'
       fullPath: '/$module/$page'
       preLoaderRoute: typeof ModulePageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/settings'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/$section': {
+      id: '/settings/$section'
+      path: '/settings/$section'
+      fullPath: '/settings/$section'
+      preLoaderRoute: typeof SettingsSectionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/finance/chart-of-accounts/': {
@@ -589,8 +609,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DepartmentsRoute: DepartmentsRoute,
-  SettingsRoute: SettingsRoute,
   ModulePageRoute: ModulePageRoute,
+  SettingsSectionRoute: SettingsSectionRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
   ProductionAssemblyOrdersNoRoute: ProductionAssemblyOrdersNoRoute,
   ProductionBillsOfMaterialsNoRoute: ProductionBillsOfMaterialsNoRoute,
   PurchasingPurchaseOrdersNoRoute: PurchasingPurchaseOrdersNoRoute,

@@ -345,3 +345,116 @@ Not covered: **Locations & warehouses** is its own component (`SFLocationsWareho
 current copy until it's converted separately.
 
 Backend: none — static UI copy. No new data, PII or audit surface.
+
+## React app (2026-11-17)
+
+Code: `apps/web/src/components/settings/` (template), `components/help/` (quiet help),
+`src/app/shortcuts.ts` (shortcut catalogue), `features/settings/` (the sections).
+Tiers are parked (CLAUDE.md "current working mode"): nothing is gated.
+
+### URLs and navigation
+
+- `/settings` redirects to `/settings/ws-profile` (a member role: `/settings/me-profile`).
+- One URL per section: `/settings/<id>` with the prototype's ids — `ws-profile`, `ws-gst`, `ws-plan`,
+  `ws-modules`, `ws-regional`, `ws-team`, `shortcuts`, `uom`, `categories`, `locations`, `assembly`,
+  `carrier-types`, `cfg-*`, `terminology`, `me-*`. The list, scopes and groups are `components/settings/nav.ts`.
+  An unknown id is "Page not found".
+- Scopes: **Workspace** (groups Workspace, Configuration, Terminology) and **My settings**. The frame shows
+  a scope switch plus the groups of the active scope; on phones the nav is a select above the section.
+  Breadcrumb: Settings ▸ group ▸ section. Sidebar "Settings" → `/settings`; account menu "My settings" →
+  `/settings/me-profile`.
+- Ported so far: Business profile (`ws-profile`), Units of measure (`uom`), Keyboard shortcuts
+  (`shortcuts`). Every other id shows "has not been moved to the new app yet" inside the frame.
+- A member (demo role) sees My settings only; workspace ids show "Workspace settings are for owners and
+  admins". UX only — the backend enforces it.
+
+### Settings template API
+
+- `SettingsFrame` (route component) — nav + breadcrumb + body; receives the registry
+  `features/settings/sections.ts` (`id → component`). **Port a section:** build it, add one line there.
+- `SettingsPage` — title row (title ⓘ, optional count pill and `actions`), loading skeleton, error + retry,
+  body, and — when given a `form` — the save bar. Owns keys: **Ctrl/Cmd+S** save, **Esc** discard (an open
+  layer closes first), **`?`** toggle inline descriptions (per-user `me.showSetHelp`, off by default; ignored
+  while typing). `width="wide"` for tables.
+- `SettingsSection<V>` — `SettingsPage` + `useSettingsForm` + `SettingsRows` for pages of label | control
+  rows. Props: `id` (input-id prefix), `title`, `help` (`HelpMap`: `page`, a key per group id, a key per
+  row), `saved` / `isLoading` / `error` / `onRetry`, `onSave(next)` (the whole document), `groups`,
+  optional cross-field `validate`.
+- A row: `{ key, label, control, help?, default?, defaultText?, validate?, warn?, hidden?, locked? }`;
+  controls `text | select | switch | number | area | readonly` (`components/settings/rows.ts`). `default`
+  enables "Use default" in the popover while the value differs. `validate` blocks Save with an error under
+  the value; `warn` is a non-blocking state note.
+- `useSettingsForm` — draft = only the changed keys over the saved value; dirty = keys that differ (editing
+  back to the saved value is not a change); one save at a time; success toast `Saved`; the **leave guard**
+  (TanStack `useBlocker` + `beforeunload`) offers Keep editing / Discard and leave / Save and leave.
+- Save bar is mode-stable (always rendered, buttons just enable): "No unsaved changes" / "N unsaved changes".
+- Section settings that fit none of the rows (tables, catalogues) pass `children` to `SettingsPage`.
+
+### Quiet help (`components/help/`)
+
+- `HelpTarget` wraps a label or title and adds the ⓘ button (`aria-label="About …"`, `aria-expanded`).
+  Mouse: hover the label or ⓘ ~400 ms opens the popover, leaving closes it (140 ms grace), click pins; Esc,
+  ✕ or a click outside closes. ⓘ fades in on row hover/focus (`reveal="always"` keeps a faint one). Keyboard:
+  focusing ⓘ opens, Enter/Space pins. Touch (`(hover:none), (pointer:coarse)`): ⓘ always visible, 44 px, opens a
+  bottom sheet. The popover flips to the side with room and caps its height to the space available.
+- Content (`HelpContent`): title, description, each option (current marked, default tagged), "Default: …"
+  with **Use default** when the value differs, and a compliance note. Data type `HelpEntry` / `HelpMap`
+  (`types.ts`) — a page's help is one pure map.
+- `?` inline mode: `HelpInlineContext` (provided by `SettingsPage`) makes every target print its description
+  under the label.
+- `FieldRows` (drawer and record cards) now renders its field `hint` through `HelpTarget` — pages still
+  pass `hint` as before (hover/pin popover instead of a tooltip; the old `hintSide` prop is ignored).
+
+### Keyboard shortcut catalogue
+
+- One data module, `src/app/shortcuts.ts` (`SHORTCUT_GROUPS`, `filterShortcuts`), renders
+  `/settings/shortcuts` (grouped by where the keys apply, searchable by every word across group, key and
+  text; `/` focuses the search, Esc clears it).
+- Templates expose their keys as data beside the code that handles them: `components/list-page/shortcut-meta.ts`,
+  `components/data-grid/shortcut-meta.ts`, `components/record-page/shortcut-meta.ts`,
+  `components/document/shortcut-meta.ts`. A page's own keys are a `ShortcutMeta` (`lib/shortcuts.ts`) in its
+  `shortcuts.ts`, spread into `ListPage`'s `shortcuts` prop (`ListShortcut extends ShortcutMeta`) and imported
+  by the catalogue — see `features/purchasing/purchase-orders/shortcuts.ts`, `purchase-prices/shortcuts.ts`.
+- **A page registers shortcuts** by adding its group to `SHORTCUT_GROUPS` in the same turn it adds the key.
+  Groups ported from the prototype: only for pages that exist in React; the rest follow their pages.
+
+### Persistence
+
+- Workspace identity (Business profile): `localStorage` `shelfree.v2.workspace` via `sessionApi.updateWorkspace`
+  (`data/api/session.ts`); `useWorkspace` feeds the sidebar, so a save shows there at once.
+- Per-user settings: `shelfree.v2.me` via `sessionApi.updateMe` (`showSetHelp` today; the rest of
+  `meDefaults()` joins as My settings sections are ported).
+- Workspace configuration switches (purchasing/tax): `shelfree.v2.settings` (`data/api/settings.ts`, unchanged).
+- Units of measure: collection `unitsOfMeasure` → `shelfree.v2.unitsOfMeasure` (see `docs/units-of-measure`).
+- Screens never touch storage; they use `useWorkspace / useUpdateWorkspace / useMe / useUpdateMe / useList`.
+
+### Backend-build notes
+
+- Endpoints: `GET/PATCH /workspace` (identity), `GET/PATCH /me/settings`, `GET/PATCH /workspace/settings`
+  (configuration switches), `GET/POST/PATCH/DELETE /units-of-measure`.
+- **Who may change workspace settings:** owner and admin only, enforced server-side per endpoint;
+  `PATCH /me/settings` only for the signed-in user. The frame's role check is UX.
+- Business profile validation the backend repeats: name and legal name required; email shape; six-digit PIN;
+  PAN `AAAAA9999A`; GSTIN is **not** edited here (managed under GST registrations). State vs GSTIN state code
+  and PAN vs GSTIN are warnings in the UI — the backend may log them but must not reject.
+- **Audit:** every workspace-setting change is an audit event (actor, setting, old → new, time). Identity
+  fields (GSTIN, PAN, legal name) are tax-relevant: keep the change history. `PATCH` should accept only the
+  changed keys and respond with the full document; use an `If-Match` / version header so two admins saving
+  at once do not overwrite each other (the form holds only changed keys, so a merge is possible).
+- No secrets and no PII beyond the business's own contact details are stored client-side; `showSetHelp` is a
+  harmless preference.
+
+### Decisions & deferred-to-backend
+
+- **Template over copies:** sections describe rows; layout, dirty tracking, leave guard and save live in the
+  template. Exceptions are options on the template.
+- **Own nav, not the app sidebar:** the prototype swaps the app sidebar for a settings sidebar; the React
+  frame keeps the app sidebar and puts the section navigation inside the page (the app shell stays stable
+  and tabs/breadcrumb keep working).
+- **Save model:** rows are always editable and held until Save (like Tax settings in the prototype), with a
+  count of unsaved changes and a leave guard. The prototype's per-row instant save on Business profile is
+  replaced by this.
+- **GSTIN is read-only on Business profile** with a link to GST registrations (same as the prototype's
+  "manage" button); logo upload is still a stub and is not shown.
+- Deferred: the other ~22 sections; the review-before-save dialog of Tax settings (a section can add its own);
+  terminology overrides; role-based hiding beyond the demo `member` role.
