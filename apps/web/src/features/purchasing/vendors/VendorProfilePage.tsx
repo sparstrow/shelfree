@@ -21,6 +21,10 @@ import {
 } from '@/domain/vendor'
 import { fmtDate, int, todayLocal } from '@/lib/format'
 import { VendorOverview, type VendorDraft } from './VendorOverview'
+import { VendorItemsTab } from './tabs/VendorItemsTab'
+import { VendorOrdersTab } from './tabs/VendorOrdersTab'
+import { VendorPerformanceTab } from './tabs/VendorPerformanceTab'
+import { VendorReceiptsTab } from './tabs/VendorReceiptsTab'
 
 const BACK_TO = '/purchasing/vendors'
 
@@ -130,20 +134,47 @@ export function VendorProfilePage({ no }: { no: string }) {
         return { title: 'Vendor updated', description: `${next.no} · ${next.name}${vendorSavedNote(v, next, ws)}` }
       }}
     >
-      {(ctx, tab) =>
-        tab.id === 'overview' ? (
-          <VendorOverview
-            ctx={ctx}
-            stats={stats}
-            supply={vendorSupply(ctx.record, items.data ?? [], prices.data ?? [], stats.orders, today)}
-            activity={vendorActivity(ctx.record, stats, today)}
-            purchasePersonOptions={purchasePersonOptions}
-            workspaceTax={ws}
-          />
-        ) : (
-          <RecordTabPending label={tab.label} />
-        )
-      }
+      {(ctx, tab) => {
+        switch (tab.id) {
+          case 'overview':
+            return (
+              <VendorOverview
+                ctx={ctx}
+                stats={stats}
+                supply={vendorSupply(ctx.record, items.data ?? [], prices.data ?? [], stats.orders, today)}
+                activity={vendorActivity(ctx.record, stats, today)}
+                purchasePersonOptions={purchasePersonOptions}
+                workspaceTax={ws}
+              />
+            )
+          case 'items':
+            return (
+              <VendorItemsTab
+                vendor={ctx.record}
+                items={items.data ?? []}
+                prices={prices.data ?? []}
+                orders={stats.orders}
+                today={today}
+              />
+            )
+          case 'orders':
+            return (
+              <VendorOrdersTab
+                vendor={ctx.record}
+                orders={stats.orders}
+                receipts={receipts.data ?? []}
+                employees={employees.data ?? []}
+                today={today}
+              />
+            )
+          case 'receipts':
+            return <VendorReceiptsTab vendorNo={ctx.record.no} receipts={stats.receipts} />
+          case 'performance':
+            return <VendorPerformanceTab vendor={ctx.record} stats={stats} items={items.data ?? []} />
+          default:
+            return <RecordTabPending label={tab.label} />
+        }
+      }}
     </RecordPage>
   )
 }
