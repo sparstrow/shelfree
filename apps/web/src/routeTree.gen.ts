@@ -15,6 +15,8 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ModulePageRouteImport } from './routes/$module/$page'
 import { Route as FinanceChartOfAccountsIndexRouteImport } from './routes/finance/chart-of-accounts/index'
 import { Route as PeopleContactsIndexRouteImport } from './routes/people/contacts/index'
+import { Route as PeopleEmployeesIndexRouteImport } from './routes/people/employees/index'
+import { Route as PeopleUsersIndexRouteImport } from './routes/people/users/index'
 import { Route as ProductionAssemblyOrdersIndexRouteImport } from './routes/production/assembly-orders/index'
 import { Route as ProductionAssemblyOrdersNoRouteImport } from './routes/production/assembly-orders/$no'
 import { Route as ProductionBillsOfMaterialsIndexRouteImport } from './routes/production/bills-of-materials/index'
@@ -63,6 +65,16 @@ const FinanceChartOfAccountsIndexRoute =
 const PeopleContactsIndexRoute = PeopleContactsIndexRouteImport.update({
   id: '/people/contacts/',
   path: '/people/contacts/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PeopleEmployeesIndexRoute = PeopleEmployeesIndexRouteImport.update({
+  id: '/people/employees/',
+  path: '/people/employees/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PeopleUsersIndexRoute = PeopleUsersIndexRouteImport.update({
+  id: '/people/users/',
+  path: '/people/users/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProductionAssemblyOrdersIndexRoute =
@@ -180,6 +192,8 @@ export interface FileRoutesByFullPath {
   '/warehouse/items/$no': typeof WarehouseItemsNoRoute
   '/finance/chart-of-accounts/': typeof FinanceChartOfAccountsIndexRoute
   '/people/contacts/': typeof PeopleContactsIndexRoute
+  '/people/employees/': typeof PeopleEmployeesIndexRoute
+  '/people/users/': typeof PeopleUsersIndexRoute
   '/production/assembly-orders/': typeof ProductionAssemblyOrdersIndexRoute
   '/production/bills-of-materials/': typeof ProductionBillsOfMaterialsIndexRoute
   '/purchasing/carriers/': typeof PurchasingCarriersIndexRoute
@@ -206,6 +220,8 @@ export interface FileRoutesByTo {
   '/warehouse/items/$no': typeof WarehouseItemsNoRoute
   '/finance/chart-of-accounts': typeof FinanceChartOfAccountsIndexRoute
   '/people/contacts': typeof PeopleContactsIndexRoute
+  '/people/employees': typeof PeopleEmployeesIndexRoute
+  '/people/users': typeof PeopleUsersIndexRoute
   '/production/assembly-orders': typeof ProductionAssemblyOrdersIndexRoute
   '/production/bills-of-materials': typeof ProductionBillsOfMaterialsIndexRoute
   '/purchasing/carriers': typeof PurchasingCarriersIndexRoute
@@ -233,6 +249,8 @@ export interface FileRoutesById {
   '/warehouse/items/$no': typeof WarehouseItemsNoRoute
   '/finance/chart-of-accounts/': typeof FinanceChartOfAccountsIndexRoute
   '/people/contacts/': typeof PeopleContactsIndexRoute
+  '/people/employees/': typeof PeopleEmployeesIndexRoute
+  '/people/users/': typeof PeopleUsersIndexRoute
   '/production/assembly-orders/': typeof ProductionAssemblyOrdersIndexRoute
   '/production/bills-of-materials/': typeof ProductionBillsOfMaterialsIndexRoute
   '/purchasing/carriers/': typeof PurchasingCarriersIndexRoute
@@ -261,6 +279,8 @@ export interface FileRouteTypes {
     | '/warehouse/items/$no'
     | '/finance/chart-of-accounts/'
     | '/people/contacts/'
+    | '/people/employees/'
+    | '/people/users/'
     | '/production/assembly-orders/'
     | '/production/bills-of-materials/'
     | '/purchasing/carriers/'
@@ -287,6 +307,8 @@ export interface FileRouteTypes {
     | '/warehouse/items/$no'
     | '/finance/chart-of-accounts'
     | '/people/contacts'
+    | '/people/employees'
+    | '/people/users'
     | '/production/assembly-orders'
     | '/production/bills-of-materials'
     | '/purchasing/carriers'
@@ -313,6 +335,8 @@ export interface FileRouteTypes {
     | '/warehouse/items/$no'
     | '/finance/chart-of-accounts/'
     | '/people/contacts/'
+    | '/people/employees/'
+    | '/people/users/'
     | '/production/assembly-orders/'
     | '/production/bills-of-materials/'
     | '/purchasing/carriers/'
@@ -340,6 +364,8 @@ export interface RootRouteChildren {
   WarehouseItemsNoRoute: typeof WarehouseItemsNoRoute
   FinanceChartOfAccountsIndexRoute: typeof FinanceChartOfAccountsIndexRoute
   PeopleContactsIndexRoute: typeof PeopleContactsIndexRoute
+  PeopleEmployeesIndexRoute: typeof PeopleEmployeesIndexRoute
+  PeopleUsersIndexRoute: typeof PeopleUsersIndexRoute
   ProductionAssemblyOrdersIndexRoute: typeof ProductionAssemblyOrdersIndexRoute
   ProductionBillsOfMaterialsIndexRoute: typeof ProductionBillsOfMaterialsIndexRoute
   PurchasingCarriersIndexRoute: typeof PurchasingCarriersIndexRoute
@@ -395,6 +421,20 @@ declare module '@tanstack/react-router' {
       path: '/people/contacts'
       fullPath: '/people/contacts/'
       preLoaderRoute: typeof PeopleContactsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/people/employees/': {
+      id: '/people/employees/'
+      path: '/people/employees'
+      fullPath: '/people/employees/'
+      preLoaderRoute: typeof PeopleEmployeesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/people/users/': {
+      id: '/people/users/'
+      path: '/people/users'
+      fullPath: '/people/users/'
+      preLoaderRoute: typeof PeopleUsersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/production/assembly-orders/': {
@@ -540,6 +580,8 @@ const rootRouteChildren: RootRouteChildren = {
   WarehouseItemsNoRoute: WarehouseItemsNoRoute,
   FinanceChartOfAccountsIndexRoute: FinanceChartOfAccountsIndexRoute,
   PeopleContactsIndexRoute: PeopleContactsIndexRoute,
+  PeopleEmployeesIndexRoute: PeopleEmployeesIndexRoute,
+  PeopleUsersIndexRoute: PeopleUsersIndexRoute,
   ProductionAssemblyOrdersIndexRoute: ProductionAssemblyOrdersIndexRoute,
   ProductionBillsOfMaterialsIndexRoute: ProductionBillsOfMaterialsIndexRoute,
   PurchasingCarriersIndexRoute: PurchasingCarriersIndexRoute,
