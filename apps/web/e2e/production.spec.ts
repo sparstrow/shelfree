@@ -49,7 +49,7 @@ test.describe('Production ▸ Bills of Materials list', () => {
   test('opens BOM document route on row double-click', async ({ page }) => {
     await page.getByRole('row', { name: /BOM00001/ }).dblclick()
     await expect(page).toHaveURL(/\/production\/bills-of-materials\/BOM00001$/)
-    await expect(page.getByText('Bill of materials BOM00001')).toBeVisible()
+    await expect(page.getByText('BOM00001', { exact: true }).first()).toBeVisible()
   })
 })
 

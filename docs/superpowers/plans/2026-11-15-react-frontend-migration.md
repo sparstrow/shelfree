@@ -62,14 +62,15 @@ same turn a page is ported.**
 | Purchasing ▸ Purchase Receipts (list + document) | ported |
 | Purchasing ▸ Purchase Lines | ported |
 | Purchasing ▸ Vendors (list) | ported |
-| Purchasing ▸ Vendor profile | Overview ported on the Record page template; other tabs pending |
+| Purchasing ▸ Vendor profile | ported — all 10 tabs on the Record page template |
 | Sales ▸ Customers (list) | ported |
 | Sales ▸ Customer profile | 8 tabs ported on the Record page template (Overview, Billing & address, Order history, Statement & aging, Shipping addresses, Notes & activity, Documents, Credit & risk); Sales prices & Contacts pending |
 | Purchasing ▸ Charges | ported |
 | Finance ▸ Chart of Accounts | ported |
 | People ▸ Contacts | ported |
 | Warehouse ▸ Items (list + item profile) | ported (`/warehouse/items/$no/edit` card pending) |
-| Production ▸ Bills of Materials (list) | ported (document pending) |
-| Production ▸ Assembly Orders (list) | ported (document pending) |
-| Purchasing ▸ Purchase Prices, Carriers | pending (next) |
+| Production ▸ Bills of Materials (list + document) | ported |
+| Production ▸ Assembly Orders (list + document) | ported (full/partial Finish command, shortage guard, FinishDialog) |
+| Purchasing ▸ Carriers | ported (contact picker shared) |
+| Purchasing ▸ Purchase Prices | ported (list on the editor template + in-grid cell editing + "Items with no vendor price" tab) |
 | Every other prototype page | pending |
