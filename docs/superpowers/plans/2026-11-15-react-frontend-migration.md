@@ -67,7 +67,8 @@ same turn a page is ported.**
 | Purchasing ▸ Vendors (list) | ported |
 | Purchasing ▸ Vendor profile | ported — all 10 tabs on the Record page template |
 | Sales ▸ Customers (list) | ported |
-| Sales ▸ Customer profile | 8 tabs ported on the Record page template (Overview, Billing & address, Order history, Statement & aging, Shipping addresses, Notes & activity, Documents, Credit & risk); Sales prices & Contacts pending |
+| Sales ▸ Customer profile | all 10 tabs ported on the Record page template (Overview, Billing & address, Sales prices, Order history, Statement & aging, Shipping addresses, Notes & activity, Documents, Contacts, Credit & risk) |
+| Sales ▸ Sales Prices | ported (List prices + Customer prices on ListPage with editor & in-grid cell editing + Price check) |
 | Purchasing ▸ Charges | ported |
 | Finance ▸ Chart of Accounts | ported |
 | People ▸ Contacts | ported |
