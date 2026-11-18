@@ -200,3 +200,31 @@ deliberately **not** persisted.
   the workspace. No new audit-relevant mutations (starring is already covered by
   the favorites doc). Nothing new lands in localStorage beyond the three flags
   above.
+
+## React app (2026-11-17)
+
+Ported to `apps/web` at `/departments`.
+
+- **Files:** `apps/web/src/features/departments/DepartmentsPage.tsx`,
+  `apps/web/src/domain/departments.ts`, `apps/web/src/domain/departments.test.ts`,
+  `apps/web/src/routes/departments/index.tsx` (with layout `<Outlet />` in
+  `apps/web/src/routes/departments.tsx`).
+- **URL:** `/departments`.
+- **Same as prototype:** CSS multi-column blocks (`columns: 272px 4`) built from the sidebar's single
+  module registry (`MODULES` in `apps/web/src/app/nav.ts`), Setup pages grouped below a hairline
+  rule (`SETUP_PAGE_LABELS`), *Coming soon* badge on pages not yet ported to React (still navigable),
+  *Jump back in* row of up to 5 recent list pages from `useUi().recents` (hidden while filtering),
+  per-row favorite stars synced with the sidebar (`useUi().favorites`), right-click context menu
+  (*Open*, *Open in new tab*, *Add/Remove from favorites*), and keyboard navigation (`ArrowUp`/`ArrowDown`
+  wrapping through rows, `ArrowLeft`/`ArrowRight` jumping between blocks, `Enter` opening the focused
+  page, `Ctrl/Cmd+Enter` opening in a new workspace tab, `Shift+S` toggling favorite, typing any letter
+  or digit anywhere to focus and filter, `Esc` clearing the filter).
+- **Deliberate changes:** `BUILT_REACT_PAGES` reflects pages ported to React rather than the prototype's
+  `deptBuiltPages()`; Settings toggles (`deptPage`, `deptRecents`, `deptShowUnbuilt`) and the global
+  `Ctrl/Cmd+Shift+D` shortcut are deferred until Settings ▸ Configuration ▸ Navigation and Keyboard
+  shortcuts are ported.
+- **Persistence:** `shelfree.v2.ui` (`favorites`, `recents`, `tabs` via `useUi`); filter query and
+  focus index remain in-memory only.
+- **Backend rules:** no new endpoints; composes `GET /me`, `GET /workspace/settings`, and `GET /favorites`
+  (or a tenant- and permission-filtered `GET /navigation` manifest).
+- **Tests:** `apps/web/src/domain/departments.test.ts`, `apps/web/e2e/notes-departments-vpi.spec.ts`.

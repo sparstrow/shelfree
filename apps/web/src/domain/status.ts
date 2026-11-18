@@ -37,6 +37,8 @@ const TONES: Record<string, Tone> = {
   'On leave': 'warn',
   Terminated: 'neutral',
   Contractor: 'info',
+  Valid: 'ok',
+  Invalid: 'bad',
 }
 
 export function statusTone(label: string): Tone {

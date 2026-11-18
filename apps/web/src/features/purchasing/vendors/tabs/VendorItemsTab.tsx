@@ -27,8 +27,8 @@ export function VendorItemsTab({ vendor, items, prices, orders, today }: VendorI
   )
 
   const openItem = (itemNo: string) => void navigate({ to: '/warehouse/items/$no', params: { no: itemNo } })
-  const openPriceList = () =>
-    void navigate({ to: '/purchasing/purchase-prices', search: { vendor: vendor.no } })
+  const openVendorItems = () =>
+    void navigate({ to: '/purchasing/vendors/$no/items', params: { no: vendor.no } })
 
   return (
     <div className="animate-sf-fade">
@@ -38,7 +38,7 @@ export function VendorItemsTab({ vendor, items, prices, orders, today }: VendorI
           {int(summary.itemCount)} {summary.itemCount === 1 ? 'item' : 'items'}
         </span>
         <div className="min-w-3 flex-1" />
-        <button type="button" onClick={openPriceList} className={cn(primaryButton, 'h-[30px] px-[13px]')}>
+        <button type="button" onClick={openVendorItems} className={cn(primaryButton, 'h-[30px] px-[13px]')}>
           Manage prices
         </button>
       </div>

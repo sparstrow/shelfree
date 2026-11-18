@@ -21,6 +21,7 @@ import {
   toPurchasePrice,
   unpricedItems,
   validatePrice,
+  vendorPriceRows,
   vendorPricedItems,
 } from './purchase-prices'
 
@@ -144,6 +145,16 @@ describe('resolvePrice and tiers', () => {
   it('vendorPricedItems lists items priced on the date', () => {
     expect([...vendorPricedItems(rows, 'V1', TODAY)].sort()).toEqual(['IT-A', 'IT-B'])
     expect([...vendorPricedItems([row({ effTo: '2026-01-31' })], 'V1', TODAY)]).toEqual([])
+  })
+  it('vendorPriceRows filters to one vendor and sorts by item, tier qty, and start date', () => {
+    const mixed = [
+      row({ no: 'PP-C', vendor: 'V1', item: 'IT-B', minQty: 1, effFrom: '2026-02-01' }),
+      row({ no: 'PP-A2', vendor: 'V1', item: 'IT-A', minQty: 10, effFrom: '2026-01-01' }),
+      row({ no: 'PP-OTHER', vendor: 'V2', item: 'IT-A', minQty: 1 }),
+      row({ no: 'PP-A1-NEW', vendor: 'V1', item: 'IT-A', minQty: 1, effFrom: '2026-06-01' }),
+      row({ no: 'PP-A1-OLD', vendor: 'V1', item: 'IT-A', minQty: 1, effFrom: '2026-01-01' }),
+    ]
+    expect(vendorPriceRows(mixed, 'V1').map((r) => r.no)).toEqual(['PP-A1-OLD', 'PP-A1-NEW', 'PP-A2', 'PP-C'])
   })
 })
 
