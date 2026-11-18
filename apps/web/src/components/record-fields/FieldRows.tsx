@@ -10,7 +10,10 @@
  */
 import { Check, Copy, Info } from 'lucide-react'
 import { useState } from 'react'
+import { ContactPicker } from '@/components/lookup/ContactPicker'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { useList } from '@/data/queries'
+import { formatContactPhone } from '@/domain/contacts'
 import { EM_DASH } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { type EditorField, fieldBoxClass, fieldViewText, optionsOf } from './model'
@@ -60,6 +63,90 @@ function CopyButton({ text, label }: { text: string; label: string }) {
   )
 }
 
+function ViewBox<T>({
+  field,
+  text,
+  editing,
+  muted,
+  copy,
+}: {
+  field: EditorField<T>
+  text: string
+  editing: boolean
+  muted: boolean
+  copy: boolean
+}) {
+  return (
+    <div
+      className={cn(
+        fieldBoxClass,
+        'relative border-transparent font-medium',
+        field.type === 'area' ? 'items-start py-[7px] whitespace-pre-wrap' : 'truncate',
+        field.mono && 'font-mono text-xs',
+        muted && 'text-muted-foreground',
+        copy && 'pr-8',
+      )}
+      title={editing && field.locked ? 'Locked' : text}
+    >
+      {text}
+      {copy && <CopyButton text={text} label={field.label} />}
+    </div>
+  )
+}
+
+function ContactLookupField<T>({
+  field,
+  values,
+  id,
+  live,
+  editing,
+  error,
+  muted,
+  onChange,
+}: {
+  field: EditorField<T>
+  values: T
+  id: string
+  live: boolean
+  editing: boolean
+  error?: string
+  muted: boolean
+  onChange: (key: keyof T & string, value: unknown) => void
+}) {
+  const contacts = useList('contacts')
+  const rawVal = values[field.key]
+  const contactNo = rawVal == null ? '' : String(rawVal)
+  const person = (contacts.data ?? []).find((c) => c.no === contactNo)
+  const resolvedText = field.display
+    ? field.display(values) || EM_DASH
+    : !contactNo
+      ? EM_DASH
+      : !person
+        ? `${contactNo} · missing`
+        : [
+            `${person.name}${person.active === false ? ' (inactive)' : ''}`,
+            formatContactPhone(person.phone),
+          ]
+            .filter(Boolean)
+            .join(' · ')
+  const copy = !!field.copyable && !editing && resolvedText !== EM_DASH && !muted
+
+  if (!live) {
+    return <ViewBox field={field} text={resolvedText} editing={editing} muted={muted} copy={copy} />
+  }
+  return (
+    <ContactPicker
+      id={id}
+      value={contactNo}
+      onChange={(next) => onChange(field.key, next)}
+      allowNone={field.allowNone ?? true}
+      title={field.label}
+      placeholder={field.placeholder ?? 'Pick a contact…'}
+      aria-invalid={!!error}
+    />
+  )
+}
+
 export function FieldRows<T>({
   fields,
   values,
@@ -106,21 +193,19 @@ export function FieldRows<T>({
               )}
             </span>
             <div className="min-w-0">
-              {!live ? (
-                <div
-                  className={cn(
-                    fieldBoxClass,
-                    'relative border-transparent font-medium',
-                    field.type === 'area' ? 'items-start py-[7px] whitespace-pre-wrap' : 'truncate',
-                    field.mono && 'font-mono text-xs',
-                    muted && 'text-muted-foreground',
-                    copy && 'pr-8',
-                  )}
-                  title={editing && field.locked ? 'Locked' : text}
-                >
-                  {text}
-                  {copy && <CopyButton text={text} label={field.label} />}
-                </div>
+              {field.type === 'lookup' && field.source === 'contacts' ? (
+                <ContactLookupField
+                  field={field}
+                  values={values}
+                  id={id}
+                  live={live}
+                  editing={editing}
+                  error={error}
+                  muted={muted}
+                  onChange={onChange}
+                />
+              ) : !live ? (
+                <ViewBox field={field} text={text} editing={editing} muted={muted} copy={copy} />
               ) : field.type === 'select' ? (
                 <select
                   id={id}

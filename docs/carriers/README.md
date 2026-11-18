@@ -116,3 +116,23 @@ Grid prefs use the generic per-dataset grid storage (dataset id `carriers`).
   is a workspace setting (task 5).
 - Carrier performance (on-time %, transit days, cost/kg) derives from shipment records —
   Freight analysis report, later.
+
+## React app (2026-11-17)
+
+- **URL**: `/purchasing/carriers` (`?sel=<code>` opens a carrier's drawer).
+- **Files**: `features/purchasing/carriers/CarriersPage.tsx` (ListPage + `editor`),
+  `routes/purchasing/carriers/index.tsx`, `domain/carriers.ts` (+ test: types and behaviours,
+  blank / next code / duplicate / onChange / normalize / validate, GST treatment, tracking link,
+  row flag, notices), `e2e/carriers.spec.ts`.
+- **Contact**: the carrier's person is a link (`contactId`) picked with the shared
+  `ContactPicker` through the new `lookup` field type — never copied name/phone columns.
+  Phone masked in the grid and export, full in the drawer.
+- **Same as prototype**: columns, views, filters, fields, validation messages, notices; delete is
+  always allowed (`cantDelete: () => null` — nothing references carriers yet).
+- **Deliberate changes / deferred**: carrier types use `CARRIER_TYPE_DEFAULTS` from
+  `domain/carriers.ts`; Settings › Carrier types is not ported yet (the workspace settings
+  document has no carrier-types field).
+- **Persistence**: `shelfree.v2.carriers`, contacts created inline in `shelfree.v2.contacts`.
+- **Backend**: `POST/PATCH/DELETE /carriers` with the same validation; `contactId` must reference
+  a contact in the same tenant; delete must be blocked once shipments reference a carrier;
+  audit `carrier.created/updated/deleted`.

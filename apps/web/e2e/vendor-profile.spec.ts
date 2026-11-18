@@ -27,7 +27,7 @@ test.describe('Vendor profile', () => {
     await page.keyboard.press(']')
     await expect(page).toHaveURL(/\?tab=details$/)
     await expect(page.getByRole('tab', { name: 'Address & payment' })).toHaveAttribute('aria-selected', 'true')
-    await expect(page.getByRole('tabpanel')).toContainText('This tab has not been moved yet')
+    await expect(page.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', 'rp-tab-details')
 
     await page.keyboard.press('3')
     await expect(page).toHaveURL(/\?tab=items$/)
