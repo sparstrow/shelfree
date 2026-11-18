@@ -62,7 +62,7 @@ same turn a page is ported.**
 | Purchasing ▸ Purchase Receipts (list + document) | ported |
 | Purchasing ▸ Purchase Lines | ported |
 | Purchasing ▸ Vendors (list) | ported |
-| Purchasing ▸ Vendor profile | Overview ported on the Record page template; other tabs pending |
+| Purchasing ▸ Vendor profile | ported — all 10 tabs on the Record page template (merged across 3 PRs) |
 | Sales ▸ Customers (list) | ported (profile pending) |
 | Purchasing ▸ Charges | ported |
 | Finance ▸ Chart of Accounts | ported |
