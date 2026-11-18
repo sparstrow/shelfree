@@ -548,3 +548,18 @@ export const assemblyOrderSchema = z.object({
   createdAt: isoDateTime,
 })
 export type AssemblyOrder = z.infer<typeof assemblyOrderSchema>
+
+// ── Settings ▸ Configuration ▸ Units of measure ──────────────────────────────
+/** A unit the business added. The locked default units live in `domain/units-of-measure`. */
+export const uomSchema = z.object({
+  code: z.string(),
+  name: z.string(),
+  cat: z.enum(['count', 'weight', 'volume', 'liquid', 'length', 'area']),
+  /** GST Unique Quantity Code. */
+  uqc: z.string(),
+  /** `1 PNL = 12 NOS`, or `—` for a standalone unit. */
+  conv: z.string(),
+  sym: z.string(),
+  custom: z.literal(true),
+})
+export type CustomUom = z.infer<typeof uomSchema>

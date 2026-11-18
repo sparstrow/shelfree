@@ -7,6 +7,8 @@ import { useActivePage } from './use-active-page'
 export interface TopBarProps {
   /** Overrides the page name in the breadcrumb (document screens: "Purchase Order"). */
   pageLabel?: string
+  /** Settings only: the group between "Settings" and the section (Workspace, Configuration…). */
+  crumb?: string
   /** Record count shown as a pill beside the page name (table pages). */
   count?: number
   countTitle?: string
@@ -21,7 +23,7 @@ const crumbClass =
   '-mx-1 -my-0.5 rounded-[5px] border-0 bg-transparent px-1 py-0.5 text-[13px] text-muted-foreground transition-colors duration-[120ms] hover:bg-[color-mix(in_oklab,var(--foreground)_8%,transparent)] hover:text-foreground'
 
 /** The 56 px page header: breadcrumb, count, page search, notifications, New. */
-export function TopBar({ pageLabel, count, countTitle, newLabel, onNew, children }: TopBarProps) {
+export function TopBar({ pageLabel, crumb, count, countTitle, newLabel, onNew, children }: TopBarProps) {
   const active = useActivePage()
   // List pages take their <h1> from the breadcrumb; document screens bring their own.
   const Current = pageLabel ? 'span' : 'h1'
@@ -39,6 +41,21 @@ export function TopBar({ pageLabel, count, countTitle, newLabel, onNew, children
           </Link>
           <ChevronRight className="size-[14px] text-muted-foreground opacity-60" strokeWidth={2} />
           <Current className="m-0 text-[13px] font-semibold">{pageLabel ?? active.page.label}</Current>
+        </>
+      ) : active.kind === 'settings' && pageLabel ? (
+        // Settings ▸ Group ▸ Section (the section's own h1 is in the page body).
+        <>
+          <Link to="/settings" className={crumbClass}>
+            Settings
+          </Link>
+          {crumb && (
+            <>
+              <ChevronRight className="size-[14px] text-muted-foreground opacity-60" strokeWidth={2} />
+              <span className="text-[13px] text-muted-foreground">{crumb}</span>
+            </>
+          )}
+          <ChevronRight className="size-[14px] text-muted-foreground opacity-60" strokeWidth={2} />
+          <span className="m-0 text-[13px] font-semibold">{pageLabel}</span>
         </>
       ) : (
         <Current className="m-0 text-[13px] font-semibold">
