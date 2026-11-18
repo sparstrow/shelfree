@@ -14,7 +14,7 @@ import { StatusPill } from '@/components/StatusPill'
 import { FieldRows } from '@/components/record-fields/FieldRows'
 import { type EditorField, fieldBoxClass } from '@/components/record-fields/model'
 import { cn } from '@/lib/utils'
-import type { DrawerFact } from './RecordDrawer'
+import type { DrawerFact, DrawerStat } from './RecordDrawer'
 
 export type { EditorField, EditorFieldType, EditorOption } from '@/components/record-fields/model'
 
@@ -28,6 +28,8 @@ export interface EditableDrawerProps<T> {
   tags?: string[]
   title: string
   subtitle?: string
+  /** KPI strip rendered below the header in view mode. */
+  stats?: DrawerStat[]
   /** Header in edit / new mode, e.g. "Edit charge" / "New charge". */
   editHeading: string
   editSubheading?: string
@@ -42,6 +44,8 @@ export interface EditableDrawerProps<T> {
   onClose: () => void
   footer: ReactNode
   children?: ReactNode
+  /** Extra content shown below fields and facts while editing or creating. */
+  editChildren?: ReactNode
 }
 
 export function EditableDrawer<T>({
@@ -53,6 +57,7 @@ export function EditableDrawer<T>({
   tags = [],
   title,
   subtitle,
+  stats,
   editHeading,
   editSubheading,
   notice,
@@ -64,6 +69,7 @@ export function EditableDrawer<T>({
   onClose,
   footer,
   children,
+  editChildren,
 }: EditableDrawerProps<T>) {
   const editing = mode !== 'view'
   const bodyRef = useRef<HTMLDivElement>(null)
@@ -113,6 +119,16 @@ export function EditableDrawer<T>({
       </div>
 
       <div ref={bodyRef} className="flex-1 overflow-auto px-[14px] pt-3 pb-[14px]">
+        {!editing && stats && stats.length > 0 && (
+          <div className="-mx-[14px] -mt-3 mb-3 flex gap-2 border-b border-border px-[14px] py-3">
+            {stats.map((stat, i) => (
+              <div key={stat.label} className={cn('flex-1 text-center', i > 0 && 'border-l border-border')}>
+                <div className={cn('tnum text-base font-bold', stat.tone === 'bad' && 'text-bad-fg')}>{stat.value}</div>
+                <div className="mt-0.5 text-[11px] text-muted-foreground">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
         {!editing && notice && (
           <div role="status" className="mb-3 flex items-start gap-2 rounded-lg bg-warn-bg px-[10px] py-2 text-xs leading-normal text-warn-fg">
             <CircleAlert className="mt-px size-[13px] flex-none" strokeWidth={2} />
@@ -136,7 +152,7 @@ export function EditableDrawer<T>({
             {formError}
           </div>
         )}
-        {!editing && children}
+        {editing ? editChildren : children}
       </div>
 
       <div className="border-t border-border px-3 py-[10px]">

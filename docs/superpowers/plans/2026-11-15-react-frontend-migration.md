@@ -69,6 +69,8 @@ same turn a page is ported.**
 | Purchasing ▸ Charges | ported |
 | Finance ▸ Chart of Accounts | ported |
 | People ▸ Contacts | ported |
+| People ▸ Users | ported (in-place drawer with module permissions matrix, bulk actions, protected delete) |
+| People ▸ Employees | ported (in-place drawer, masked grid & export PII, bulk actions, reference-safe delete) |
 | Warehouse ▸ Items (list + item profile) | ported (`/warehouse/items/$no/edit` card pending) |
 | Production ▸ Bills of Materials (list + document) | ported |
 | Production ▸ Assembly Orders (list + document) | ported (full/partial Finish command, shortage guard, FinishDialog) |

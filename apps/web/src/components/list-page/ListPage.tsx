@@ -17,11 +17,12 @@ import { toast } from 'sonner'
 import { TopBar } from '@/app/shell/TopBar'
 import { useUi } from '@/app/stores/ui'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { DataGrid, type GridAction } from '@/components/data-grid/DataGrid'
+import { DataGrid, type GridAction, type GridBulkAction } from '@/components/data-grid/DataGrid'
 import type { Dataset, GridFilter } from '@/components/data-grid/model'
 import { EditableDrawer, type EditorField } from '@/components/record-drawer/EditableDrawer'
 import {
   type DrawerFact,
+  type DrawerStat,
   RecordDrawer,
   type RecordDrawerProps,
   drawerDangerIconButton,
@@ -41,6 +42,8 @@ export interface ListContext<T> {
   /** Open a row's drawer in edit mode. */
   startEdit: (row: T) => void
 }
+
+export type ListBulkAction<T> = GridBulkAction<T>
 
 export interface ListAction<T> {
   label: string
@@ -84,6 +87,8 @@ export interface EditorView {
   tags?: string[]
   title: string
   subtitle?: string
+  /** KPI strip rendered below the header in view mode. */
+  stats?: DrawerStat[]
   /** Warning shown in view mode. */
   notice?: string
   /** Read-only facts after the fields (Source, Last changed…). */
@@ -113,6 +118,8 @@ export interface ListEditor<T> {
   label: (record: T) => string
   /** Optional view-mode content rendered below fields and facts in the drawer. */
   extra?: (record: T) => ReactNode
+  /** Optional edit/new-mode content rendered below fields and facts in the drawer. */
+  extraEdit?: (draft: T, mode: 'edit' | 'new', onChange: (key: keyof T & string, value: unknown) => void) => ReactNode
 }
 
 interface Editing<T> {
@@ -143,6 +150,8 @@ export interface ListPageProps<T> {
   remove?: ListDelete<T>
   /** Page-specific actions, after the standard open actions. */
   actions?: ListAction<T>[]
+  /** Action buttons shown in the bulk bar when rows are selected. */
+  bulkActions?: ListBulkAction<T>[]
   shortcuts?: ListShortcut<T>[]
   /** Preview drawer contents. Omit for lists without a preview. */
   preview?: (row: T) => ListPreview
@@ -174,6 +183,7 @@ export function ListPage<T>({
   create,
   remove,
   actions = [],
+  bulkActions = [],
   shortcuts = [],
   preview,
   editor,
@@ -367,6 +377,7 @@ export function ListPage<T>({
         tags={v.tags}
         title={v.title}
         subtitle={v.subtitle}
+        stats={v.stats}
         notice={v.notice}
         editHeading={editing?.mode === 'new' ? `New ${noun}` : `Edit ${noun}`}
         editSubheading={editing?.mode === 'edit' ? editor.label(editRecord) : undefined}
@@ -379,6 +390,7 @@ export function ListPage<T>({
           setEditing(null)
           setActiveId(null)
         }}
+        editChildren={editing ? editor.extraEdit?.(editing.draft, editing.mode, changeField) : undefined}
         footer={
           editing ? (
             <>
@@ -402,6 +414,20 @@ export function ListPage<T>({
                     Duplicate
                   </button>
                 )}
+                {actions
+                  .filter((a) => a.inDrawer && (!a.when || a.when(active)))
+                  .map((a) => (
+                    <button
+                      key={a.label}
+                      type="button"
+                      onClick={() => a.run(active, listContext)}
+                      title={a.title}
+                      className={drawerSecondaryButton}
+                    >
+                      {a.icon && <a.icon className="size-[13px]" strokeWidth={2} />}
+                      {a.label}
+                    </button>
+                  ))}
                 {remove && (
                   <button
                     type="button"
@@ -488,6 +514,7 @@ export function ListPage<T>({
         }}
         onOpen={open ?? (editor ? startEdit : (row) => setActiveId(dataset.idOf(row)))}
         actions={gridActions}
+        bulkActions={bulkActions}
         drawer={drawer}
         emptyText={emptyText}
         showTotals={showTotals}

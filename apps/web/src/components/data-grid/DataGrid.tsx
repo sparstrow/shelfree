@@ -80,6 +80,15 @@ export interface GridAction<T> {
   onSelect: (row: T) => void
 }
 
+export interface GridBulkAction<T> {
+  label: string
+  icon?: LucideIcon
+  danger?: boolean
+  /** Hidden from the bulk bar when this returns false for the selected rows. */
+  when?: (rows: T[]) => boolean
+  run: (rows: T[], ctx: { clearSelection: () => void }) => void | Promise<void>
+}
+
 export interface DataGridProps<T> {
   dataset: Dataset<T>
   rows: T[] | undefined
@@ -93,6 +102,8 @@ export interface DataGridProps<T> {
   onOpen: (row: T) => void
   /** Row right-click menu and the toolbar Actions menu (acts on the active row). */
   actions?: GridAction<T>[]
+  /** Action buttons shown in the bulk bar when one or more rows are checked. */
+  bulkActions?: GridBulkAction<T>[]
   /** Side drawer rendered beside the table. */
   drawer?: ReactNode
   emptyText?: string
@@ -152,6 +163,7 @@ export function DataGrid<T>({
   onActiveChange,
   onOpen,
   actions = [],
+  bulkActions = [],
   drawer,
   emptyText,
   showTotals = false,
@@ -192,6 +204,10 @@ export function DataGrid<T>({
   )
   const slice = useMemo(() => paginate(filtered, page, pageSize), [filtered, page, pageSize])
   const pageIds = useMemo(() => slice.rows.map(dataset.idOf), [slice.rows, dataset])
+  const selectedRows = useMemo(
+    () => filtered.filter((r) => selected.has(dataset.idOf(r))),
+    [filtered, selected, dataset],
+  )
   const activeRow = useMemo(
     () => (activeId ? (rows ?? []).find((r) => dataset.idOf(r) === activeId) : undefined),
     [activeId, rows, dataset],
@@ -261,16 +277,14 @@ export function DataGrid<T>({
   }
 
   const exportSelected = () => {
-    const list = filtered.filter((r) => selected.has(dataset.idOf(r)))
-    download(`${dataset.id}-selected.csv`, toCsv(list, dataset, columns))
+    download(`${dataset.id}-selected.csv`, toCsv(selectedRows, dataset, columns))
   }
 
   const copySelected = async () => {
-    const list = filtered.filter((r) => selected.has(dataset.idOf(r)))
-    const text = list.map((r) => columns.map((c) => dataset.text(r, c.key)).join('\t')).join('\n')
+    const text = selectedRows.map((r) => columns.map((c) => dataset.text(r, c.key)).join('\t')).join('\n')
     try {
       await navigator.clipboard.writeText(text)
-      toast('Copied', { description: `${int(list.length)} ${list.length === 1 ? 'row' : 'rows'} copied to the clipboard.` })
+      toast('Copied', { description: `${int(selectedRows.length)} ${selectedRows.length === 1 ? 'row' : 'rows'} copied to the clipboard.` })
     } catch {
       toast('Could not copy', { description: 'The browser blocked clipboard access.' })
     }
@@ -609,9 +623,9 @@ export function DataGrid<T>({
 
         <FilterChips filters={filters} columns={dataset.filterColumns} onChange={changeFilters} />
 
-        {selected.size > 0 && (
+        {selectedRows.length > 0 && (
           <div className="flex animate-sf-fade items-center gap-2 border border-[color-mix(in_oklab,var(--primary)_35%,transparent)] bg-[color-mix(in_oklab,var(--primary)_12%,var(--card))] px-5 py-[9px]">
-            <span className="tnum text-[12.5px] font-semibold text-foreground">{int(selected.size)} selected</span>
+            <span className="tnum text-[12.5px] font-semibold text-foreground">{int(selectedRows.length)} selected</span>
             <div className="h-[18px] w-px bg-[color-mix(in_oklab,var(--primary)_35%,transparent)]" />
             <button type="button" onClick={copySelected} title="Copy rows" className={bulkButton}>
               <Copy className="size-[13px] text-muted-foreground" strokeWidth={2} />
@@ -621,6 +635,22 @@ export function DataGrid<T>({
               <Download className="size-[13px] text-muted-foreground" strokeWidth={2} />
               Export
             </button>
+            {bulkActions.some((a) => !a.when || a.when(selectedRows)) && (
+              <div className="h-[18px] w-px bg-[color-mix(in_oklab,var(--primary)_35%,transparent)]" />
+            )}
+            {bulkActions
+              .filter((a) => !a.when || a.when(selectedRows))
+              .map((a) => (
+                <button
+                  key={a.label}
+                  type="button"
+                  onClick={() => void a.run(selectedRows, { clearSelection: () => setSelected(new Set()) })}
+                  className={cn(bulkButton, a.danger && 'text-bad-fg hover:bg-bad-bg')}
+                >
+                  {a.icon && <a.icon className="size-[13px]" strokeWidth={2} />}
+                  {a.label}
+                </button>
+              ))}
             <div className="flex-1" />
             <button type="button" onClick={() => setSelected(new Set())} className={bulkButton}>
               <X className="size-[13px]" strokeWidth={2} />
