@@ -183,49 +183,85 @@ re-keyed on load. Committed sales stock is netted at the principal location (`lo
 
 ## React app (2026-11-17)
 
-List pages for **Production ▸ Bills of Materials** and **Production ▸ Assembly Orders** are ported in
-`apps/web/`. Document editors (`/production/bills-of-materials/$no` and `/production/assembly-orders/$no`) remain
-pending placeholders in a follow-up task.
+List pages for **Production ▸ Bills of Materials** and **Production ▸ Assembly Orders**, plus the full **Assembly
+Order document** (`/production/assembly-orders/$no` and `/production/assembly-orders/new`) with its **Finish** dialog,
+are ported in `apps/web/`. The Bills of Materials document (`/production/bills-of-materials/$no`) remains a pending
+placeholder in a parallel task.
 
 ### Files & URLs
 
 - Schemas & API collections: [`bomSchema` / `assemblyOrderSchema`](../../apps/web/src/data/schemas/index.ts),
   `api.boms` / `api.assemblyOrders` in [`apps/web/src/data/api/index.ts`](../../apps/web/src/data/api/index.ts).
+- Transactional commands & query hooks: [`finishAssemblyOrder`](../../apps/web/src/data/api/commands.ts) and
+  [`useFinishAssemblyOrder`](../../apps/web/src/data/queries/index.ts).
 - Domain helpers & unit tests: [`apps/web/src/domain/production.ts`](../../apps/web/src/domain/production.ts),
-  [`apps/web/src/domain/production.test.ts`](../../apps/web/src/domain/production.test.ts).
+  [`apps/web/src/domain/production.test.ts`](../../apps/web/src/domain/production.test.ts),
+  [`apps/web/src/domain/assembly-order.ts`](../../apps/web/src/domain/assembly-order.ts),
+  [`apps/web/src/domain/assembly-order.test.ts`](../../apps/web/src/domain/assembly-order.test.ts).
 - Bills of Materials list (`/production/bills-of-materials`, `?sel=<no>` preview; `/production/bills-of-materials/$no`
   pending placeholder): [`dataset.ts`](../../apps/web/src/features/production/boms/dataset.ts),
   [`BomsPage.tsx`](../../apps/web/src/features/production/boms/BomsPage.tsx),
   [`index.tsx`](../../apps/web/src/routes/production/bills-of-materials/index.tsx),
   [`$no.tsx`](../../apps/web/src/routes/production/bills-of-materials/$no.tsx).
-- Assembly Orders list (`/production/assembly-orders`, `?sel=<no>` preview; `/production/assembly-orders/$no` pending
-  placeholder): [`dataset.ts`](../../apps/web/src/features/production/assembly-orders/dataset.ts),
+- Assembly Orders list (`/production/assembly-orders`, `?sel=<no>` preview) & document
+  (`/production/assembly-orders/$no`, `/production/assembly-orders/new`):
+  [`dataset.ts`](../../apps/web/src/features/production/assembly-orders/dataset.ts),
   [`AssemblyOrdersPage.tsx`](../../apps/web/src/features/production/assembly-orders/AssemblyOrdersPage.tsx),
+  [`AssemblyOrderEditor.tsx`](../../apps/web/src/features/production/assembly-orders/AssemblyOrderEditor.tsx),
+  [`FinishDialog.tsx`](../../apps/web/src/features/production/assembly-orders/FinishDialog.tsx),
   [`index.tsx`](../../apps/web/src/routes/production/assembly-orders/index.tsx),
   [`$no.tsx`](../../apps/web/src/routes/production/assembly-orders/$no.tsx).
-- Drawer warning banner & muted line support: optional `notice` and `DrawerLine.rightTone` props added to
-  [`RecordDrawer.tsx`](../../apps/web/src/components/record-drawer/RecordDrawer.tsx).
-- Playwright list specs: [`apps/web/e2e/production.spec.ts`](../../apps/web/e2e/production.spec.ts).
+- Optional backward-compatible UI extensions: `notice` and `DrawerLine.rightTone` on
+  [`RecordDrawer.tsx`](../../apps/web/src/components/record-drawer/RecordDrawer.tsx); `icon` on
+  [`StatusPill.tsx`](../../apps/web/src/components/StatusPill.tsx) and `statusIcon` on
+  [`parts.tsx`](../../apps/web/src/components/document/parts.tsx).
+- Playwright specs: [`apps/web/e2e/production.spec.ts`](../../apps/web/e2e/production.spec.ts) (lists) and
+  [`apps/web/e2e/assembly-order-document.spec.ts`](../../apps/web/e2e/assembly-order-document.spec.ts) (AO document & Finish).
 
 ### Behaviour & deliberate differences from prototype
 
-- **Same as prototype**: columns (widths, alignment, freeze, hidden defaults), sort order (`no` asc), search blobs,
-  system/default views (`All` / `Active` / `Drafts` / `Archived` for BOMs; `All orders` / `Open` / `Finished` /
-  `Cancelled` for Assembly Orders), filter columns, multi-level rolled-up BOM costs (materials + labour + overhead %,
-  depth cap 6), net stock availability netting `qtySO` at the active principal warehouse (`mainLocationId`), preview
-  drawer stats/lines/facts, assembly-order shortage warning banner, and append-only `NotesBlock` threads (`bom` and
-  `assemblyOrder`). Neither list page mutates stock or item costs.
-- **Delete rules (stricter than prototype)**:
-  - A BOM can be deleted only when `status !== 'active'` and no assembly order references it (`ao.bomId === bom.no`).
-  - An assembly order can be deleted only in its opening status (`planned` or `draft`).
-- **Growth `production` axis**: `apps/web` does not yet expose the `production` axis toggle, so `bomDataset({ showKind })`
-  defaults `showKind` to `false` (hiding the `Kind` column and filter while keeping all 9 seeded BOM rows so multi-level
-  rollups such as `CMB-PWH-12` → `SBC-CONE-12` calculate identically).
+- **Same as prototype**:
+  - List pages: columns (widths, alignment, freeze, hidden defaults), sort order (`no` asc), search blobs,
+    system/default views (`All` / `Active` / `Drafts` / `Archived` for BOMs; `All orders` / `Open` / `Finished` /
+    `Cancelled` for Assembly Orders), filter columns, multi-level rolled-up BOM costs (materials + labour + overhead %,
+    depth cap 6), net stock availability netting `qtySO` at the active principal warehouse (`mainLocationId`), preview
+    drawer stats/lines/facts, assembly-order shortage warning banner, and append-only `NotesBlock` threads (`bom` and
+    `assemblyOrder`). Neither list page mutates stock or item costs.
+  - Assembly Order document: item picker restricted to non-blocked items with an active BOM, BOM explosion and line
+    rescaling when quantity changes in draft/planned, header card (`Item to assemble`, `Quantity`, `Output location`,
+    `Due date`, `Assignee`, `Progress`), read-only exploded `Components` grid linking to item pages, shortage warning
+    banner with buildable count, `BOM · version` header link, status workflow (`Draft` → `Release` → `Start` → `Finish`
+    with full/partial output and component consumption), `Cancel order`, admin-gated `Reopen` (`owner`/`admin`),
+    append-only `NotesBlock`, and `Cmd/Ctrl+Enter` / `Esc` shortcuts.
+- **Deliberate differences / tighter integrity rules**:
+  - **All-or-nothing Finish & shortage refusal**: Instead of the prototype's silent `Math.max(0, ...)` clamp on
+    component stock during Finish, `aoFinish` / `finishAssemblyOrder` validates every Finish input (`qtyFinished > 0`,
+    not exceeding remaining quantity, non-negative consumed quantities, `allowOverConsume` guard, and net available
+    component stock `availAt` at the order's site) before any persistence occurs, refusing Finish on any shortage so
+    on-hand stock never goes negative and no partial writes happen.
+  - **Closed records are strictly read-only**: In `finished` and `cancelled` status, header scheduling fields (`Output
+    location`, `Due date`, `Assignee`) are disabled and `Save` is hidden (fixing the prototype's omission).
+  - **Delete rules (stricter than prototype)**:
+    - A BOM can be deleted only when `status !== 'active'` and no assembly order references it (`ao.bomId === bom.no`).
+    - An assembly order can be deleted only in its opening status (`planned` or `draft`).
+- **Deferred / backend contract notes**:
+  - **Growth `production` axis**: `apps/web` does not yet expose the `production` axis toggle, so `bomDataset({ showKind })`
+    defaults `showKind` to `false` and `AssemblyOrderEditor` uses `DEFAULT_PRODUCTION_SETTINGS` (`outputLoc: 'WH-TVM'`,
+    `manualConsumption: false`, `allowShortRelease: true`, `allowOverConsume: true`).
+  - **Costing & WIP journal postings deferred**: Finish adjusts physical item stock (`item.locs[siteId]`), `qtyFinished`,
+    `lines[].qtyConsumed`, and order `status`, without posting GL inventory/WIP/variance entries or recalculating item
+    unit costs — deferred to the finance-for-production follow-up.
+  - **Audit events required on backend**: When wired to the real API, every Assembly Order state transition (`release`,
+    `start`, `cancel`, `reopen`) and `POST /assembly-orders/{no}/finish` (partial or full posted output and manual
+    consumption overrides) must emit an immutable server-side audit event with actor, timestamp, location, and
+    component/output deltas.
 
 ### Persistence & tests
 
-- Browser `localStorage` collections: `shelfree.v2.boms`, `shelfree.v2.assemblyOrders` (alongside `shelfree.v2.notes`,
-  `shelfree.v2.items`, `shelfree.v2.warehouses`, `shelfree.v2.employees`).
-- Covered by unit tests (`production.test.ts`), schema seed validation (`seed.test.ts`), and Playwright list specs
-  (`production.spec.ts`).
+- Browser `localStorage` collections: `shelfree.v2.boms`, `shelfree.v2.assemblyOrders`, `shelfree.v2.items` (alongside
+  `shelfree.v2.notes`, `shelfree.v2.warehouses`, `shelfree.v2.employees`).
+- Covered by unit tests ([`production.test.ts`](../../apps/web/src/domain/production.test.ts),
+  [`assembly-order.test.ts`](../../apps/web/src/domain/assembly-order.test.ts)), schema seed validation (`seed.test.ts`),
+  and Playwright specs ([`production.spec.ts`](../../apps/web/e2e/production.spec.ts),
+  [`assembly-order-document.spec.ts`](../../apps/web/e2e/assembly-order-document.spec.ts)).
 

@@ -70,6 +70,6 @@ same turn a page is ported.**
 | People ▸ Contacts | ported |
 | Warehouse ▸ Items (list) | ported (item page pending) |
 | Production ▸ Bills of Materials (list) | ported (document pending) |
-| Production ▸ Assembly Orders (list) | ported (document pending) |
+| Production ▸ Assembly Orders (list + document) | ported (full/partial Finish command, shortage guard, FinishDialog) |
 | Purchasing ▸ Purchase Prices, Carriers | pending (next) |
 | Every other prototype page | pending |
