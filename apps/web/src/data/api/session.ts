@@ -1,7 +1,8 @@
 /**
- * Who is signed in and which workspace they are in. Static demo values today
- * (the prototype's `meDefaults()` / `wsDefaults()`); the real backend supplies
- * these from the session. No credentials or tokens are ever stored client-side.
+ * Who is signed in and which workspace they are in. Demo values today (the
+ * prototype's `meDefaults()` / `wsDefaults()`) with the user's saved settings
+ * layered on top; the real backend supplies both from the session and the
+ * tenant's settings. No credentials or tokens are ever stored client-side.
  */
 import { z } from 'zod'
 
@@ -36,6 +37,8 @@ export const meSchema = z.object({
   language: z.string(),
   locale: z.string(),
   defLocation: z.string(),
+  /** `?` on a Settings page shows every description inline. Off by default (quiet pages). */
+  showSetHelp: z.boolean(),
 })
 export type Me = z.infer<typeof meSchema>
 
@@ -69,9 +72,44 @@ const ME: Me = {
   language: 'English (India)',
   locale: 'en-IN',
   defLocation: 'TVM-Main',
+  showSetHelp: false,
+}
+
+const WORKSPACE_KEY = 'shelfree.v2.workspace'
+const ME_KEY = 'shelfree.v2.me'
+
+/** Saved values on top of the demo ones. */
+function readStored<S extends z.ZodType>(key: string, schema: S, base: z.infer<S>): z.infer<S> {
+  try {
+    const raw = localStorage.getItem(key)
+    if (raw) return schema.parse({ ...(base as object), ...(JSON.parse(raw) as object) }) as z.infer<S>
+  } catch {
+    // Unreadable or outdated: fall back to the demo values.
+  }
+  return schema.parse(base) as z.infer<S>
+}
+
+function writeStored(key: string, value: unknown): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // Storage unavailable: the change lasts for this session only.
+  }
 }
 
 export const sessionApi = {
-  workspace: (): Promise<Workspace> => Promise.resolve(workspaceSchema.parse(WORKSPACE)),
-  me: (): Promise<Me> => Promise.resolve(meSchema.parse(ME)),
+  workspace: (): Promise<Workspace> => Promise.resolve(readStored(WORKSPACE_KEY, workspaceSchema, WORKSPACE)),
+  /** Settings ▸ Business profile. Backend: `PATCH /workspace`, owner / admin only. */
+  updateWorkspace: (next: Workspace): Promise<Workspace> => {
+    const parsed = workspaceSchema.parse(next)
+    writeStored(WORKSPACE_KEY, parsed)
+    return Promise.resolve(parsed)
+  },
+  me: (): Promise<Me> => Promise.resolve(readStored(ME_KEY, meSchema, ME)),
+  /** My settings. Backend: `PATCH /me/settings`. */
+  updateMe: (next: Me): Promise<Me> => {
+    const parsed = meSchema.parse(next)
+    writeStored(ME_KEY, parsed)
+    return Promise.resolve(parsed)
+  },
 }
