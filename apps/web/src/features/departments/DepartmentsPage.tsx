@@ -14,6 +14,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
+import { HelpTarget } from '@/components/help/HelpTarget'
 import { useWorkspace } from '@/data/queries/session'
 import {
   type DepartmentPageEntry,
@@ -245,10 +246,14 @@ export function DepartmentsPage() {
         <div className="mx-auto flex max-w-[1220px] flex-col gap-4">
           <div className="flex flex-wrap items-end gap-5">
             <div className="min-w-[240px] flex-1">
-              <h1 className="m-0 text-xl font-bold tracking-[-0.02em]">Departments</h1>
-              <p className="mt-1.5 mb-0 max-w-[620px] text-[13.5px] text-pretty text-muted-foreground">
-                Every page in {wsName}, grouped by department. Start typing to filter, then Enter to open.
-              </p>
+              <HelpTarget
+                help={{
+                  title: 'Departments',
+                  body: `Every page in ${wsName}, grouped by department. Start typing to filter, then Enter to open.`,
+                }}
+              >
+                <h1 className="m-0 text-xl font-bold tracking-[-0.02em]">Departments</h1>
+              </HelpTarget>
             </div>
             <span className="relative inline-flex flex-none">
               <Search

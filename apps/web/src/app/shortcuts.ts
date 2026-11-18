@@ -100,6 +100,10 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
     { combo: 'Ctrl/Cmd + Enter', desc: 'On an assembly order: advance the status — Release, then Start, then open the Finish dialog.' },
     { combo: 'Esc', desc: 'Close the item picker or dialog; from a document with nothing open, go back to the list.' },
   ]),
+  group('item-card', 'Item card — new / edit item', [
+    { combo: 'Ctrl/Cmd + S', desc: 'Create the item, or save the changes.' },
+    { combo: 'Esc', desc: 'Discard and go back (to the item, or to the Items list).' },
+  ]),
   group('document-lines', 'Document lines — purchase orders, receipts, BOMs, assembly orders', LINE_GRID_SHORTCUTS),
   group('notes', 'Notes (on any record)', [
     { combo: 'Ctrl/Cmd + Enter', desc: 'Add the note you’re typing. Notes are append-only — once added, nobody can edit or delete one.' },

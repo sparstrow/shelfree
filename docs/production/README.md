@@ -212,12 +212,19 @@ document editor (`/production/bills-of-materials/$no`, `new`) and the **Assembly
   [`FinishDialog.tsx`](../../apps/web/src/features/production/assembly-orders/FinishDialog.tsx),
   [`index.tsx`](../../apps/web/src/routes/production/assembly-orders/index.tsx),
   [`$no.tsx`](../../apps/web/src/routes/production/assembly-orders/$no.tsx).
+- Production Orders list (`/production/production-orders`, `?sel=<no>` preview):
+  [`index.tsx`](../../apps/web/src/routes/production/production-orders/index.tsx) renders the shared
+  `AssemblyOrdersPage` directly (matching prototype `datasetIdFor`, which maps both pages to `assemblyOrders`).
+  `AssemblyOrdersPage` accepts optional `sel` and `pageLabel` props and reads `?sel=` via
+  `useSearch({ strict: false })` so both routes work without copying the screen. Because `apps/web` does not
+  yet expose the `production` capability axis toggle, `Production Orders` stays visible in `app/nav.ts`.
 - Template additions (optional, backward-compatible):
   - [`RecordDrawer.tsx`](../../apps/web/src/components/record-drawer/RecordDrawer.tsx): `notice` and `DrawerLine.rightTone`.
   - [`DocumentPage.tsx`](../../apps/web/src/components/document/DocumentPage.tsx) (`TotalsCard`): optional `title` and `ReactNode` row/total `value`.
   - [`LineGrid.tsx`](../../apps/web/src/components/document/LineGrid.tsx): optional `lineNoun`, `addLabel`, `subRows`, `data-line-index`, and modifier-key guard in `onBodyKeyDown`.
   - [`StatusPill.tsx`](../../apps/web/src/components/StatusPill.tsx) `icon` and [`parts.tsx`](../../apps/web/src/components/document/parts.tsx) `statusIcon`.
 - Playwright specs: [`production.spec.ts`](../../apps/web/e2e/production.spec.ts) (lists),
+  [`item-units.spec.ts`](../../apps/web/e2e/item-units.spec.ts) (`/production/production-orders` list & preview),
   [`bom-document.spec.ts`](../../apps/web/e2e/bom-document.spec.ts) (BOM document),
   [`assembly-order-document.spec.ts`](../../apps/web/e2e/assembly-order-document.spec.ts) (AO document & Finish).
 
@@ -255,6 +262,7 @@ document editor (`/production/bills-of-materials/$no`, `new`) and the **Assembly
   - `Ctrl/Cmd+S`: save the BOM (works from inside inputs).
   - `Esc`: close an open dialog/menu/add-line row, blur the focused field, or return to the BOM list.
 - **Deliberate differences from prototype**:
+  - BOM and Assembly Order documents show no header subtitle; the prototype's explanatory line was removed under Quiet pages (2026-11-18).
   - Line actions use shared `LineGrid` controls (drag-to-reorder, `Alt+↑/↓`, selection bar duplicate/remove, `⋯` / context
     menu, inline `+ Add component` search) instead of per-row arrow/delete buttons and a modal component picker.
   - `draft-stash.ts` in `purchase-orders/` is typed strictly to `PurchaseOrder` and was not modified or reused, so
