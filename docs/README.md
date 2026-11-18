@@ -79,6 +79,10 @@ behavior, data-model, or screen change (see root `CLAUDE.md`).
   one shared directory of external people; carriers, vendors and customers **link** to a
   contact instead of keeping their own name/phone/email. Includes the app-wide searchable
   contact picker. Registry page.
+- [`people/`](people/README.md) — People ▸ **Users** & **Employees** (also part of
+  `Shelfree App.dc.html`): sign-in accounts with 8-module `None / Read / Write` permissions,
+  invite lifecycle, last-Admin / self-delete guards, employee directory, masked grid & export PII,
+  and reference-safe deletion.
 - [`tax-codes/`](tax-codes/README.md) — Settings ▸ Configuration ▸ **Tax codes**: national GST
   rate codes with dated rate history, Goods-rate system code, retired 12%/28% kept inactive.
   Tax codes & GST plan task 1.
