@@ -80,21 +80,25 @@ export function DocumentCard({ children, className }: { children: ReactNode; cla
 
 /** The totals card: rows of label/value, the last one emphasised. */
 export function TotalsCard({
+  title,
   rows,
   total,
   children,
 }: {
-  rows: { label: string; value: string; tone?: 'bad' }[]
-  total: { label: string; value: string }
+  title?: string
+  rows: { label: string; value: ReactNode; tone?: 'bad' }[]
+  total: { label: string; value: ReactNode }
   children?: ReactNode
 }) {
   return (
     <div className="rounded-xl border border-border bg-card px-4 py-[14px]">
+      {title && <div className="mb-2.5 text-[13px] font-semibold">{title}</div>}
       {rows.map((row) => (
         <div
           key={row.label}
           className={
-            'flex items-center justify-between py-[5px] text-[13px] ' + (row.tone === 'bad' ? 'text-bad-fg' : 'text-muted-foreground')
+            'flex items-center justify-between gap-2.5 py-[5px] text-[13px] ' +
+            (row.tone === 'bad' ? 'text-bad-fg' : 'text-muted-foreground')
           }
         >
           <span>{row.label}</span>

@@ -14,6 +14,7 @@
 import { GripVertical, Plus } from 'lucide-react'
 import {
   type DragEvent,
+  Fragment,
   type KeyboardEvent,
   type MouseEvent,
   type ReactNode,
@@ -57,6 +58,11 @@ export interface AddLineContext<T> {
   close: () => void
 }
 
+export interface LineSubRow {
+  key: string
+  cells: Partial<Record<string, ReactNode>>
+}
+
 export interface LineGridProps<T> {
   /** Persisted column widths are stored under this id. */
   gridId: string
@@ -77,6 +83,12 @@ export interface LineGridProps<T> {
   rowHasIssue?: (line: T, index: number) => boolean
   /** The inline "add line" row contents (item search…). Needed for `addLine`. */
   renderAddLine?: (ctx: AddLineContext<T>) => ReactNode
+  /** Singular/plural noun for the header count, e.g. `['component', 'components']`. */
+  lineNoun?: [string, string]
+  /** Label for the inline add-row trigger. Default: "Add line". */
+  addLabel?: string
+  /** Optional nested read-only child rows displayed under a line, aligned to `columns`. */
+  subRows?: (line: T, index: number) => readonly LineSubRow[]
   emptyText?: string
   /** Minimum table width before it scrolls sideways. */
   minWidth?: number
@@ -123,6 +135,9 @@ export function LineGrid<T>({
   banner,
   rowHasIssue,
   renderAddLine,
+  lineNoun = ['line', 'lines'],
+  addLabel = 'Add line',
+  subRows,
   emptyText = 'No lines yet.',
   minWidth,
 }: LineGridProps<T>) {
@@ -253,6 +268,7 @@ export function LineGrid<T>({
 
   /** ↑ / ↓ in an input marked `data-col` moves to the same input on the neighbouring line. */
   const onBodyKeyDown = (e: KeyboardEvent<HTMLTableSectionElement>) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return
     if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
     const input = e.target as HTMLElement
     const col = input.dataset?.col
@@ -276,92 +292,108 @@ export function LineGrid<T>({
     const line = lines[index]
     const isSelected = selected.includes(index)
     const issue = rowHasIssue?.(line, index) ?? false
+    const children = subRows?.(line, index) ?? []
     return (
-      <tr
-        key={index}
-        onContextMenu={
-          f.rowMenu
-            ? (e) => {
-                e.preventDefault()
-                openMenu(index, e.clientX, e.clientY)
-              }
-            : undefined
-        }
-        onDragOver={
-          f.reorder
-            ? (e) => {
-                e.preventDefault()
-                if (dragIds?.length && dragOver !== index) setDragOver(index)
-              }
-            : undefined
-        }
-        onDrop={f.reorder ? (e) => onDrop(index, e) : undefined}
-        className={cn(
-          'border-t transition-colors duration-[160ms]',
-          dragOver === index ? 'border-t-2 border-primary' : 'border-border',
-          isSelected
-            ? 'bg-[color-mix(in_oklab,var(--primary)_8%,transparent)]'
-            : issue
-              ? 'bg-[color-mix(in_oklab,var(--bad-fg)_5%,transparent)]'
-              : 'bg-transparent',
-        )}
-      >
-        {f.reorder && (
-          <td
-            draggable={canReorder}
-            onDragStart={(e) => onDragStart(index, e)}
-            onDragEnd={() => {
-              setDragIds(null)
-              setDragOver(null)
-            }}
-            onClick={() => {
-              if (canReorder) return
-              setSort(null)
-              toast('Sort cleared', { description: 'Lines are back in order — drag to reorder.' })
-            }}
-            title={canReorder ? 'Drag to reorder' : 'Sorted view — click to clear the sort and reorder'}
-            className={cn('px-1 py-[9px] text-center text-muted-foreground', canReorder ? 'cursor-grab' : 'cursor-pointer opacity-40')}
-          >
-            <GripVertical className="mx-auto size-[14px]" strokeWidth={2} />
-          </td>
-        )}
-        {f.select && (
-          <td className="px-1 py-[9px] text-center">
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={() => setSelected((cur) => (cur.includes(index) ? cur.filter((i) => i !== index) : [...cur, index]))}
-              aria-label={`Select line ${index + 1}`}
-              className="size-[14px] cursor-pointer accent-primary"
-            />
-          </td>
-        )}
-        {f.lineNumbers && (
-          <td className="tnum px-1.5 pt-[13px] pb-[9px] text-right align-top text-xs text-muted-foreground">{index + 1}</td>
-        )}
-        {columns.map((c) => (
-          <td key={c.key} className={c.cellClassName ?? (c.align === 'right' ? 'px-[10px] py-[9px]' : 'px-4 py-[9px]')}>
-            {c.cell(line, index)}
-          </td>
-        ))}
-        {f.rowMenu && (
-          <td className="px-2 py-[9px] text-center">
-            <button
-              type="button"
-              title="More actions"
-              aria-label={`More actions for line ${index + 1}`}
-              aria-haspopup="menu"
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect()
-                openMenu(index, rect.right - 4, rect.bottom)
+      <Fragment key={index}>
+        <tr
+          data-line-index={index}
+          onContextMenu={
+            f.rowMenu
+              ? (e) => {
+                  e.preventDefault()
+                  openMenu(index, e.clientX, e.clientY)
+                }
+              : undefined
+          }
+          onDragOver={
+            f.reorder
+              ? (e) => {
+                  e.preventDefault()
+                  if (dragIds?.length && dragOver !== index) setDragOver(index)
+                }
+              : undefined
+          }
+          onDrop={f.reorder ? (e) => onDrop(index, e) : undefined}
+          className={cn(
+            'border-t transition-colors duration-[160ms]',
+            dragOver === index ? 'border-t-2 border-primary' : 'border-border',
+            isSelected
+              ? 'bg-[color-mix(in_oklab,var(--primary)_8%,transparent)]'
+              : issue
+                ? 'bg-[color-mix(in_oklab,var(--bad-fg)_5%,transparent)]'
+                : 'bg-transparent',
+          )}
+        >
+          {f.reorder && (
+            <td
+              draggable={canReorder}
+              onDragStart={(e) => onDragStart(index, e)}
+              onDragEnd={() => {
+                setDragIds(null)
+                setDragOver(null)
               }}
-              className="inline-flex size-[26px] items-center justify-center rounded-md border-0 bg-transparent text-muted-foreground transition-colors duration-[140ms] hover:bg-tint-12 hover:text-foreground"
+              onClick={() => {
+                if (canReorder) return
+                setSort(null)
+                toast('Sort cleared', { description: 'Lines are back in order — drag to reorder.' })
+              }}
+              title={canReorder ? 'Drag to reorder' : 'Sorted view — click to clear the sort and reorder'}
+              className={cn('px-1 py-[9px] text-center text-muted-foreground', canReorder ? 'cursor-grab' : 'cursor-pointer opacity-40')}
             >
-              ⋯
-            </button>
-          </td>
-        )}
-      </tr>
+              <GripVertical className="mx-auto size-[14px]" strokeWidth={2} />
+            </td>
+          )}
+          {f.select && (
+            <td className="px-1 py-[9px] text-center">
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={() => setSelected((cur) => (cur.includes(index) ? cur.filter((i) => i !== index) : [...cur, index]))}
+                aria-label={`Select line ${index + 1}`}
+                className="size-[14px] cursor-pointer accent-primary"
+              />
+            </td>
+          )}
+          {f.lineNumbers && (
+            <td className="tnum px-1.5 pt-[13px] pb-[9px] text-right align-top text-xs text-muted-foreground">{index + 1}</td>
+          )}
+          {columns.map((c) => (
+            <td key={c.key} className={c.cellClassName ?? (c.align === 'right' ? 'px-[10px] py-[9px]' : 'px-4 py-[9px]')}>
+              {c.cell(line, index)}
+            </td>
+          ))}
+          {f.rowMenu && (
+            <td className="px-2 py-[9px] text-center">
+              <button
+                type="button"
+                title="More actions"
+                aria-label={`More actions for line ${index + 1}`}
+                aria-haspopup="menu"
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  openMenu(index, rect.right - 4, rect.bottom)
+                }}
+                className="inline-flex size-[26px] items-center justify-center rounded-md border-0 bg-transparent text-muted-foreground transition-colors duration-[140ms] hover:bg-tint-12 hover:text-foreground"
+              >
+                ⋯
+              </button>
+            </td>
+          )}
+        </tr>
+        {children.map((sub) => (
+          <tr key={sub.key} className="border-t border-dashed border-border bg-[color-mix(in_oklab,var(--foreground)_3%,transparent)]">
+            {f.reorder && <td />}
+            {f.select && <td />}
+            {f.lineNumbers && <td />}
+            {columns.map((c) => (
+              <td key={c.key} className={c.cellClassName ?? (c.align === 'right' ? 'px-[10px] py-[9px]' : 'px-4 py-[9px]')}>
+                {sub.cells[c.key] ?? null}
+              </td>
+            ))}
+            {f.rowMenu && <td />}
+          </tr>
+        ))}
+      </Fragment>
     )
   })
   if (f.addLine && addAt != null && renderAddLine) {
@@ -382,7 +414,7 @@ export function LineGrid<T>({
         <div className="text-[13px] font-semibold">
           {title}{' '}
           <span className="font-medium text-muted-foreground">
-            · {lines.length} {lines.length === 1 ? 'line' : 'lines'}
+            · {lines.length} {lines.length === 1 ? lineNoun[0] : lineNoun[1]}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -471,7 +503,7 @@ export function LineGrid<T>({
                   <td colSpan={colSpan} className="px-4 py-[10px] text-[12.5px] text-muted-foreground">
                     <button type="button" className="inline-flex items-center gap-1.5 border-0 bg-transparent p-0 text-inherit">
                       <Plus className="size-[14px]" strokeWidth={2} />
-                      Add line
+                      {addLabel}
                     </button>
                   </td>
                 </tr>

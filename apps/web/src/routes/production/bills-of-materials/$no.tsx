@@ -1,12 +1,18 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { PlaceholderPage } from '@/app/shell/PlaceholderPage'
+import { z } from 'zod'
+import { BomEditor } from '@/features/production/boms/BomEditor'
 
-/** BOM document placeholder — the full editor is a later task. */
+/** The bill of materials document. `$no` is a BOM number, or `new` (optionally with `?item=`). */
 export const Route = createFileRoute('/production/bills-of-materials/$no')({
-  component: BomDocumentPlaceholder,
+  validateSearch: z.object({
+    /** Optional parent item no. when creating a new BOM from an item profile. */
+    item: z.string().optional(),
+  }),
+  component: BomRoute,
 })
 
-function BomDocumentPlaceholder() {
+function BomRoute() {
   const { no } = Route.useParams()
-  return <PlaceholderPage title={`Bill of materials ${no}`} kind="pending" />
+  const { item } = Route.useSearch()
+  return <BomEditor routeNo={no} parentItem={item} />
 }

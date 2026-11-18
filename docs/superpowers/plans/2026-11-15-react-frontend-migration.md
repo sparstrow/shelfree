@@ -69,7 +69,7 @@ same turn a page is ported.**
 | Finance ▸ Chart of Accounts | ported |
 | People ▸ Contacts | ported |
 | Warehouse ▸ Items (list) | ported (item page pending) |
-| Production ▸ Bills of Materials (list) | ported (document pending) |
+| Production ▸ Bills of Materials (list + document) | ported |
 | Production ▸ Assembly Orders (list) | ported (document pending) |
 | Purchasing ▸ Purchase Prices, Carriers | pending (next) |
 | Every other prototype page | pending |
