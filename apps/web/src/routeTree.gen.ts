@@ -37,6 +37,7 @@ import { Route as SalesCustomersNoRouteImport } from './routes/sales/customers/$
 import { Route as WarehouseItemsIndexRouteImport } from './routes/warehouse/items/index'
 import { Route as WarehouseItemsNoRouteImport } from './routes/warehouse/items/$no'
 import { Route as PurchasingVendorsNoItemsRouteImport } from './routes/purchasing/vendors/$no_.items'
+import { Route as WarehouseItemsNoEditRouteImport } from './routes/warehouse/items/$no_.edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -190,6 +191,11 @@ const PurchasingVendorsNoItemsRoute =
     path: '/purchasing/vendors/$no/items',
     getParentRoute: () => rootRouteImport,
   } as any)
+const WarehouseItemsNoEditRoute = WarehouseItemsNoEditRouteImport.update({
+  id: '/warehouse/items/$no_/edit',
+  path: '/warehouse/items/$no/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -220,6 +226,7 @@ export interface FileRoutesByFullPath {
   '/sales/customers/': typeof SalesCustomersIndexRoute
   '/warehouse/items/': typeof WarehouseItemsIndexRoute
   '/purchasing/vendors/$no/items': typeof PurchasingVendorsNoItemsRoute
+  '/warehouse/items/$no/edit': typeof WarehouseItemsNoEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -249,6 +256,7 @@ export interface FileRoutesByTo {
   '/sales/customers': typeof SalesCustomersIndexRoute
   '/warehouse/items': typeof WarehouseItemsIndexRoute
   '/purchasing/vendors/$no/items': typeof PurchasingVendorsNoItemsRoute
+  '/warehouse/items/$no/edit': typeof WarehouseItemsNoEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -280,6 +288,7 @@ export interface FileRoutesById {
   '/sales/customers/': typeof SalesCustomersIndexRoute
   '/warehouse/items/': typeof WarehouseItemsIndexRoute
   '/purchasing/vendors/$no_/items': typeof PurchasingVendorsNoItemsRoute
+  '/warehouse/items/$no_/edit': typeof WarehouseItemsNoEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -312,6 +321,7 @@ export interface FileRouteTypes {
     | '/sales/customers/'
     | '/warehouse/items/'
     | '/purchasing/vendors/$no/items'
+    | '/warehouse/items/$no/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -341,6 +351,7 @@ export interface FileRouteTypes {
     | '/sales/customers'
     | '/warehouse/items'
     | '/purchasing/vendors/$no/items'
+    | '/warehouse/items/$no/edit'
   id:
     | '__root__'
     | '/'
@@ -371,6 +382,7 @@ export interface FileRouteTypes {
     | '/sales/customers/'
     | '/warehouse/items/'
     | '/purchasing/vendors/$no_/items'
+    | '/warehouse/items/$no_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -401,6 +413,7 @@ export interface RootRouteChildren {
   SalesCustomersIndexRoute: typeof SalesCustomersIndexRoute
   WarehouseItemsIndexRoute: typeof WarehouseItemsIndexRoute
   PurchasingVendorsNoItemsRoute: typeof PurchasingVendorsNoItemsRoute
+  WarehouseItemsNoEditRoute: typeof WarehouseItemsNoEditRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -601,6 +614,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PurchasingVendorsNoItemsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/warehouse/items/$no_/edit': {
+      id: '/warehouse/items/$no_/edit'
+      path: '/warehouse/items/$no/edit'
+      fullPath: '/warehouse/items/$no/edit'
+      preLoaderRoute: typeof WarehouseItemsNoEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -644,6 +664,7 @@ const rootRouteChildren: RootRouteChildren = {
   SalesCustomersIndexRoute: SalesCustomersIndexRoute,
   WarehouseItemsIndexRoute: WarehouseItemsIndexRoute,
   PurchasingVendorsNoItemsRoute: PurchasingVendorsNoItemsRoute,
+  WarehouseItemsNoEditRoute: WarehouseItemsNoEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
