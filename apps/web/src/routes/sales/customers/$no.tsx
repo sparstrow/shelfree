@@ -1,12 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { z } from 'zod'
 import { PlaceholderPage } from '@/app/shell/PlaceholderPage'
+import { CustomerProfilePage } from '@/features/sales/customers/CustomerProfilePage'
 
-/** Customer profile placeholder — the full profile is a later task. */
+/** The customer profile. `$no` is a customer number; `?tab=` is the open tab. */
 export const Route = createFileRoute('/sales/customers/$no')({
-  component: CustomerProfilePlaceholder,
+  validateSearch: z.object({
+    tab: z.string().optional(),
+  }),
+  component: CustomerProfileRoute,
 })
 
-function CustomerProfilePlaceholder() {
+function CustomerProfileRoute() {
   const { no } = Route.useParams()
-  return <PlaceholderPage title={`Customer ${no}`} kind="pending" />
+  // Creating a customer is a later task: `new` keeps the placeholder.
+  if (no === 'new') return <PlaceholderPage title="New customer" kind="pending" />
+  return <CustomerProfilePage no={no} />
 }
