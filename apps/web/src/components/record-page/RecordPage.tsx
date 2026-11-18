@@ -93,6 +93,8 @@ export interface RecordPageProps<R, D extends object> {
   children: (ctx: RecordTabContext<R, D>, tab: RecordTab) => ReactNode
   /** Extra buttons in the view-mode group, before Edit (New purchase order, Delete…). */
   actions?: ReactNode
+  /** When set, clicking Edit or pressing E calls this instead of entering in-place edit mode. */
+  onEdit?: () => void
   /** The form values for a record. */
   toDraft: (record: R) => D
   /** Tidy typed values before validating and saving. */
@@ -176,6 +178,7 @@ export function RecordPage<R, D extends object>({
   tabs,
   children,
   actions,
+  onEdit,
   toDraft,
   normalize,
   validate,
@@ -211,6 +214,10 @@ export function RecordPage<R, D extends object>({
 
   const startEdit = () => {
     if (!record || editing) return
+    if (onEdit) {
+      onEdit()
+      return
+    }
     setDraft(toDraft(record))
     setErrors({})
     setFormError('')

@@ -68,7 +68,7 @@ same turn a page is ported.**
 | Purchasing ▸ Charges | ported |
 | Finance ▸ Chart of Accounts | ported |
 | People ▸ Contacts | ported |
-| Warehouse ▸ Items (list) | ported (item page pending) |
+| Warehouse ▸ Items (list + item profile) | ported (`/warehouse/items/$no/edit` card pending) |
 | Production ▸ Bills of Materials (list) | ported (document pending) |
 | Production ▸ Assembly Orders (list) | ported (document pending) |
 | Purchasing ▸ Purchase Prices, Carriers | pending (next) |
