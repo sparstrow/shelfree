@@ -1,15 +1,20 @@
 import type { PurchaseOrder, PurchasePrice, PurchaseReceipt, Vendor } from '@/data/schemas'
 import {
+  applyVendorBlocked,
   applyVendorForm,
   gstinFormatError,
   normalizeVendorForm,
   validateVendorForm,
   vendorActivity,
+  vendorBlockToast,
+  vendorBlocked,
   vendorGstEffect,
   vendorGstReview,
   vendorLastOrderDate,
   vendorLocation,
+  vendorPayables,
   vendorSavedNote,
+  vendorStateOptions,
   vendorStats,
   vendorSupply,
   vendorStatus,
@@ -223,12 +228,18 @@ describe('validateVendorForm', () => {
 
   it('does not ask for a GSTIN from unregistered or overseas vendors', () => {
     expect(validateVendorForm({ ...form, gstRegType: 'unregistered', gstin: '' }, vendor())).toEqual({})
-    expect(validateVendorForm({ ...form, gstRegType: 'overseas', gstin: '' }, vendor({ country: 'China' }))).toEqual({})
+    expect(validateVendorForm({ ...form, gstRegType: 'overseas', gstin: '', country: 'China' }, vendor())).toEqual({})
   })
 
   it('refuses an overseas vendor whose country is India', () => {
     expect(validateVendorForm({ ...form, gstRegType: 'overseas', gstin: '' }, vendor()).gstRegType).toContain('country')
-    expect(validateVendorForm({ ...form, gstRegType: 'overseas', gstin: '' }, vendor({ country: '' })).gstRegType).toBeDefined()
+    expect(validateVendorForm({ ...form, gstRegType: 'overseas', gstin: '', country: '' }, vendor()).gstRegType).toBeDefined()
+  })
+
+  it('validates 6-digit PIN codes for India while allowing foreign postal codes', () => {
+    expect(validateVendorForm({ ...form, zip: '632009' })).toEqual({})
+    expect(validateVendorForm({ ...form, zip: '123' }).zip).toBe('A PIN code has 6 digits.')
+    expect(validateVendorForm({ ...form, zip: 'SW1A 1AA', country: 'United Kingdom' })).toEqual({})
   })
 })
 
@@ -246,10 +257,26 @@ describe('vendorToForm / normalizeVendorForm', () => {
     })
   })
 
-  it('trims and upper-cases typed values', () => {
-    const f = normalizeVendorForm({ ...vendorToForm(vendor(), ws), name: '  Acme ', gstin: ' 33aafck 5100m1z0' })
-    expect(f.name).toBe('Acme')
-    expect(f.gstin).toBe('33AAFCK5100M1Z0')
+  it('copies and trims address fields', () => {
+    const f = normalizeVendorForm({
+      ...vendorToForm(vendor(), ws),
+      name: '  Acme ',
+      addr1: '  14 Kiln St ',
+      addr2: ' Phase II ',
+      city: ' Vellore ',
+      zip: ' 632009 ',
+      country: ' India ',
+      gstin: ' 33aafck 5100m1z0',
+    })
+    expect(f).toMatchObject({
+      name: 'Acme',
+      addr1: '14 Kiln St',
+      addr2: 'Phase II',
+      city: 'Vellore',
+      zip: '632009',
+      country: 'India',
+      gstin: '33AAFCK5100M1Z0',
+    })
   })
 })
 
@@ -267,9 +294,17 @@ describe('applyVendorForm', () => {
   const ctx = { openOrders: 2, by: 'Asha', now: '2026-11-17T10:00:00' }
   const base = vendorToForm(vendor(), ws)
 
-  it('writes the edited fields and a budget number', () => {
-    const next = applyVendorForm(vendor(), { ...base, category: 'Ceramics', budgetedAmount: '1000.5' }, ctx)
+  it('writes the edited overview and address fields and a budget number', () => {
+    const next = applyVendorForm(
+      vendor(),
+      { ...base, category: 'Ceramics', addr1: '14 Kiln St', addr2: 'Unit B', city: 'Ranipet', state: 'Tamil Nadu', zip: '632401', country: 'India', budgetedAmount: '1000.5' },
+      ctx,
+    )
     expect(next.category).toBe('Ceramics')
+    expect(next.addr1).toBe('14 Kiln St')
+    expect(next.addr2).toBe('Unit B')
+    expect(next.city).toBe('Ranipet')
+    expect(next.zip).toBe('632401')
     expect(next.budgetedAmount).toBe(1000.5)
     expect(next.gstRegLog).toBeUndefined()
   })
@@ -305,5 +340,81 @@ describe('vendorSavedNote', () => {
     expect(vendorSavedNote(a, { ...a, category: 'X' }, ws)).toBe('')
     expect(vendorSavedNote(a, { ...a, gstRegType: 'composition' }, ws)).toContain('now composition')
     expect(vendorSavedNote(a, { ...a, taxCalcOverride: true, taxCalc: 'rate' }, ws)).toContain('new tax calculation')
+  })
+})
+
+describe('vendorPayables', () => {
+  it('computes aging buckets, GRNI on non-closed POs, and committed budget share', () => {
+    const v = vendor({ balance: 68400, balanceDue: 21200, overdue: 5000, budgetedAmount: 10000 })
+    const orders = [
+      order({ no: 'PO00001', status: 'Issued' }), // 100 * 50 = 5000
+      order({ no: 'PO00002', status: 'Closed' }), // 100 * 50 = 5000 (committed, not GRNI)
+      order({ no: 'PO00003', status: 'Draft' }), // excluded from committed
+      order({ no: 'PO00004', status: 'Cancelled' }), // excluded from committed
+      order({ no: 'PO00005', vendor: 'V00002', status: 'Issued' }), // other vendor
+    ]
+    const receipts = [
+      receipt({ no: 'GRN00001', po: 'PO00001', status: 'Posted' }), // 40 * 50 = 2000 (PO not closed -> GRNI)
+      receipt({ no: 'GRN00002', po: 'PO00002', status: 'Posted' }), // PO closed -> excluded from GRNI
+      receipt({ no: 'GRN00003', po: 'PO00001', status: 'Draft' }), // Draft -> excluded from GRNI
+      receipt({ no: 'GRN00004', po: 'PO00005', vendor: 'V00002', status: 'Posted' }), // other vendor
+    ]
+    expect(vendorPayables(v, orders, receipts)).toEqual({
+      balance: 68400,
+      notYetDue: 47200,
+      dueNow: 16200,
+      overdue: 5000,
+      grni: 2000,
+      committed: 10000,
+      budget: 10000,
+      budgetPct: 100,
+    })
+  })
+
+  it('returns 0 budgetPct when no budget is set and clamps negative buckets to zero', () => {
+    const v = vendor({ balance: 100, balanceDue: 200, overdue: 300, budgetedAmount: 0 })
+    const p = vendorPayables(v, [order()], [])
+    expect(p.notYetDue).toBe(0)
+    expect(p.dueNow).toBe(0)
+    expect(p.overdue).toBe(300)
+    expect(p.budgetPct).toBe(0)
+  })
+})
+
+describe('vendor blocking helpers', () => {
+  it('normalises blocked values and produces the prototype toast copy', () => {
+    expect(vendorBlocked(null)).toBe('')
+    expect(vendorBlocked({ blocked: '' })).toBe('')
+    expect(vendorBlocked({ blocked: 'Payment' })).toBe('Payment')
+    expect(vendorBlocked({ blocked: 'All' })).toBe('All')
+    expect(vendorBlocked({ blocked: 'Other' })).toBe('')
+
+    expect(applyVendorBlocked(vendor(), 'All').blocked).toBe('All')
+    expect(vendorBlockToast('V00001', 'All')).toEqual({
+      title: 'Vendor blocked',
+      description: 'V00001 · no new orders, receipts or payments',
+    })
+    expect(vendorBlockToast('V00001', 'Payment')).toEqual({
+      title: 'Payments blocked',
+      description: 'V00001 · orders and receipts still allowed',
+    })
+    expect(vendorBlockToast('V00001', '')).toEqual({
+      title: 'Vendor unblocked',
+      description: 'V00001 · all transactions allowed',
+    })
+  })
+})
+
+describe('vendorStateOptions', () => {
+  it('lists current GST states sorted A–Z without retired/foreign codes and preserves unknown values', () => {
+    const opts = vendorStateOptions('Tamil Nadu')
+    expect(opts[0]).toEqual({ value: '', label: 'Select state…' })
+    expect(opts.some((o) => o.value === 'Tamil Nadu')).toBe(true)
+    expect(opts.some((o) => o.value === 'Foreign country')).toBe(false)
+    expect(opts.some((o) => o.value === 'Daman and Diu')).toBe(false)
+
+    const unknown = vendorStateOptions('California')
+    expect(unknown[0]).toEqual({ value: '', label: 'Select state…' })
+    expect(unknown[1]).toEqual({ value: 'California', label: 'California (not a GST state)' })
   })
 })
