@@ -1,4 +1,4 @@
-import { getRouteApi, useNavigate } from '@tanstack/react-router'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useMemo } from 'react'
 import { type ListPreview, ListPage } from '@/components/list-page/ListPage'
 import { useCollectionDelete } from '@/components/list-page/use-collection-delete'
@@ -18,12 +18,18 @@ import {
 import { EM_DASH, fmtDate, int } from '@/lib/format'
 import { assemblyOrderDataset } from './dataset'
 
-const route = getRouteApi('/production/assembly-orders/')
+export interface AssemblyOrdersPageProps {
+  /** Assembly order number whose preview drawer opens on arrival (`?sel=`). */
+  sel?: string
+  /** Optional breadcrumb label override when rendered outside the Assembly Orders nav route. */
+  pageLabel?: string
+}
 
-/** Production ▸ Assembly Orders (list). */
-export function AssemblyOrdersPage() {
+/** Production ▸ Assembly Orders (list) — also rendered for Production ▸ Production Orders. */
+export function AssemblyOrdersPage({ sel: selProp, pageLabel }: AssemblyOrdersPageProps) {
   const navigate = useNavigate()
-  const { sel } = route.useSearch()
+  const search = useSearch({ strict: false }) as { sel?: unknown }
+  const sel = selProp ?? (typeof search.sel === 'string' ? search.sel : undefined)
   const orders = useList('assemblyOrders')
   const items = useList('items')
   const employees = useList('employees')
@@ -104,6 +110,7 @@ export function AssemblyOrdersPage() {
 
   return (
     <ListPage
+      pageLabel={pageLabel}
       dataset={dataset}
       rows={orders.data}
       isLoading={orders.isPending}

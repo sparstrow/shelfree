@@ -448,6 +448,26 @@ export const salesInvoiceSchema = z.object({
 })
 export type SalesInvoice = z.infer<typeof salesInvoiceSchema>
 
+// ── Sales ▸ Sales Prices (customer-specific price overrides) ─────────────────
+export const customerPriceSchema = z.object({
+  id: z.string(),
+  /** Customer no. */
+  customer: z.string(),
+  /** Item no. */
+  item: z.string(),
+  price: z.number(),
+  /** Minimum quantity floor; 1 = applies to any quantity. */
+  minQty: z.number(),
+  /** Active from / to (inclusive, ISO date). Empty = always / open-ended. */
+  effFrom: z.string(),
+  effTo: z.string(),
+  /** Reserved for future per-UoM pricing. */
+  uom: z.string(),
+  currency: z.string(),
+  note: z.string(),
+})
+export type CustomerPrice = z.infer<typeof customerPriceSchema>
+
 // ── Production ▸ Bills of Materials ──────────────────────────────────────────
 export const BOM_STATUSES = ['draft', 'active', 'archived'] as const
 export const bomStatusSchema = z.enum(BOM_STATUSES)

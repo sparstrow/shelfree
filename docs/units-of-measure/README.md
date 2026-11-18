@@ -160,3 +160,42 @@ Route `/settings/uom` (`features/settings/units-of-measure/`), on the Settings t
 - **Deliberate difference from the prototype:** the unit form is a dialog on a plain table, not the data grid
   (the settings frame already provides the header); delete is blocked for in-use units, which the prototype did
   not check.
+
+## React app (2026-11-18) — Warehouse ▸ Units of Measure
+
+Route `/warehouse/units-of-measure` (`?sel=<itemNo> · <code>` preview deep link), built on `ListPage` with
+pure register helpers in `apps/web/src/domain/units-of-measure.ts` (reusing `allUnits`, `sizeInBase`,
+`categoryName`, `formatFactor` and `domain/item.ts` `itemCategoryParent`).
+
+- **Files:** `apps/web/src/features/warehouse/units-of-measure/ItemUnitsPage.tsx` + `dataset.ts`, route
+  `apps/web/src/routes/warehouse/units-of-measure/index.tsx`, domain helpers in
+  `apps/web/src/domain/units-of-measure.ts` (+ `units-of-measure.test.ts`), browser spec
+  `apps/web/e2e/item-units.spec.ts`.
+- **Same as prototype:**
+  - Derived register (one row per item × unit, composite key `<itemNo> · <code>`), default sort by key asc.
+  - Columns and default visibility: `Item` (frozen), `Description`, `Unit`, `Unit name`, `Measurement`,
+    `UQC`, `Qty in base`, `Base unit`, `Role` (`StatusPill`), and hidden-by-default `Item category` + `Source`.
+  - Row flag warning dot when `qtyInBase == null` (`Missing conversion`), views (`All item units`, `Pack units`,
+    `Missing conversion`), filter columns, and quick search blob.
+  - Detail drawer (`UNIT DETAILS` 8 facts + explanatory footnote), primary action **Open on item**, row
+    double-click / `Enter` opening `/warehouse/items/<itemNo>?tab=units`, and single/bulk remove with
+    confirm + **Undo**.
+- **Deliberate changes:**
+  - **Derived from `items` + `unitsOfMeasure` without a separate `itemUom` store yet:** because `itemSchema`
+    only persists `item.uom` (and `ItemUnitsTab` keeps added pack units in component state), the register
+    initially lists one `Base` row per seeded item (22 rows). `buildItemUnitRows` already supports a
+    per-item `itemUoms` map (tested in `units-of-measure.test.ts`) for when `shelfree.v2.itemUom` lands.
+  - **Removing a row clears `item.uom`** on the underlying `Item` via `useUpsert('items')` (restored on
+    Undo); bulk removal uses a bulk bar `Remove` action with `ConfirmDialog` + Undo.
+  - **No `New` button on the register:** units are defined in Settings ▸ Units of measure and attached on
+    each item's Units of measure tab (`create` omitted on `ListPage`).
+  - **No new keyboard shortcuts** beyond `ListPage` and `DataGrid`, so `app/shortcuts.ts` is unchanged.
+- **Persistence:** reads/writes `shelfree.v2.items` and reads `shelfree.v2.unitsOfMeasure` via `@/data/queries`.
+- **Backend rules:** `GET /item-units` join view (paged, filterable, sortable across all columns above);
+  `DELETE /items/{id}/units/{code}` must enforce one base unit per item, refuse removing a unit referenced
+  by open PO/SO/receipt/assembly lines or posted history (409), emit an audit event (actor, item, unit,
+  old/new qty), and scope every query by `tenant_id` under `warehouse.items.read` / `warehouse.items.write`.
+- **Tests:** unit tests in `apps/web/src/domain/units-of-measure.test.ts` and Playwright tests in
+  `apps/web/e2e/item-units.spec.ts`.
+
+**Open (2026-11-18):** the React item schema stores only the base unit (`item.uom`), so every item has one row and the *Pack units* view is empty. The prototype's per-item unit set (`list`, `base`, `pack`, `qty` — `itemUomUpdate`) needs its own collection, shared with Item profile ▸ Units of measure (which today keeps added pack units in component state). Backend: `item_units(item_no, unit_code, role base|pack|other, qty_in_base)`; one base per item; removing the base promotes the next unit, as the prototype does.

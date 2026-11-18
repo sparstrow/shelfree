@@ -10,7 +10,7 @@ test.describe('Production ▸ Assembly Order document', () => {
 
     await expect(page).toHaveURL(/\/production\/assembly-orders\/AO00001$/)
     await expect(page.getByRole('heading', { name: 'Assembly order' })).toBeVisible()
-    await expect(page.getByText('AO00001', { exact: true })).toBeVisible()
+    await expect(page.getByText('AO00001', { exact: true }).filter({ visible: true }).first()).toBeVisible()
     await expect(page.getByText('Released', { exact: true })).toBeVisible()
     await expect(page.getByRole('link', { name: /BOM00004 · v1/ })).toBeVisible()
     await expect(page.getByText(/Short 15\.4 .* you can build 24 of 40\./)).toBeVisible()
