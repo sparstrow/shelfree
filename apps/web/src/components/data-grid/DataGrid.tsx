@@ -12,6 +12,7 @@ import {
   Eye,
   Funnel,
   List,
+  Pencil,
   type LucideIcon,
   Pin,
   RefreshCw,
@@ -53,6 +54,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { int, money } from '@/lib/format'
 import { isTypingTarget } from '@/lib/keyboard'
 import { cn } from '@/lib/utils'
+import { CellEditor } from './CellEditor'
 import { FilterChips } from './FilterChips'
 import {
   type Dataset,
@@ -169,6 +171,7 @@ export function DataGrid<T>({
   const [pageSize, setPageSize] = useState(20)
   const [selected, setSelected] = useState<Set<string>>(() => new Set())
   const [refreshing, setRefreshing] = useState(false)
+  const [cell, setCell] = useState<{ id: string; key: string } | null>(null)
   const [scrolledX, setScrolledX] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
   const anchorRef = useRef<string | null>(null)
@@ -213,6 +216,33 @@ export function DataGrid<T>({
     if (!view) return
     setViewId(id)
     changeFilters(view.filters.map((f) => ({ ...f, id: nextFilterId() })))
+    if (view.sorts) setSorts(view.sorts)
+  }
+
+  // ── in-place cell editing (columns with `edit`) ────────────────────────────
+  const cellRefs = useRef(new Map<string, HTMLDivElement>())
+  const editableColumns = columns.filter((c) => c.edit)
+  const cellText = (row: T, c: GridColumn): string => {
+    const custom = (c.edit?.value as ((r: T) => string) | undefined)?.(row)
+    if (custom !== undefined) return custom
+    const raw = dataset.raw(row, c.key)
+    return raw === '' || (typeof raw === 'number' && Number.isNaN(raw)) ? '' : String(raw)
+  }
+  const finishCell = async (row: T, c: GridColumn, value: string | null, move: 1 | -1 | 0) => {
+    const id = dataset.idOf(row)
+    const target = move ? editableColumns[editableColumns.findIndex((x) => x.key === c.key) + move] : undefined
+    if (target) setCell({ id, key: target.key })
+    else {
+      setCell(null)
+      requestAnimationFrame(() => cellRefs.current.get(`${id}|${c.key}`)?.focus())
+    }
+    if (value === null || !c.edit) return
+    try {
+      const message = await (c.edit.commit as (r: T, v: string) => string | void | Promise<string | void>)(row, value)
+      if (message) toast('Not saved', { description: message })
+    } catch {
+      toast('Not saved', { description: 'Check your connection and try again.' })
+    }
   }
 
   const refresh = async () => {
@@ -759,23 +789,66 @@ export function DataGrid<T>({
                     const text = dataset.text(row, c.key)
                     const negative = c.type === 'num' && Number(dataset.raw(row, c.key)) < 0
                     const flag = colIndex === 0 ? (dataset.rowFlag?.(row) ?? null) : null
+                    const editing = !!c.edit && cell?.id === id && cell.key === c.key
                     return (
                       <div
                         key={c.key}
                         role="gridcell"
                         data-col-key={c.key}
+                        data-editable={c.edit ? '' : undefined}
+                        ref={
+                          c.edit
+                            ? (el) => {
+                                if (el) cellRefs.current.set(`${id}|${c.key}`, el)
+                                else cellRefs.current.delete(`${id}|${c.key}`)
+                              }
+                            : undefined
+                        }
+                        tabIndex={c.edit && !editing ? 0 : undefined}
+                        title={c.edit && !editing ? 'Double-click or press Enter to edit' : undefined}
+                        onDoubleClick={
+                          c.edit
+                            ? (e) => {
+                                e.stopPropagation()
+                                setCell({ id, key: c.key })
+                              }
+                            : undefined
+                        }
+                        onKeyDown={
+                          c.edit && !editing
+                            ? (e) => {
+                                if (e.key === 'Enter' || e.key === 'F2') {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  setCell({ id, key: c.key })
+                                }
+                              }
+                            : undefined
+                        }
                         style={frozenStyle(c)}
                         className={cn(
-                          'flex flex-none items-center gap-[7px] overflow-hidden px-3 transition-[padding] duration-[180ms] ease-[cubic-bezier(.4,0,.2,1)]',
+                          'group/cell flex flex-none items-center gap-[7px] overflow-hidden px-3 transition-[padding,background-color] duration-[180ms] ease-[cubic-bezier(.4,0,.2,1)]',
                           compact ? 'py-1.5' : 'py-[9px]',
                           c.align === 'right' ? 'justify-end' : 'justify-start',
                           c.frozen === 'left' ? 'z-[2] bg-inherit' : 'z-[1]',
                           negative && 'bg-bad-bg',
+                          c.edit && 'cursor-text outline-none hover:bg-[color-mix(in_oklab,var(--foreground)_8%,transparent)] focus-visible:shadow-[inset_0_0_0_1.5px_var(--ring)]',
                           frozenClass(c, ''),
                         )}
                       >
                         {flag && <span title={flag} className="size-1.5 flex-none rounded-full bg-warn-fg" />}
-                        {c.type === 'pill' ? (
+                        {editing && c.edit ? (
+                          <CellEditor
+                            kind={c.edit.kind}
+                            step={c.edit.step}
+                            min={c.edit.min}
+                            initial={cellText(row, c)}
+                            label={c.label}
+                            align={c.align}
+                            mono={c.type === 'mono'}
+                            onFinish={(value, move) => void finishCell(row, c, value, move)}
+                          />
+                        ) : c.type === 'pill' ? (
                           <StatusPill label={text} />
                         ) : (
                           <span
@@ -788,6 +861,13 @@ export function DataGrid<T>({
                           >
                             {text}
                           </span>
+                        )}
+                        {c.edit && !editing && (
+                          <Pencil
+                            aria-hidden
+                            className="size-[10px] flex-none text-muted-foreground opacity-0 transition-opacity duration-[140ms] group-hover/cell:opacity-70 group-focus-visible/cell:opacity-70"
+                            strokeWidth={2}
+                          />
                         )}
                       </div>
                     )

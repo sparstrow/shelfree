@@ -27,6 +27,29 @@ export interface GridColumn {
   aggFmt?: AggFmt | null
   /** Render the value in the muted colour (secondary figures). */
   muted?: boolean
+  /** Opt in to editing this column's cells right in the grid (see `CellEdit`). */
+  edit?: CellEdit
+}
+
+/**
+ * In-grid cell editing (optional, per column). Double-click, or Enter on a focused
+ * cell, opens an input in place; Enter / blur commit, Esc cancels, Tab commits and
+ * moves to the next editable cell in the row. Columns without `edit` are unchanged.
+ * Row-typed callbacks take `never` here because columns are not generic; a page
+ * writes them against its own row type.
+ */
+export interface CellEdit {
+  kind: 'text' | 'number' | 'date'
+  /** `step` / `min` for number inputs. */
+  step?: string
+  min?: string
+  /** Text the input starts with. Default: the column's raw value ('' for none). */
+  value?: (row: never) => string
+  /**
+   * Save the typed text. Return an error message to refuse it (shown as a toast
+   * and the cell keeps its old value); return nothing when saved or unchanged.
+   */
+  commit: (row: never, value: string) => string | void | Promise<string | void>
 }
 
 export type FilterKind = 'text' | 'enum' | 'num'
@@ -65,6 +88,8 @@ export interface GridView {
   /** Built-in views cannot be renamed or deleted. */
   system?: boolean
   filters: Omit<GridFilter, 'id'>[]
+  /** Sort applied with the view (e.g. "Expiring" by end date). Omit to keep the current sort. */
+  sorts?: SortSpec[]
 }
 
 export interface SortSpec {

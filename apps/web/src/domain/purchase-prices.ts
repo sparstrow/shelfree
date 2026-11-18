@@ -259,8 +259,8 @@ export function pricesToSave(
 
 export type ChangePriceStart =
   | { kind: 'draft'; draft: PriceRow }
-  | { kind: 'ended'; reason: string }
-  | { kind: 'scheduled'; reason: string }
+  | { kind: 'ended'; title: string; reason: string }
+  | { kind: 'scheduled'; title: string; reason: string }
 
 /**
  * "Change price": a new row starting today that replaces `row`. Not for rows
@@ -273,10 +273,10 @@ export function startPriceChange(
   fmt: (iso: string) => string,
 ): ChangePriceStart {
   if (row.effTo && row.effTo < today) {
-    return { kind: 'ended', reason: 'This price has already ended. Add a new row with N, or duplicate it.' }
+    return { kind: 'ended', title: 'This price has already ended', reason: 'Add a new row with N, or duplicate it.' }
   }
   if (row.effFrom && row.effFrom >= today) {
-    return { kind: 'scheduled', reason: `Not in force yet. It starts ${fmt(row.effFrom)} — edit it directly.` }
+    return { kind: 'scheduled', title: 'Not in force yet', reason: `It starts ${fmt(row.effFrom)} — edit it directly.` }
   }
   return {
     kind: 'draft',

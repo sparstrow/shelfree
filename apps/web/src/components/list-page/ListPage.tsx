@@ -33,12 +33,20 @@ import { isTypingTarget } from '@/lib/keyboard'
 /** What the preview drawer shows for a row (the template adds the close button and footer). */
 export type ListPreview = Omit<RecordDrawerProps, 'onClose' | 'footer'>
 
+/** What a page action can ask of the template (only with an `editor`). */
+export interface ListContext<T> {
+  /** Open the New drawer, optionally pre-filled (e.g. "Change price", "Add quantity tier"). */
+  startNew: (draft?: T) => void
+  /** Open a row's drawer in edit mode. */
+  startEdit: (row: T) => void
+}
+
 export interface ListAction<T> {
   label: string
   icon?: LucideIcon
   /** Hidden from the row menu when this returns false. */
   when?: (row: T) => boolean
-  run: (row: T) => void
+  run: (row: T, list: ListContext<T>) => void
   /** Also show as a button in the preview footer. */
   inDrawer?: boolean
   /** Tooltip for the drawer button (shortcut hint etc.). */
@@ -48,10 +56,12 @@ export interface ListAction<T> {
 export interface ListShortcut<T> {
   /** Single key, e.g. `r`. Fires on the active row when not typing. */
   key: string
+  /** `true` = needs Shift (⇧P), `false` = only without Shift; omit to ignore Shift. */
+  shift?: boolean
   /** Shown on the Keyboard shortcuts page. */
   description: string
   when?: (row: T) => boolean
-  run: (row: T) => void
+  run: (row: T, list: ListContext<T>) => void
 }
 
 export interface ListDelete<T> {
@@ -138,6 +148,10 @@ export interface ListPageProps<T> {
 
   /** Row whose preview is open on arrival (`?sel=` deep links). */
   initialActiveId?: string | null
+  /** Open the New drawer pre-filled on arrival (e.g. "Add price" from another tab). Needs `editor`. */
+  initialDraft?: T
+  /** Extra controls in the top bar, before the page search (e.g. a tab switch). */
+  topBarExtra?: ReactNode
   initialFilters?: Omit<GridFilter, 'id'>[]
   emptyText?: string
   showTotals?: boolean
@@ -160,6 +174,8 @@ export function ListPage<T>({
   preview,
   editor,
   initialActiveId = null,
+  initialDraft,
+  topBarExtra,
   initialFilters,
   emptyText,
   showTotals,
@@ -169,7 +185,9 @@ export function ListPage<T>({
   const openTab = useUi((s) => s.openTab)
   const [activeId, setActiveId] = useState<string | null>(initialActiveId)
   const [deleting, setDeleting] = useState<T | null>(null)
-  const [editing, setEditing] = useState<Editing<T> | null>(null)
+  const [editing, setEditing] = useState<Editing<T> | null>(() =>
+    editor && initialDraft ? { mode: 'new', draft: initialDraft, orig: null, errors: {}, formError: '' } : null,
+  )
 
   const active = activeId ? (rows ?? []).find((r) => dataset.idOf(r) === activeId) : undefined
   const noun = dataset.noun
@@ -212,10 +230,10 @@ export function ListPage<T>({
   }
 
   // ── editor (reference lists) ────────────────────────────────────────────────
-  const startNew = () => {
+  const startNew = (draft?: T) => {
     if (!editor) return
     setActiveId(null)
-    setEditing({ mode: 'new', draft: editor.blank(rows ?? []), orig: null, errors: {}, formError: '' })
+    setEditing({ mode: 'new', draft: draft ?? editor.blank(rows ?? []), orig: null, errors: {}, formError: '' })
   }
   const startEdit = (row: T) => {
     if (!editor) return
@@ -287,15 +305,19 @@ export function ListPage<T>({
     return () => window.removeEventListener('keydown', onKey, true)
   })
 
+  const listContext: ListContext<T> = { startNew, startEdit }
+
   // Page shortcuts act on the active row.
   useEffect(() => {
     if (!shortcuts.length) return
     const onKey = (e: KeyboardEvent) => {
       if (isTypingTarget(e.target) || e.metaKey || e.ctrlKey || e.altKey || !active) return
-      const hit = shortcuts.find((s) => s.key === e.key.toLowerCase() && (!s.when || s.when(active)))
+      const hit = shortcuts.find(
+        (s) => s.key === e.key.toLowerCase() && (s.shift === undefined || s.shift === e.shiftKey) && (!s.when || s.when(active)),
+      )
       if (hit) {
         e.preventDefault()
-        hit.run(active)
+        hit.run(active, listContext)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -313,7 +335,7 @@ export function ListPage<T>({
   if (open) gridActions.push({ label: openLabel ?? `Open ${noun}`, icon: ExternalLink, onSelect: open })
   if (openInNewTab) gridActions.push({ label: 'Open in new tab', icon: ExternalLink, onSelect: openInNewTab })
   for (const a of actions) {
-    gridActions.push({ label: a.label, icon: a.icon, disabled: a.when ? (row) => !a.when?.(row) : undefined, onSelect: a.run })
+    gridActions.push({ label: a.label, icon: a.icon, disabled: a.when ? (row) => !a.when?.(row) : undefined, onSelect: (row) => a.run(row, listContext) })
   }
   gridActions.push({ label: 'Copy number', icon: Copy, onSelect: copyNo })
   if (remove) {
@@ -413,7 +435,7 @@ export function ListPage<T>({
             {actions
               .filter((a) => a.inDrawer && (!a.when || a.when(active)))
               .map((a) => (
-                <button key={a.label} type="button" onClick={() => a.run(active)} title={a.title} className={drawerSecondaryButton}>
+                <button key={a.label} type="button" onClick={() => a.run(active, listContext)} title={a.title} className={drawerSecondaryButton}>
                   {a.icon && <a.icon className="size-[13px]" strokeWidth={2} />}
                   {a.label}
                 </button>
@@ -442,8 +464,10 @@ export function ListPage<T>({
         count={rows?.length}
         countTitle={rows ? `${rows.length} ${rows.length === 1 ? noun : dataset.nounPlural}` : undefined}
         newLabel={create?.label ?? (editor ? `New ${noun}` : undefined)}
-        onNew={create?.run ?? (editor ? startNew : undefined)}
-      />
+        onNew={create?.run ?? (editor ? () => startNew() : undefined)}
+      >
+        {topBarExtra}
+      </TopBar>
       <DataGrid
         key={gridKey}
         dataset={dataset}
