@@ -67,15 +67,18 @@ same turn a page is ported.**
 | Purchasing ▸ Vendors (list) | ported |
 | Purchasing ▸ Vendor profile | ported — all 10 tabs on the Record page template |
 | Sales ▸ Customers (list) | ported |
-| Sales ▸ Customer profile | 8 tabs ported on the Record page template (Overview, Billing & address, Order history, Statement & aging, Shipping addresses, Notes & activity, Documents, Credit & risk); Sales prices & Contacts pending |
+| Sales ▸ Customer profile | all 10 tabs ported on the Record page template (Overview, Billing & address, Sales prices, Order history, Statement & aging, Shipping addresses, Notes & activity, Documents, Contacts, Credit & risk) |
+| Sales ▸ Sales Prices | ported (List prices + Customer prices on ListPage with editor & in-grid cell editing + Price check) |
 | Purchasing ▸ Charges | ported |
 | Finance ▸ Chart of Accounts | ported |
 | People ▸ Contacts | ported |
 | People ▸ Users | ported (in-place drawer with module permissions matrix, bulk actions, protected delete) |
 | People ▸ Employees | ported (in-place drawer, masked grid & export PII, bulk actions, reference-safe delete) |
 | Warehouse ▸ Items (list + item profile) | ported (`/warehouse/items/$no/edit` card pending) |
+| Warehouse ▸ Units of Measure (item units) | ported (`/warehouse/units-of-measure` on `ListPage`, derived from `items` + `unitsOfMeasure`) |
 | Production ▸ Bills of Materials (list + document) | ported |
 | Production ▸ Assembly Orders (list + document) | ported (full/partial Finish command, shortage guard, FinishDialog) |
+| Production ▸ Production Orders | ported (`/production/production-orders` renders shared `AssemblyOrdersPage`) |
 | Purchasing ▸ Carriers | ported (contact picker shared) |
 | Purchasing ▸ Purchase Prices | ported (list on the editor template + in-grid cell editing + "Items with no vendor price" tab) |
 | Purchasing ▸ Vendor Purchase Items | ported (`/purchasing/vendors/$no/items`, linked from Vendor profile ▸ Items supplied) |

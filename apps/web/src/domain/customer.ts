@@ -4,12 +4,14 @@
  */
 import type {
   Customer,
+  CustomerPrice,
   CustomerShipTo,
   CustomerStatus,
   Item,
   SalesInvoice,
   SalesOrder,
 } from '@/data/schemas'
+import { type SalesPricingSettings, resolveCustomerPrice } from './sales-prices'
 import { type Tone, statusTone } from './status'
 import { gstinFormatError } from './vendor'
 
@@ -111,25 +113,65 @@ export interface CustomerDocumentRow {
   amount: number
 }
 
+export interface CustomerOrderPricing {
+  customer: Pick<Customer, 'no' | 'pricingEligible' | 'createdAt'>
+  prices: readonly CustomerPrice[]
+  settings?: SalesPricingSettings
+  /** Date on which prices are resolved; defaults to `order.orderDate || ''`. */
+  date?: string
+}
+
 /**
- * Total for a sales order from item list prices.
- * Agreed-price resolution via `customerPrices` is deferred until Sales prices is ported.
+ * Total for a sales order: resolves agreed customer prices (and quantity tiers)
+ * via `resolveCustomerPrice` when pricing context is provided, falling back to
+ * each item's list price.
  */
 export function customerOrderTotal(
-  order: Pick<SalesOrder, 'lines'>,
-  items: readonly Pick<Item, 'no' | 'price'>[],
+  order: Pick<SalesOrder, 'lines'> & { orderDate?: string },
+  items: readonly (Pick<Item, 'no' | 'price'> & { uom?: string })[],
+  pricing?: CustomerOrderPricing,
 ): number {
-  const priceByNo = new Map(items.map((i) => [i.no, i.price]))
-  return (order.lines || []).reduce((sum, [itemNo, qty]) => sum + (priceByNo.get(itemNo) ?? 0) * (qty || 0), 0)
+  const itemByNo = new Map(items.map((i) => [i.no, i]))
+  return (order.lines || []).reduce((sum, [itemNo, qty]) => {
+    const item = itemByNo.get(itemNo)
+    if (!item) return sum
+    let unit = Number(item.price) || 0
+    if (pricing) {
+      const resolved = resolveCustomerPrice({
+        customer: pricing.customer,
+        item: { no: item.no, price: item.price, uom: item.uom ?? '' },
+        prices: pricing.prices,
+        qty,
+        date: pricing.date ?? order.orderDate ?? '',
+        settings: pricing.settings,
+      })
+      if (resolved.price != null) unit = resolved.price
+    }
+    return sum + unit * (qty || 0)
+  }, 0)
 }
 
 /** Combined sales orders and invoices for one customer (matched by name in seed), newest first. */
 export function customerDocuments(
-  customer: Pick<Customer, 'name'>,
+  customer: Pick<Customer, 'name'> & Partial<Pick<Customer, 'no' | 'pricingEligible' | 'createdAt'>>,
   orders: readonly SalesOrder[],
   invoices: readonly SalesInvoice[],
-  items: readonly Pick<Item, 'no' | 'price'>[],
+  items: readonly (Pick<Item, 'no' | 'price'> & { uom?: string })[],
+  customerPrices?: readonly CustomerPrice[],
+  pricingSettings?: SalesPricingSettings,
 ): CustomerDocumentRow[] {
+  const pricing: CustomerOrderPricing | undefined =
+    customerPrices && customer.no
+      ? {
+          customer: {
+            no: customer.no,
+            pricingEligible: customer.pricingEligible,
+            createdAt: customer.createdAt,
+          },
+          prices: customerPrices,
+          settings: pricingSettings,
+        }
+      : undefined
   const orderRows: CustomerDocumentRow[] = orders
     .filter((o) => o.customer === customer.name)
     .map((o) => ({
@@ -138,7 +180,7 @@ export function customerDocuments(
       date: o.orderDate,
       lineCount: (o.lines || []).length,
       status: o.status,
-      amount: customerOrderTotal(o, items),
+      amount: customerOrderTotal(o, items, pricing),
     }))
   const invoiceRows: CustomerDocumentRow[] = invoices
     .filter((v) => v.customer === customer.name)
