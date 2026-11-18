@@ -47,6 +47,8 @@ export interface DocumentHeaderProps {
   /** Record number shown as a mono pill. */
   no?: string
   status?: string
+  /** Optional leading icon rendered inside the header status pill. */
+  statusIcon?: ReactNode
   subtitle?: string
   backLabel: string
   onBack: () => void
@@ -55,7 +57,16 @@ export interface DocumentHeaderProps {
 }
 
 /** The title row of a document: back button, title, number, status, subtitle, actions. */
-export function DocumentHeader({ title, no, status, subtitle, backLabel, onBack, actions }: DocumentHeaderProps) {
+export function DocumentHeader({
+  title,
+  no,
+  status,
+  statusIcon,
+  subtitle,
+  backLabel,
+  onBack,
+  actions,
+}: DocumentHeaderProps) {
   return (
     <div className="flex flex-none items-center gap-3 border-b border-border px-5 py-4">
       <button
@@ -75,7 +86,7 @@ export function DocumentHeader({ title, no, status, subtitle, backLabel, onBack,
               {no}
             </span>
           )}
-          {status && <StatusPill label={status} />}
+          {status && <StatusPill label={status} icon={statusIcon} />}
         </div>
         {subtitle && <div className="mt-[3px] text-[12.5px] text-muted-foreground">{subtitle}</div>}
       </div>

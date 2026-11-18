@@ -1,12 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { PlaceholderPage } from '@/app/shell/PlaceholderPage'
+import { AssemblyOrderEditor } from '@/features/production/assembly-orders/AssemblyOrderEditor'
 
-/** Assembly order document placeholder — the full document is a later task. */
 export const Route = createFileRoute('/production/assembly-orders/$no')({
-  component: AssemblyOrderDocumentPlaceholder,
+  component: AssemblyOrderDocumentRoute,
 })
 
-function AssemblyOrderDocumentPlaceholder() {
+function AssemblyOrderDocumentRoute() {
   const { no } = Route.useParams()
-  return <PlaceholderPage title={`Assembly order ${no}`} kind="pending" />
+  return <AssemblyOrderEditor routeNo={no} />
 }

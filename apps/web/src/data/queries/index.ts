@@ -4,7 +4,11 @@
  */
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type Api, type CollectionName, api } from '@/data/api'
-import { postPurchaseReceipt } from '@/data/api/commands'
+import {
+  type FinishAssemblyOrderInput,
+  finishAssemblyOrder,
+  postPurchaseReceipt,
+} from '@/data/api/commands'
 
 type RecordOf<K extends CollectionName> = Awaited<ReturnType<Api[K]['list']>>[number]
 
@@ -61,6 +65,21 @@ export function usePostPurchaseReceipt() {
     onSuccess: () =>
       Promise.all(
         (['purchaseReceipts', 'purchaseOrders', 'items'] as const).map((name) =>
+          client.invalidateQueries({ queryKey: [name] }),
+        ),
+      ),
+  })
+}
+
+/** Finish (full or partial) an assembly order and refresh orders and stock. */
+export function useFinishAssemblyOrder() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ no, ...input }: { no: string } & FinishAssemblyOrderInput) =>
+      finishAssemblyOrder(no, input),
+    onSuccess: () =>
+      Promise.all(
+        (['assemblyOrders', 'items'] as const).map((name) =>
           client.invalidateQueries({ queryKey: [name] }),
         ),
       ),
