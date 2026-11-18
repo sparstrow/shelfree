@@ -50,8 +50,6 @@ const TABS: readonly RecordTab[] = [
 /** Fields that belong to Address & payment; everything else lives on Overview. */
 const DETAILS_FIELDS = new Set(['addr1', 'addr2', 'city', 'state', 'zip', 'country'])
 const tabOfField = (key: string) => (DETAILS_FIELDS.has(key) ? 'details' : 'overview')
-/** Fields that live on the Overview tab (the only tab built so far). */
-const tabOfField = () => 'overview'
 
 /** Purchasing ▸ Vendors ▸ profile page. */
 export function VendorProfilePage({ no }: { no: string }) {
