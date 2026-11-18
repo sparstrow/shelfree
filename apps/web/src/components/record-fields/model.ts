@@ -1,7 +1,7 @@
 /** Field model for in-place rows (see FieldRows.tsx). */
 import { EM_DASH } from '@/lib/format'
 
-export type EditorFieldType = 'text' | 'number' | 'area' | 'select' | 'toggle'
+export type EditorFieldType = 'text' | 'number' | 'area' | 'select' | 'toggle' | 'lookup'
 
 export interface EditorOption {
   value: string
@@ -13,6 +13,10 @@ export interface EditorField<T> {
   label: string
   type: EditorFieldType
   options?: readonly (string | EditorOption)[]
+  /** Lookup source when `type === 'lookup'`. */
+  source?: 'contacts'
+  /** Allow clearing a lookup value back to empty (default true). */
+  allowNone?: boolean
   mono?: boolean
   /** Shown as text in edit mode too (system records, derived values). */
   locked?: boolean

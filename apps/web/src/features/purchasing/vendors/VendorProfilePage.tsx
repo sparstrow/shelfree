@@ -21,6 +21,7 @@ import {
 } from '@/domain/vendor'
 import { fmtDate, int, todayLocal } from '@/lib/format'
 import { VendorOverview, type VendorDraft } from './VendorOverview'
+import { VendorContactsTab } from './tabs/VendorContactsTab'
 import { VendorItemsTab } from './tabs/VendorItemsTab'
 import { VendorOrdersTab } from './tabs/VendorOrdersTab'
 import { VendorPerformanceTab } from './tabs/VendorPerformanceTab'
@@ -147,6 +148,8 @@ export function VendorProfilePage({ no }: { no: string }) {
                 workspaceTax={ws}
               />
             )
+          case 'contacts':
+            return <VendorContactsTab vendor={ctx.record} />
           case 'items':
             return (
               <VendorItemsTab

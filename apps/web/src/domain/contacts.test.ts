@@ -1,5 +1,6 @@
-import type { Carrier, Contact, Customer, Vendor } from '@/data/schemas'
+import type { Carrier, Contact, ContactLink, Customer, Vendor } from '@/data/schemas'
 import {
+  addContactLink,
   blankContact,
   contactDeleteBlocked,
   contactKinds,
@@ -11,9 +12,13 @@ import {
   contactSubtitle,
   duplicateContact,
   formatContactPhone,
+  mirrorPrimaryContact,
   nextContactNo,
   normalizeContact,
   normalizePhone,
+  setPrimaryContactLink,
+  unlinkContactLink,
+  updateContactLinkRole,
   validateContact,
 } from './contacts'
 
@@ -156,5 +161,62 @@ describe('contactLinks & summaries', () => {
     expect(contactDeleteBlocked(links)).toBeNull()
     expect(contactNotice(contact({ active: true }), links)).toContain('Not linked to anything yet')
     expect(contactStatus(contact({ active: false }))).toBe('Inactive')
+  })
+})
+
+describe('contact link helpers (add, unlink, setPrimary, role, mirror)', () => {
+  const link = (over: Partial<ContactLink> = {}): ContactLink => ({
+    id: 'V00001-C1',
+    contactId: 'CON00006',
+    role: 'Owner',
+    isPrimary: true,
+    ...over,
+  })
+
+  it('adds links without duplicating, making only the first link primary', () => {
+    const first = addContactLink([], 'CON00006', { role: 'Owner', idPrefix: 'V00001' })
+    expect(first).toEqual([{ id: 'V00001-C1', contactId: 'CON00006', role: 'Owner', isPrimary: true }])
+
+    const second = addContactLink(first, 'CON00007', { role: 'Accounts', idPrefix: 'V00001' })
+    expect(second).toEqual([
+      { id: 'V00001-C1', contactId: 'CON00006', role: 'Owner', isPrimary: true },
+      { id: 'V00001-C2', contactId: 'CON00007', role: 'Accounts', isPrimary: false },
+    ])
+
+    // Already linked -> unchanged.
+    expect(addContactLink(second, 'CON00007', { idPrefix: 'V00001' })).toEqual(second)
+  })
+
+  it('switches primary and promotes next link when primary is unlinked', () => {
+    const links = [link(), link({ id: 'V00001-C2', contactId: 'CON00007', role: 'Accounts', isPrimary: false })]
+
+    const promoted = setPrimaryContactLink(links, 'V00001-C2')
+    expect(promoted.map((l) => [l.id, l.isPrimary])).toEqual([
+      ['V00001-C1', false],
+      ['V00001-C2', true],
+    ])
+
+    const afterUnlink = unlinkContactLink(promoted, 'V00001-C2')
+    expect(afterUnlink).toEqual([{ id: 'V00001-C1', contactId: 'CON00006', role: 'Owner', isPrimary: true }])
+    expect(unlinkContactLink(afterUnlink, 'V00001-C1')).toEqual([])
+  })
+
+  it('updates link role and mirrors primary contact fields', () => {
+    const links = [link(), link({ id: 'V00001-C2', contactId: 'CON00007', role: 'Accounts', isPrimary: false })]
+    expect(updateContactLinkRole(links, 'V00001-C2', '  Dispatch  ')[1].role).toBe('Dispatch')
+
+    const c6 = contact({ no: 'CON00006', name: 'Murugesan Pillai', phone: '+919442110287', email: 'orders@k.in' })
+    const c7 = contact({ no: 'CON00007', name: 'Selvi Murugesan', phone: '+919442110290', email: 'accounts@k.in' })
+    const baseVendor = { contacts: setPrimaryContactLink(links, 'V00001-C2'), contact: '', phone: '', email: '' }
+    expect(mirrorPrimaryContact(baseVendor, [c6, c7])).toMatchObject({
+      contact: 'Selvi Murugesan',
+      phone: '94421 10290',
+      email: 'accounts@k.in',
+    })
+    expect(mirrorPrimaryContact({ contacts: [], contact: 'Old', phone: '1', email: 'a@b.c' }, [c6])).toMatchObject({
+      contact: '',
+      phone: '',
+      email: '',
+    })
   })
 })
