@@ -154,6 +154,12 @@
     @apply bg-background text-foreground;
     margin: 0;
   }
+  /* The app shell fills the window and scrolls inside its own panes. Clip (not hidden) so focusing
+     a field or opening a popover can never scroll the document or the shell itself sideways/up. */
+  html,
+  body {
+    overflow: clip;
+  }
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;

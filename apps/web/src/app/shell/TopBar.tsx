@@ -29,7 +29,7 @@ export function TopBar({ pageLabel, crumb, count, countTitle, newLabel, onNew, c
   const Current = pageLabel ? 'span' : 'h1'
 
   return (
-    <header className="flex h-14 flex-none items-center gap-[9px] border-b border-border px-5">
+    <header className="@container flex h-14 flex-none items-center gap-[9px] border-b border-border px-5">
       {active.kind === 'page' ? (
         <>
           <Link
@@ -88,10 +88,12 @@ export function TopBar({ pageLabel, crumb, count, countTitle, newLabel, onNew, c
             type="button"
             onClick={onNew}
             title={newLabel}
-            className="inline-flex h-[34px] flex-none items-center gap-[7px] rounded-lg border-0 bg-primary px-[14px] text-[13px] font-semibold whitespace-nowrap text-new-btn-fg shadow-base transition-[background-color,transform,box-shadow] duration-[140ms] hover:-translate-y-px hover:bg-primary-hover hover:shadow-[0_5px_16px_-5px_rgb(0_0_0/0.4)]"
+            aria-label={newLabel}
+            className="inline-flex h-[34px] flex-none items-center gap-[7px] rounded-lg border-0 bg-primary px-[14px] @max-2xl:px-[10px] text-[13px] font-semibold whitespace-nowrap text-new-btn-fg shadow-base transition-[background-color,transform,box-shadow] duration-[140ms] hover:-translate-y-px hover:bg-primary-hover hover:shadow-[0_5px_16px_-5px_rgb(0_0_0/0.4)]"
           >
             <Plus className="size-[15px]" strokeWidth={2.4} />
-            {newLabel}
+            {/* Narrow top bar (sidebar open on a small window): icon only, the label stays as title / aria-label. */}
+            <span className="@max-2xl:sr-only">{newLabel}</span>
           </button>
         </>
       )}

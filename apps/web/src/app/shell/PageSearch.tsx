@@ -67,7 +67,7 @@ export function PageSearch() {
   }
 
   return (
-    <span className="relative inline-flex">
+    <span className="relative inline-flex min-w-[120px] shrink">
       <Search
         className="pointer-events-none absolute top-[9px] left-[10px] size-[14px] text-muted-foreground"
         strokeWidth={2}
@@ -89,7 +89,7 @@ export function PageSearch() {
         aria-expanded={showPanel}
         aria-controls="page-search-results"
         aria-autocomplete="list"
-        className="h-8 w-[220px] rounded-lg border border-input bg-transparent pr-[10px] pl-[31px] text-[13px] text-foreground outline-none transition-[width,border-color,box-shadow] duration-150 placeholder:text-muted-foreground focus:w-[280px] focus:border-ring focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--primary)_20%,transparent)]"
+        className="h-8 w-[220px] max-w-full min-w-0 rounded-lg border border-input bg-transparent pr-[10px] pl-[31px] text-[13px] text-foreground outline-none transition-[width,border-color,box-shadow] duration-150 placeholder:text-muted-foreground focus:w-[280px] focus:border-ring focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--primary)_20%,transparent)]"
       />
       {showPanel && (
         <>
