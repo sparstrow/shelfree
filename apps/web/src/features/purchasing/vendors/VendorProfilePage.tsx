@@ -25,6 +25,7 @@ import { VendorDetailsTab } from './tabs/VendorDetailsTab'
 import { VendorDocsTab } from './tabs/VendorDocsTab'
 import { VendorNotesTab } from './tabs/VendorNotesTab'
 import { VendorPayablesTab } from './tabs/VendorPayablesTab'
+import { VendorContactsTab } from './tabs/VendorContactsTab'
 import { VendorItemsTab } from './tabs/VendorItemsTab'
 import { VendorOrdersTab } from './tabs/VendorOrdersTab'
 import { VendorPerformanceTab } from './tabs/VendorPerformanceTab'
@@ -49,6 +50,8 @@ const TABS: readonly RecordTab[] = [
 /** Fields that belong to Address & payment; everything else lives on Overview. */
 const DETAILS_FIELDS = new Set(['addr1', 'addr2', 'city', 'state', 'zip', 'country'])
 const tabOfField = (key: string) => (DETAILS_FIELDS.has(key) ? 'details' : 'overview')
+/** Fields that live on the Overview tab (the only tab built so far). */
+const tabOfField = () => 'overview'
 
 /** Purchasing ▸ Vendors ▸ profile page. */
 export function VendorProfilePage({ no }: { no: string }) {
@@ -160,6 +163,8 @@ export function VendorProfilePage({ no }: { no: string }) {
             return <VendorNotesTab vendorNo={ctx.record.no} activity={vendorActivity(ctx.record, stats, today)} />
           case 'docs':
             return <VendorDocsTab />
+          case 'contacts':
+            return <VendorContactsTab vendor={ctx.record} />
           case 'items':
             return (
               <VendorItemsTab

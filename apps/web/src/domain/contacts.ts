@@ -1,4 +1,4 @@
-import type { Carrier, Contact, Customer, Vendor } from '@/data/schemas'
+import type { Carrier, Contact, ContactLink, Customer, Vendor } from '@/data/schemas'
 
 export type ContactLinkKind = 'Carrier' | 'Vendor' | 'Customer'
 
@@ -193,4 +193,64 @@ export function contactNotice(c: Pick<Contact, 'active'>, links: readonly Contac
 export function contactDeleteBlocked(links: readonly ContactUsage[]): string | null {
   if (!links.length) return null
   return `Linked to ${links.length} ${links.length === 1 ? 'record' : 'records'} — unlink it there first, or mark it inactive.`
+}
+
+/** Add a contact link to an owning record's link list. First link automatically becomes primary. */
+export function addContactLink(
+  links: readonly ContactLink[],
+  contactId: string,
+  opts?: { role?: string; idPrefix?: string },
+): ContactLink[] {
+  if (!contactId || links.some((l) => l.contactId === contactId)) return [...links]
+  const used = new Set(links.map((l) => l.id))
+  const prefix = opts?.idPrefix ? `${opts.idPrefix}-C` : 'L'
+  let n = links.length + 1
+  while (used.has(`${prefix}${n}`)) n++
+  return [
+    ...links,
+    {
+      id: `${prefix}${n}`,
+      contactId,
+      role: String(opts?.role ?? '').trim(),
+      isPrimary: links.length === 0,
+    },
+  ]
+}
+
+/** Remove a contact link by link id; if the primary was unlinked, promotes the next link. */
+export function unlinkContactLink(links: readonly ContactLink[], linkId: string): ContactLink[] {
+  const remaining = links.filter((l) => l.id !== linkId)
+  if (remaining.length > 0 && !remaining.some((l) => l.isPrimary)) {
+    return remaining.map((l, i) => (i === 0 ? { ...l, isPrimary: true } : l))
+  }
+  return remaining
+}
+
+/** Mark one contact link as primary and clear `isPrimary` on all others. */
+export function setPrimaryContactLink(links: readonly ContactLink[], linkId: string): ContactLink[] {
+  if (!links.some((l) => l.id === linkId)) return [...links]
+  return links.map((l) => ({ ...l, isPrimary: l.id === linkId }))
+}
+
+/** Update the role on one contact link. */
+export function updateContactLinkRole(links: readonly ContactLink[], linkId: string, role: string): ContactLink[] {
+  return links.map((l) => (l.id === linkId ? { ...l, role: role.trim() } : l))
+}
+
+/** Recompute the flat `contact`/`phone`/`email` read mirror from the primary linked contact. */
+export function mirrorPrimaryContact<
+  T extends { contacts: ContactLink[]; contact: string; phone: string; email: string },
+>(record: T, contacts: readonly Contact[]): T {
+  const links = record.contacts ?? []
+  const primary = links.find((l) => l.isPrimary) ?? links[0]
+  const c = primary ? contacts.find((x) => x.no === primary.contactId) : undefined
+  if (c) {
+    return {
+      ...record,
+      contact: c.name,
+      phone: formatContactPhone(c.phone) || c.phone || '',
+      email: c.email || '',
+    }
+  }
+  return links.length ? { ...record } : { ...record, contact: '', phone: '', email: '' }
 }
