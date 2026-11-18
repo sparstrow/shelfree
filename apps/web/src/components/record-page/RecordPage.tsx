@@ -299,7 +299,7 @@ export function RecordPage<R, D extends object>({
         if (editing) {
           e.preventDefault()
           cancelEdit()
-        } else if (!isTypingTarget(e.target) && !document.querySelector('[role="dialog"], [role="menu"], [role="listbox"]')) {
+        } else if (!isTypingTarget(e.target) && !document.querySelector('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-slot="popover-content"]')) {
           e.preventDefault()
           back()
         }

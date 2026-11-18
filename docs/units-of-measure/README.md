@@ -164,38 +164,69 @@ Route `/settings/uom` (`features/settings/units-of-measure/`), on the Settings t
 ## React app (2026-11-18) — Warehouse ▸ Units of Measure
 
 Route `/warehouse/units-of-measure` (`?sel=<itemNo> · <code>` preview deep link), built on `ListPage` with
-pure register helpers in `apps/web/src/domain/units-of-measure.ts` (reusing `allUnits`, `sizeInBase`,
-`categoryName`, `formatFactor` and `domain/item.ts` `itemCategoryParent`).
+pure register and unit-set helpers in `apps/web/src/domain/units-of-measure.ts` (reusing `allUnits`,
+`sizeInBase`, `categoryName`, `formatFactor` and `domain/item.ts` `itemCategoryParent`).
 
 - **Files:** `apps/web/src/features/warehouse/units-of-measure/ItemUnitsPage.tsx` + `dataset.ts`, route
-  `apps/web/src/routes/warehouse/units-of-measure/index.tsx`, domain helpers in
-  `apps/web/src/domain/units-of-measure.ts` (+ `units-of-measure.test.ts`), browser spec
+  `apps/web/src/routes/warehouse/units-of-measure/index.tsx`, schema `itemUnitSetSchema` in
+  `apps/web/src/data/schemas/index.ts`, seed `apps/web/src/data/seed/item-units.ts`, collection `itemUnits` in
+  `apps/web/src/data/api/index.ts`, atomic commands in `apps/web/src/data/api/commands.ts`, query hooks in
+  `apps/web/src/data/queries/index.ts`, domain helpers in `apps/web/src/domain/units-of-measure.ts`
+  (+ `units-of-measure.test.ts`), shared Item profile tab
+  `apps/web/src/features/warehouse/items/item-tabs/ItemUnitsTab.tsx`, browser spec
   `apps/web/e2e/item-units.spec.ts`.
 - **Same as prototype:**
-  - Derived register (one row per item × unit, composite key `<itemNo> · <code>`), default sort by key asc.
+  - Derived register (one row per item × unit, composite key `<itemNo> · <code>`), default sort by key asc,
+    built from the stored per-item unit sets (`shelfree.v2.itemUnits`), `items`, and `unitsOfMeasure`.
   - Columns and default visibility: `Item` (frozen), `Description`, `Unit`, `Unit name`, `Measurement`,
     `UQC`, `Qty in base`, `Base unit`, `Role` (`StatusPill`), and hidden-by-default `Item category` + `Source`.
   - Row flag warning dot when `qtyInBase == null` (`Missing conversion`), views (`All item units`, `Pack units`,
-    `Missing conversion`), filter columns, and quick search blob.
+    `Missing conversion`), filter columns (including `Base unit`), and quick search blob.
   - Detail drawer (`UNIT DETAILS` 8 facts + explanatory footnote), primary action **Open on item**, row
     double-click / `Enter` opening `/warehouse/items/<itemNo>?tab=units`, and single/bulk remove with
-    confirm + **Undo**.
+    confirm + **Undo** (restoring exact unit-set snapshots and `item.uom`).
 - **Deliberate changes:**
-  - **Derived from `items` + `unitsOfMeasure` without a separate `itemUom` store yet:** because `itemSchema`
-    only persists `item.uom` (and `ItemUnitsTab` keeps added pack units in component state), the register
-    initially lists one `Base` row per seeded item (22 rows). `buildItemUnitRows` already supports a
-    per-item `itemUoms` map (tested in `units-of-measure.test.ts`) for when `shelfree.v2.itemUom` lands.
-  - **Removing a row clears `item.uom`** on the underlying `Item` via `useUpsert('items')` (restored on
-    Undo); bulk removal uses a bulk bar `Remove` action with `ConfirmDialog` + Undo.
   - **No `New` button on the register:** units are defined in Settings ▸ Units of measure and attached on
     each item's Units of measure tab (`create` omitted on `ListPage`).
   - **No new keyboard shortcuts** beyond `ListPage` and `DataGrid`, so `app/shortcuts.ts` is unchanged.
-- **Persistence:** reads/writes `shelfree.v2.items` and reads `shelfree.v2.unitsOfMeasure` via `@/data/queries`.
-- **Backend rules:** `GET /item-units` join view (paged, filterable, sortable across all columns above);
-  `DELETE /items/{id}/units/{code}` must enforce one base unit per item, refuse removing a unit referenced
-  by open PO/SO/receipt/assembly lines or posted history (409), emit an audit event (actor, item, unit,
-  old/new qty), and scope every query by `tenant_id` under `warehouse.items.read` / `warehouse.items.write`.
-- **Tests:** unit tests in `apps/web/src/domain/units-of-measure.test.ts` and Playwright tests in
-  `apps/web/e2e/item-units.spec.ts`.
+- **Persistence:** reads/writes `shelfree.v2.itemUnits` and `shelfree.v2.items`, and reads
+  `shelfree.v2.unitsOfMeasure` via `@/data/queries`.
+- **Tests:** unit tests in `apps/web/src/domain/units-of-measure.test.ts` (`seed.test.ts` covers `itemUnits`)
+  and Playwright tests in `apps/web/e2e/item-units.spec.ts`.
 
-**Open (2026-11-18):** the React item schema stores only the base unit (`item.uom`), so every item has one row and the *Pack units* view is empty. The prototype's per-item unit set (`list`, `base`, `pack`, `qty` — `itemUomUpdate`) needs its own collection, shared with Item profile ▸ Units of measure (which today keeps added pack units in component state). Backend: `item_units(item_no, unit_code, role base|pack|other, qty_in_base)`; one base per item; removing the base promotes the next unit, as the prototype does.
+### Item units store & rules (2026-11-18)
+
+- **Collection (`shelfree.v2.itemUnits`):** keyed by `itemNo`; schema `itemUnitSetSchema` =
+  `{ itemNo, list: string[], base, pack, qty: Record<string, number> }`. Seeded with one base-only unit set
+  per seeded item from `item.uom` (`seedItemUnits()`).
+- **Pure domain rules (`domain/units-of-measure.ts`):**
+  - `itemUomAdd(set, code, units)` — rejects empty/duplicate codes; promotes to `base` if `set.base` is empty;
+    recomputes `pack`.
+  - `itemUomRemove(set, code, units)` — removes `code` from `list`, promotes `list[0] ?? ''` to `base` when the
+    base unit is removed, clears `pack` and `qty[code]` (and `qty[promotedBase]`), and recomputes `pack`.
+  - `itemUomSetBase(set, code, units)` — switches `base` to an attached unit, clears `qty[base]`, recomputes
+    `pack`.
+  - `itemUomSetQty(set, code, qty, units)` — validates `qty > 0` (or `null` / blank to clear), rejects base or
+    fixed-factor units, and recomputes `pack`.
+  - `itemUomComputePack(set, units)` — derives `pack` as the non-base unit holding the most base units (`> 1`).
+  - `applyItemUnitSet(item, unitSet)` / `syncItemBaseUnit(item, existingSet, units)` — keeps `item.uom` equal to
+    `unitSet.base` in one helper returning both aligned records.
+- **Atomic commands (`data/api/commands.ts`):** `updateItemUnits`, `bulkRemoveItemUnits`, `restoreItemUnits`,
+  and `saveItemWithUnits` validate domain rules and schemas first and write both `itemUnits` and `items` (with
+  rollback on partial failure so both change or neither does), wrapped by `useUpdateItemUnits`,
+  `useBulkRemoveItemUnits`, `useRestoreItemUnits`, and `useSaveItemWithUnits` in `data/queries/index.ts`.
+- **Backend contract & security:**
+  - Table `item_units(item_no, unit_code, role, qty_in_base)` (`role` ∈ `base | master_pack | pack`, with
+    `master_pack` derived server-side from the largest `qty_in_base > 1`), maintaining the invariant
+    `base = items.uom` and exactly one base unit per non-empty item unit set; server enforces all unit rules,
+    `qty_in_base > 0`, fixed-factor immutability, and `DELETE` refusal (`409`) when referenced by open
+    PO/SO/receipt/assembly lines or posted history.
+  - Endpoints `GET /item-units`, `GET/PATCH /items/{no}/units`, `DELETE /item-units/bulk`, and
+    `POST /items/{no}/units/restore` enforce tenant scoping (`tenant_id`), `warehouse.items.read` /
+    `warehouse.items.write` RBAC, and emit audit events on add, remove, base change, and conversion change.
+  - No PII; tenant-scoped master data only.
+- **Pending integration:** `features/warehouse/items/ItemCard.tsx` does not exist yet on this branch
+  (`/warehouse/items/new` and `/warehouse/items/$no/edit` render placeholders); `syncItemBaseUnit` and
+  `saveItemWithUnits` are ready to wire into `ItemCard` when it lands.
+
+**Delete guard (2026-11-18):** Settings ▸ Units of measure blocks deleting a unit used by any item — as its base (`items.uom`) or anywhere in its unit set (`itemUnits.list`); `countByUnit(items, sets)`. The backend enforces the same with a foreign key from `item_units.unit_code`.

@@ -7,7 +7,7 @@
  * locked. Custom units are the business's own: they can be edited and deleted,
  * unless an item still uses them.
  */
-import type { Item } from '@/data/schemas'
+import type { Item, ItemUnitSet } from '@/data/schemas'
 import { itemCategoryParent } from '@/domain/item'
 
 export type UomCategoryId = 'count' | 'weight' | 'volume' | 'liquid' | 'length' | 'area'
@@ -231,9 +231,20 @@ export function filterUnits(units: readonly Uom[], opts: { cat: string; query: s
 }
 
 /** Item count per unit code. */
-export function countByUnit(items: readonly { uom: string }[]): Map<string, number> {
+/**
+ * How many items use each unit — as base (`item.uom`) or as any unit in the item's stored unit set
+ * (pack units). An item counts once per unit.
+ */
+export function countByUnit(
+  items: readonly { no?: string; uom: string }[],
+  sets: readonly { itemNo: string; list: readonly string[] }[] = [],
+): Map<string, number> {
+  const listOf = new Map(sets.map((s) => [s.itemNo, s.list]))
   const out = new Map<string, number>()
-  for (const i of items) out.set(i.uom, (out.get(i.uom) ?? 0) + 1)
+  for (const i of items) {
+    const codes = new Set([i.uom, ...((i.no !== undefined && listOf.get(i.no)) || [])].filter(Boolean))
+    for (const c of codes) out.set(c, (out.get(c) ?? 0) + 1)
+  }
   return out
 }
 
@@ -248,6 +259,31 @@ export interface ItemUomEntry {
   list: string[]
   base: string
   qty?: Record<string, number>
+}
+
+export type ItemUomUpdateResult =
+  | { ok: false; error: string }
+  | { ok: true; unitSet: ItemUnitSet }
+
+export interface ItemUnitTabRow {
+  code: string
+  name: string
+  catName: string
+  uqc: string
+  base: string
+  qtyInBase: number | null
+  isBase: boolean
+  isFixed: boolean
+  role: ItemUnitRole
+}
+
+export interface ItemUnitTabSummary {
+  base: string
+  pack: string
+  packLabel: string
+  packSize: number | null
+  rows: ItemUnitTabRow[]
+  availableToAdd: Uom[]
 }
 
 export interface ItemUnitRow {
@@ -274,6 +310,321 @@ export function itemUnitKey(itemNo: string, code: string): string {
   return `${itemNo} · ${code}`
 }
 
+/**
+ * Fixed conversion factor for `code` expressed in the item's `base` unit when both
+ * share a measurement category and convert to that category's base; otherwise null.
+ */
+export function fixedSizeInItemBase(code: string, base: string, units: readonly Uom[]): number | null {
+  if (!code || !base || code === base) return null
+  const codeDef = units.find((u) => u.code === code)
+  const baseDef = units.find((u) => u.code === base)
+  if (!codeDef || !baseDef || codeDef.cat !== baseDef.cat) return null
+  const codeSize = sizeInBase(code, units)
+  const baseSize = sizeInBase(base, units)
+  if (codeSize === null || baseSize === null || baseSize <= 0) return null
+  return Number((codeSize / baseSize).toPrecision(12))
+}
+
+/** Default per-item unit set seeded from `item.uom` (base unit only). */
+export function itemUomDefault(itemNo: string, baseUom: string): ItemUnitSet {
+  const base = normalizeCode(baseUom)
+  return {
+    itemNo,
+    list: base ? [base] : [],
+    base,
+    pack: '',
+    qty: {},
+  }
+}
+
+/** Conversion factor of `code` in `set.base` units (`1` for base, fixed or manual `> 0`, else null). */
+export function itemUomBaseSize(
+  set: Pick<ItemUnitSet, 'base' | 'qty'>,
+  code: string,
+  units: readonly Uom[] = DEFAULT_UNITS,
+): number | null {
+  if (!code) return null
+  if (code === set.base) return 1
+  const fixed = fixedSizeInItemBase(code, set.base, units)
+  if (fixed !== null) return fixed
+  const manual = set.qty[code]
+  return manual !== undefined && Number.isFinite(manual) && manual > 0 ? manual : null
+}
+
+/** Automatically derive the master pack as the non-base unit holding the most base units (> 1). */
+export function itemUomComputePack(
+  set: Pick<ItemUnitSet, 'list' | 'base' | 'qty'>,
+  units: readonly Uom[] = DEFAULT_UNITS,
+): string {
+  if (!set.base) return ''
+  let best = ''
+  let bestSize = 1
+  for (const code of set.list) {
+    if (code === set.base) continue
+    const size = itemUomBaseSize(set, code, units)
+    if (size !== null && size > bestSize) {
+      bestSize = size
+      best = code
+    }
+  }
+  return best
+}
+
+/** Clean an item unit set (deduplicate codes, align base, drop stale qty entries, recompute pack). */
+export function itemUomNormalize(
+  set: ItemUnitSet,
+  units: readonly Uom[] = DEFAULT_UNITS,
+): ItemUnitSet {
+  const list: string[] = []
+  const seen = new Set<string>()
+  for (const raw of set.list) {
+    const code = normalizeCode(raw)
+    if (code && !seen.has(code)) {
+      seen.add(code)
+      list.push(code)
+    }
+  }
+  const normBase = normalizeCode(set.base)
+  const base = normBase && list.includes(normBase) ? normBase : (list[0] ?? '')
+  const qty: Record<string, number> = {}
+  for (const [rawCode, val] of Object.entries(set.qty)) {
+    const code = normalizeCode(rawCode)
+    if (!code || !seen.has(code) || code === base) continue
+    if (fixedSizeInItemBase(code, base, units) !== null) continue
+    if (Number.isFinite(val) && val > 0) qty[code] = val
+  }
+  const next: ItemUnitSet = { itemNo: set.itemNo, list, base, pack: '', qty }
+  next.pack = itemUomComputePack(next, units)
+  return next
+}
+
+/** Validate an explicit unit set against the per-item invariants and recompute its master pack. */
+export function itemUomValidate(
+  set: ItemUnitSet,
+  units: readonly Uom[] = DEFAULT_UNITS,
+): ItemUomUpdateResult {
+  const list: string[] = []
+  const seen = new Set<string>()
+  for (const raw of set.list) {
+    const code = normalizeCode(raw)
+    if (!code) return { ok: false, error: 'Unit code cannot be empty.' }
+    if (seen.has(code)) return { ok: false, error: `${code} is already on this item.` }
+    seen.add(code)
+    list.push(code)
+  }
+  const base = normalizeCode(set.base)
+  if (list.length === 0) {
+    if (base) return { ok: false, error: 'Base unit must be empty when the item has no units.' }
+  } else if (!base || !seen.has(base)) {
+    return { ok: false, error: 'Base unit must be one of the units on this item.' }
+  }
+  const qty: Record<string, number> = {}
+  for (const [rawCode, val] of Object.entries(set.qty)) {
+    const code = normalizeCode(rawCode)
+    if (!seen.has(code)) return { ok: false, error: `${code || rawCode} is not on this item.` }
+    if (code === base) return { ok: false, error: 'Base unit always has conversion 1.' }
+    if (fixedSizeInItemBase(code, base, units) !== null) {
+      return { ok: false, error: `${code} has a fixed conversion from Settings.` }
+    }
+    if (!Number.isFinite(val) || val <= 0) {
+      return { ok: false, error: 'Enter a conversion factor above zero.' }
+    }
+    qty[code] = val
+  }
+  const next: ItemUnitSet = { itemNo: set.itemNo, list, base, pack: '', qty }
+  next.pack = itemUomComputePack(next, units)
+  return { ok: true, unitSet: next }
+}
+
+/** Attach a unit code to an item (rejects duplicates; promotes to base if the item had none). */
+export function itemUomAdd(
+  set: ItemUnitSet,
+  code: string,
+  units: readonly Uom[] = DEFAULT_UNITS,
+): ItemUomUpdateResult {
+  const norm = normalizeCode(code)
+  if (!norm) return { ok: false, error: 'Choose a unit to add.' }
+  if (set.list.includes(norm)) return { ok: false, error: `${norm} is already on this item.` }
+  const next: ItemUnitSet = {
+    itemNo: set.itemNo,
+    list: [...set.list, norm],
+    base: set.base || norm,
+    pack: '',
+    qty: { ...set.qty },
+  }
+  next.pack = itemUomComputePack(next, units)
+  return { ok: true, unitSet: next }
+}
+
+/**
+ * Remove a unit from an item's unit set: promotes the next remaining unit to base
+ * if the base was removed, clears `pack` and the unit's `qty`, and recomputes master pack.
+ */
+export function itemUomRemove(
+  set: ItemUnitSet,
+  code: string,
+  units: readonly Uom[] = DEFAULT_UNITS,
+): ItemUomUpdateResult {
+  const norm = normalizeCode(code)
+  if (!norm || !set.list.includes(norm)) {
+    return { ok: false, error: `${norm || code} is not on this item.` }
+  }
+  const list = set.list.filter((c) => c !== norm)
+  const base = set.base === norm ? (list[0] ?? '') : set.base
+  const qty = { ...set.qty }
+  delete qty[norm]
+  if (base) delete qty[base]
+  const next: ItemUnitSet = { itemNo: set.itemNo, list, base, pack: '', qty }
+  next.pack = itemUomComputePack(next, units)
+  return { ok: true, unitSet: next }
+}
+
+/** Switch the item's base unit to another unit already attached to the item. */
+export function itemUomSetBase(
+  set: ItemUnitSet,
+  code: string,
+  units: readonly Uom[] = DEFAULT_UNITS,
+): ItemUomUpdateResult {
+  const norm = normalizeCode(code)
+  if (!norm || !set.list.includes(norm)) {
+    return { ok: false, error: `Add ${norm || 'the unit'} to this item before setting it as base.` }
+  }
+  const qty = { ...set.qty }
+  delete qty[norm]
+  const next: ItemUnitSet = {
+    itemNo: set.itemNo,
+    list: [...set.list],
+    base: norm,
+    pack: '',
+    qty,
+  }
+  next.pack = itemUomComputePack(next, units)
+  return { ok: true, unitSet: next }
+}
+
+/** Set or clear the manual conversion factor for a non-fixed unit on the item. */
+export function itemUomSetQty(
+  set: ItemUnitSet,
+  code: string,
+  qtyValue: number | string | null,
+  units: readonly Uom[] = DEFAULT_UNITS,
+): ItemUomUpdateResult {
+  const norm = normalizeCode(code)
+  if (!norm || !set.list.includes(norm)) {
+    return { ok: false, error: `${norm || code} is not on this item.` }
+  }
+  if (norm === set.base) return { ok: false, error: 'Base unit always has conversion 1.' }
+  if (fixedSizeInItemBase(norm, set.base, units) !== null) {
+    return { ok: false, error: `${norm} has a fixed conversion from Settings.` }
+  }
+  const qty = { ...set.qty }
+  if (qtyValue === null || (typeof qtyValue === 'string' && qtyValue.trim() === '')) {
+    delete qty[norm]
+  } else {
+    const num = typeof qtyValue === 'number' ? qtyValue : Number(qtyValue.trim())
+    if (!Number.isFinite(num) || num <= 0) {
+      return { ok: false, error: 'Enter a conversion factor above zero.' }
+    }
+    qty[norm] = num
+  }
+  const next: ItemUnitSet = {
+    itemNo: set.itemNo,
+    list: [...set.list],
+    base: set.base,
+    pack: '',
+    qty,
+  }
+  next.pack = itemUomComputePack(next, units)
+  return { ok: true, unitSet: next }
+}
+
+/**
+ * Keep `item.uom` equal to the unit set's base unit, returning both updated
+ * records together without mutating the inputs.
+ */
+export function applyItemUnitSet(
+  item: Item,
+  unitSet: ItemUnitSet,
+): { item: Item; unitSet: ItemUnitSet } {
+  const nextItem = item.uom === unitSet.base ? item : { ...item, uom: unitSet.base }
+  return { item: nextItem, unitSet }
+}
+
+/**
+ * Sync an existing (or new) unit set when an item is created or its base unit is
+ * changed on the item card, returning both aligned records.
+ */
+export function syncItemBaseUnit(
+  item: Item,
+  existingSet: ItemUnitSet | null | undefined,
+  units: readonly Uom[] = DEFAULT_UNITS,
+): { item: Item; unitSet: ItemUnitSet } {
+  const base = normalizeCode(item.uom)
+  if (!existingSet) {
+    return applyItemUnitSet(item, itemUomDefault(item.no, base))
+  }
+  const current = itemUomNormalize(existingSet, units)
+  if (!base) {
+    return applyItemUnitSet(item, { itemNo: item.no, list: [], base: '', pack: '', qty: {} })
+  }
+  const list = current.list.includes(base) ? [...current.list] : [base, ...current.list]
+  const qty = { ...current.qty }
+  delete qty[base]
+  const nextSet: ItemUnitSet = { itemNo: item.no, list, base, pack: '', qty }
+  nextSet.pack = itemUomComputePack(nextSet, units)
+  return applyItemUnitSet(item, nextSet)
+}
+
+/** Build the derived summary, table rows, master pack, and addable units for the Item profile tab. */
+export function buildItemUnitSummary(
+  set: ItemUnitSet,
+  units: readonly Uom[] = DEFAULT_UNITS,
+): ItemUnitTabSummary {
+  const normalized = itemUomNormalize(set, units)
+  const byCode = new Map(units.map((u) => [u.code, u]))
+  const pack = normalized.pack
+  const packDef = pack ? byCode.get(pack) : undefined
+  const packSize = pack ? itemUomBaseSize(normalized, pack, units) : null
+
+  const rows: ItemUnitTabRow[] = normalized.list.map((code) => {
+    const def = byCode.get(code)
+    const isBase = code === normalized.base
+    const fixed = isBase ? null : fixedSizeInItemBase(code, normalized.base, units)
+    const manual = normalized.qty[code]
+    const qtyInBase = isBase
+      ? 1
+      : fixed !== null
+        ? fixed
+        : manual !== undefined && Number.isFinite(manual) && manual > 0
+          ? manual
+          : null
+    const role: ItemUnitRole = isBase ? 'Base' : code === pack ? 'Master pack' : 'Pack unit'
+    return {
+      code,
+      name: def?.name ?? '—',
+      catName: def?.cat ? categoryName(def.cat) : '—',
+      uqc: def?.uqc || 'OTH',
+      base: normalized.base,
+      qtyInBase,
+      isBase,
+      isFixed: fixed !== null,
+      role,
+    }
+  })
+
+  const attached = new Set(normalized.list)
+  const availableToAdd = units.filter((u) => !attached.has(u.code))
+
+  return {
+    base: normalized.base,
+    pack,
+    packLabel: pack ? (packDef ? `${packDef.name} (${pack})` : pack) : '',
+    packSize,
+    rows,
+    availableToAdd,
+  }
+}
+
 /** Resolve an item's unit list and base unit (stored per-item map, falling back to `item.uom`). */
 export function itemUomStateFor(
   item: Pick<Item, 'no' | 'uom'>,
@@ -293,19 +644,7 @@ export function itemUomStateFor(
 
 /** Automatically derive the master pack as the non-base unit holding the most base units (> 1). */
 export function itemMasterPack(state: ItemUomEntry, units: readonly Uom[]): string {
-  let best = ''
-  let bestSize = 1
-  for (const code of state.list) {
-    if (code === state.base) continue
-    const fixed = sizeInBase(code, units)
-    const manual = state.qty?.[code]
-    const size = fixed !== null ? fixed : manual !== undefined && Number.isFinite(manual) && manual > 0 ? manual : null
-    if (size !== null && size > bestSize) {
-      bestSize = size
-      best = code
-    }
-  }
-  return best
+  return itemUomComputePack({ list: state.list, base: state.base, qty: state.qty ?? {} }, units)
 }
 
 /** Build one register row per item × unit from items, global unit definitions, and optional per-item UoMs. */
@@ -323,13 +662,13 @@ export function buildItemUnitRows(
       const def = byCode.get(code)
       const isBase = u.base === code
       const isPack = pack === code
-      const fixed = sizeInBase(code, units)
+      const fixed = isBase ? sizeInBase(code, units) : fixedSizeInItemBase(code, u.base, units)
       const manual = u.qty[code]
       const qtyInBase = isBase
         ? 1
         : fixed !== null
           ? fixed
-          : manual !== undefined && Number.isFinite(manual)
+          : manual !== undefined && Number.isFinite(manual) && manual > 0
             ? manual
             : null
       rows.push({

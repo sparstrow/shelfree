@@ -225,7 +225,7 @@ export function ItemProfilePage({ no }: { no: string }) {
               )
               break
             case 'units':
-              body = <ItemUnitsTab key={ctx.record.no} baseUom={ctx.record.uom} />
+              body = <ItemUnitsTab key={ctx.record.no} itemNo={ctx.record.no} baseUom={ctx.record.uom} />
               break
             case 'notes':
               body = <ItemNotesTab itemNo={ctx.record.no} />

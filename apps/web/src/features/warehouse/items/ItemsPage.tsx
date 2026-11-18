@@ -27,6 +27,7 @@ export function ItemsPage() {
   const navigate = useNavigate()
   const { sel } = route.useSearch()
   const items = useList('items')
+  const unitSets = useList('itemUnits')
   const warehouses = useList('warehouses')
   const orders = useList('purchaseOrders')
   const receipts = useList('purchaseReceipts')
@@ -35,8 +36,11 @@ export function ItemsPage() {
   const warehouseList = useMemo(() => warehouses.data ?? [], [warehouses.data])
 
   const dataset = useMemo(
-    () => itemDataset({ items: items.data ?? [], warehouses: warehouseList }),
-    [items.data, warehouseList],
+    () => {
+      const packs = new Map((unitSets.data ?? []).map((s) => [s.itemNo, s.pack]))
+      return itemDataset({ items: items.data ?? [], warehouses: warehouseList, masterPackOf: (no) => packs.get(no) ?? '' })
+    },
+    [items.data, warehouseList, unitSets.data],
   )
 
   const remove = useCollectionDelete<Item>('items', {

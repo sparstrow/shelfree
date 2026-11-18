@@ -105,6 +105,7 @@ export function itemUnitDataset(rows: readonly ItemUnitRow[]): Dataset<ItemUnitR
       { key: 'catName', label: 'Measurement', type: 'enum', options: UOM_CATEGORIES.map((c) => c.name) },
       { key: 'uqc', label: 'UQC', type: 'text' },
       { key: 'role', label: 'Role', type: 'enum', options: ['Base', 'Master pack', 'Pack unit'] },
+      { key: 'base', label: 'Base unit', type: 'text' },
       { key: 'convSet', label: 'Conversion', type: 'enum', options: ['Set', 'Not set'] },
       { key: 'source', label: 'Source', type: 'enum', options: ['System', 'Custom'] },
       { key: 'qtyInBase', label: 'Qty in base', type: 'num' },
