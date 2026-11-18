@@ -258,7 +258,8 @@ export function FieldRows<T>({
               ) : (
                 <input
                   id={id}
-                  type={field.type === 'number' ? 'number' : 'text'}
+                  type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                  step={field.type === 'number' ? field.step : undefined}
                   value={value == null ? '' : String(value)}
                   onChange={(e) => onChange(field.key, e.target.value)}
                   placeholder={field.placeholder}
