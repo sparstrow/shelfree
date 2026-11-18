@@ -130,6 +130,8 @@ export interface ListPageProps<T> {
   error?: unknown
   onRefresh: () => Promise<unknown> | void
 
+  /** Breadcrumb label override when the page isn't a `/<module>/<page>` route (e.g. `/notes`). */
+  pageLabel?: string
   /** URL of the record's own page. Enables Open, Open in new tab, double-click and Enter. */
   recordPath?: (row: T) => string
   /** Label of the open action, e.g. "Open purchase order". Default: "Open " + noun. */
@@ -165,6 +167,7 @@ export function ListPage<T>({
   isLoading,
   error,
   onRefresh,
+  pageLabel,
   recordPath,
   openLabel,
   create,
@@ -461,6 +464,7 @@ export function ListPage<T>({
   return (
     <>
       <TopBar
+        pageLabel={pageLabel}
         count={rows?.length}
         countTitle={rows ? `${rows.length} ${rows.length === 1 ? noun : dataset.nounPlural}` : undefined}
         newLabel={create?.label ?? (editor ? `New ${noun}` : undefined)}

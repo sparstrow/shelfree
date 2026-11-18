@@ -73,4 +73,7 @@ same turn a page is ported.**
 | Production ▸ Assembly Orders (list + document) | ported (full/partial Finish command, shortage guard, FinishDialog) |
 | Purchasing ▸ Carriers | ported (contact picker shared) |
 | Purchasing ▸ Purchase Prices | ported (list on the editor template + in-grid cell editing + "Items with no vendor price" tab) |
+| Purchasing ▸ Vendor Purchase Items | ported (`/purchasing/vendors/$no/items`, linked from Vendor profile ▸ Items supplied) |
+| Notes ▸ Notes | ported (`/notes` and `/notes/notes` on the List template) |
+| Departments | ported (`/departments`, directory from `app/nav.ts` with keyboard navigation and recents) |
 | Every other prototype page | pending |
