@@ -608,3 +608,48 @@ them. Full behaviour, files, persistence and backend notes:
 - Backend: `/me/views` and `/me/favorites` (per user, session-scoped); see the favourites doc.
 - `useUi` lost `favorites` / `toggleFavorite` and gained `setFavOpen`. The Departments page uses the same
   favourites hook as the sidebar.
+
+## React app (2026-11-18)
+
+### Grid: column menu, layout, grouping, find in view, footer totals
+
+Template work in `apps/web/src/components/data-grid/` — every list page gets it with no page change. Pure
+logic is `src/domain/grid-layout.ts` (tested in `grid-layout.test.ts`); view mapping is
+`src/domain/saved-views.ts`.
+
+- **Column menu** (header ▾ button or right-click a header): sort ascending / descending, pin to left / right
+  (or unpin), move left / right, hide, group by this column / ungroup, autofit this column, autofit all, reset
+  layout. Columns ▸ popover also lists columns in their current order, with a Totals row switch and Reset layout.
+- **Resize** by dragging the header's right edge (min 48 px); **double-click** the edge autofits. Autofit width
+  comes from the longest cell text and the header label (`fitWidth`, capped at 560 px).
+- **Reorder** by dragging a header (the label is the drag handle; the target shows a primary insertion edge) or
+  Move left / right in the menu.
+- **Pins**: a column pinned left or right stays sticky with a divider (+ scroll shadow); the dataset's own frozen
+  first column still works and can be unpinned. Display order is pinned-left, free, pinned-right.
+- **Group by one column**: group header rows with label and the group's row count (over the whole filtered set),
+  click to collapse / expand, *Collapse all / Expand all / Ungroup* in the strip under the toolbar. Groups are
+  ordered by the column's raw value (numeric-aware, empty group last). Collapsed groups' rows leave the paged list
+  (paging counts visible rows). Group rows are never the active row, are skipped by arrow keys and are not selected
+  by range / select-all. `?group=<column key>` in the URL opens the grid grouped (kept over a default saved view's
+  grouping). `column.groupable === false` keeps a column out of Group by; `column.hideable === false` stops it
+  being hidden.
+- **Find in view**: Ctrl/Cmd+F (or the toolbar button) opens the find bar; matching cells are highlighted and
+  the grid keeps every row; Enter / Shift+Enter (or the arrows) step through matching rows and jump to their page;
+  count "n of m matches" / "No matches"; Esc in the field closes it. With focus in the grid Esc closes the
+  preview drawer first, then find, then clears the selection (the prototype's `handleEsc` order).
+- **Footer totals**: the totals row is off by default (`showTotals` or Columns ▸ Totals row, remembered per dataset).
+  Click a footer cell to choose None / Count / Sum / Average / Min / Max (numeric columns get all, others None and
+  Count); each column starts at its `agg` default. The aggregate runs over every row of the current view.
+- **Saved views** now store column order (array order of `columns`), widths, pins, `groupBy`, `collapsed` and the
+  new optional `aggregates` map; the dirty marker compares them (a built-in view names no layout, so layout changes
+  never make it dirty). Reset layout also restores default column visibility.
+- Shortcuts catalogued in `components/data-grid/shortcut-meta.ts` (feeds Settings ▸ Keyboard shortcuts).
+- Persistence: layout state is in memory per grid and travels with saved views (`shelfree.v2.savedViews`). Only the
+  Totals row switch and footer aggregate overrides are remembered per dataset in `shelfree.v2.grid-prefs`
+  (`src/app/stores/grid-prefs.ts`, a per-browser preference).
+- Backend notes: `GET/POST/PUT /me/views` already carry `columns[]` (ordered; `width`, `visible`, `frozen`),
+  `groupBy`, `collapsed[]`; add `aggregates` (object, column key → one of `none|count|sum|avg|min|max`, validate the
+  keys against the page's columns and the values against that enum, ignore unknown keys on read). Grouping, find
+  and footer aggregates are computed client-side over the loaded rows today; with server paging the backend
+  needs `groupBy` (group headers with counts) and aggregate queries over the whole filtered set. Security
+  checklist: no PII or new compliance surface (view state only); nothing sensitive in localStorage.

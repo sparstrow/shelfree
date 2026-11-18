@@ -27,8 +27,8 @@ test.describe('Purchase Orders list', () => {
     await expect(page.getByText('Showing 1–1 of 1 purchase order')).toBeVisible()
     await page.keyboard.press('Escape')
 
-    await page.getByRole('columnheader', { name: /Total/ }).getByRole('button').click()
-    await page.getByRole('columnheader', { name: /Total/ }).getByRole('button').click()
+    await page.getByRole('columnheader', { name: /Total/ }).getByTitle(/^Sort/).click()
+    await page.getByRole('columnheader', { name: /Total/ }).getByTitle(/^Sort/).click()
     await expect(page.getByRole('row').nth(1)).toContainText('PO00001')
   })
 

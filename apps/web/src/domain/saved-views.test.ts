@@ -97,6 +97,71 @@ describe('isViewDirty', () => {
   })
 })
 
+describe('view <-> grid layout', () => {
+  const base = { filters: [], sorts: [{ key: 'no', dir: 'asc' as const }], hidden: [], compact: true }
+
+  it('round-trips order, widths, pins, grouping, collapsed groups and footer aggregates', () => {
+    const snap = {
+      ...base,
+      order: ['vendor', 'no', 'phone'],
+      widths: { vendor: 300 },
+      pins: { vendor: 'right' as const, no: null },
+      groupBy: 'vendor',
+      collapsed: ['Kai'],
+      aggregates: { phone: 'count' },
+    }
+    const data = viewDataFromSnapshot(snap, defaults)
+    expect(data.columns.map((c) => c.key)).toEqual(['vendor', 'no', 'phone'])
+    expect(data.columns[0]).toMatchObject({ width: 300, frozen: 'right' })
+    expect(data.columns[1]).toMatchObject({ width: 120, frozen: null })
+    expect(data.groupBy).toBe('vendor')
+    expect(data.aggregates).toEqual({ phone: 'count' })
+    const back = snapshotFromView(data, defaults)
+    expect(back.order).toEqual(['vendor', 'no', 'phone'])
+    expect(back.widths).toEqual({ vendor: 300 })
+    expect(back.pins).toEqual({ vendor: 'right', no: null })
+    expect(back.groupBy).toBe('vendor')
+    expect(back.collapsed).toEqual(['Kai'])
+    expect(back.aggregates).toEqual({ phone: 'count' })
+  })
+
+  it('keeps defaults for a view saved before layouts existed, and drops unknown keys', () => {
+    const data = {
+      filters: [],
+      sorts: [],
+      columns: [
+        { key: 'gone', width: 90, visible: true, frozen: null },
+        { key: 'no', width: 120, visible: true, frozen: 'left' as const },
+        { key: 'vendor', width: 200, visible: true, frozen: null },
+        { key: 'phone', width: 140, visible: false, frozen: null },
+      ],
+      density: 'compact' as const,
+      groupBy: 'gone',
+      collapsed: [],
+      aggregates: { vendor: 'bogus', ghost: 'sum' },
+    }
+    const snap = snapshotFromView(data, defaults)
+    expect(snap.order).toEqual(['no', 'vendor', 'phone'])
+    expect(snap.widths).toEqual({})
+    expect(snap.pins).toEqual({})
+    expect(snap.groupBy).toBeNull()
+    expect(snap.aggregates).toEqual({})
+  })
+
+  it('notices layout changes, but only the parts the baseline names', () => {
+    const saved = snapshotFromView(viewDataFromSnapshot({ ...base, order: ['no', 'vendor', 'phone'] }, defaults), defaults)
+    expect(isViewDirty(saved, { ...base, order: ['no', 'vendor', 'phone'] })).toBe(false)
+    expect(isViewDirty(saved, { ...base, order: ['vendor', 'no', 'phone'] })).toBe(true)
+    expect(isViewDirty(saved, { ...base, order: ['no', 'vendor', 'phone'], widths: { no: 150 } })).toBe(true)
+    expect(isViewDirty(saved, { ...base, order: ['no', 'vendor', 'phone'], pins: { no: null } })).toBe(true)
+    expect(isViewDirty(saved, { ...base, order: ['no', 'vendor', 'phone'], groupBy: 'vendor' })).toBe(true)
+    expect(isViewDirty(saved, { ...base, order: ['no', 'vendor', 'phone'], collapsed: ['x'] })).toBe(true)
+    expect(isViewDirty(saved, { ...base, order: ['no', 'vendor', 'phone'], aggregates: { phone: 'count' } })).toBe(true)
+    // A built-in view names no layout, so layout changes never make it dirty.
+    expect(isViewDirty({ filters: [] }, { ...base, groupBy: 'vendor', widths: { no: 1 } })).toBe(false)
+  })
+})
+
 describe('withDefaultView', () => {
   const views = [
     { id: 'a', pageKey: 'p', isDefaultFor: true },

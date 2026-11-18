@@ -38,13 +38,19 @@ same turn a page is ported.**
 
 ## Known gaps in what is done (fix next)
 
-- Grid features still to port: filter side panel, column reorder / resize / pin
-  menu, grouping, find-in-view, footer aggregate chooser, bulk edit / bulk delete,
-  in-cell editing. (User-saved views and sidebar favourites — views, rename, drag
-  reorder, right-click menu — are ported, 2026-11-18. A saved view stores grouping
-  and column width / order / pin too, but the grid does not use them yet. The
-  favourites cap, the "Favorites" label and the Settings ▸ Favorites & views page
-  wait for the Settings redesign.)
+- Grid features still to port: filter side panel, bulk edit / bulk delete. (Ported:
+  in-cell editing; user-saved views and sidebar favourites — views, rename, drag
+  reorder, right-click menu — 2026-11-18; column menu (sort / pin / move / hide /
+  group / autofit / reset), resize, drag reorder, pinned left + right, group by,
+  find in view (Ctrl/Cmd+F), footer aggregate picker — 2026-11-18, all in the shared
+  `DataGrid`; a saved view now stores and applies that layout. The favourites cap,
+  the "Favorites" label and the Settings ▸ Favorites & views page wait for the
+  Settings redesign.)
+- Grid parity notes: find opens with Ctrl/Cmd+F only (the prototype also used `/`; here `/`
+  already focuses the grid search box). The footer totals row is still off by default; it
+  is switched on from Columns ▸ Totals row (remembered per dataset) or a page's
+  `showTotals`. Group-by is in the URL (`?group=<column key>`) but, like the other grid
+  state, filters / sorts are not yet.
 - Theme switch in the account menu is temporary until My settings ▸ Appearance is ported.
 - Keyboard shortcuts page ported (`/settings/shortcuts`); a new page adds its keys to `src/app/shortcuts.ts` in the same turn.
 - Grid bulk actions (bulk edit, multi-row issue/cancel/close/duplicate/delete) not ported.

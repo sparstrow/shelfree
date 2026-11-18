@@ -620,6 +620,8 @@ export const savedViewSchema = z.object({
   density: z.enum(['default', 'compact']),
   groupBy: z.string().nullable(),
   collapsed: z.array(z.string()),
+  /** Footer aggregate chosen per column key. Columns not listed use their default. */
+  aggregates: z.record(z.string(), z.string()).optional(),
   /** At most one per user and page. Applied when the page opens. */
   isDefaultFor: z.boolean(),
   /** Born from pinning an unsaved state (the user has not named it yet). */
