@@ -1,11 +1,14 @@
 /**
- * Units of measure — the global unit definitions (Settings ▸ Configuration).
+ * Units of measure — the global unit definitions (Settings ▸ Configuration)
+ * and derived per-item unit register (Warehouse ▸ Units of Measure).
  * Pure rules, no React or storage: the backend enforces the same ones.
  *
  * Default units ship GST-ready (each mapped to its official UQC code) and are
  * locked. Custom units are the business's own: they can be edited and deleted,
  * unless an item still uses them.
  */
+import type { Item } from '@/data/schemas'
+import { itemCategoryParent } from '@/domain/item'
 
 export type UomCategoryId = 'count' | 'weight' | 'volume' | 'liquid' | 'length' | 'area'
 
@@ -236,3 +239,132 @@ export function countByUnit(items: readonly { uom: string }[]): Map<string, numb
 
 /** Defaults first, then the business's own units. */
 export const allUnits = (custom: readonly Uom[]): Uom[] => [...DEFAULT_UNITS, ...custom]
+
+// ── Warehouse ▸ Units of Measure (per-item unit register) ────────────────────
+
+export type ItemUnitRole = 'Base' | 'Master pack' | 'Pack unit'
+
+export interface ItemUomEntry {
+  list: string[]
+  base: string
+  qty?: Record<string, number>
+}
+
+export interface ItemUnitRow {
+  /** Composite row key: `"<itemNo> · <code>"`. */
+  no: string
+  itemNo: string
+  itemDesc: string
+  /** Top-level item category name. */
+  category: string
+  code: string
+  name: string
+  cat: UomCategoryId | ''
+  catName: string
+  uqc: string
+  base: string
+  qtyInBase: number | null
+  fixed: boolean
+  role: ItemUnitRole
+  source: 'System' | 'Custom'
+}
+
+/** Composite row key for one item × unit row (`<itemNo> · <code>`). */
+export function itemUnitKey(itemNo: string, code: string): string {
+  return `${itemNo} · ${code}`
+}
+
+/** Resolve an item's unit list and base unit (stored per-item map, falling back to `item.uom`). */
+export function itemUomStateFor(
+  item: Pick<Item, 'no' | 'uom'>,
+  itemUoms?: Readonly<Record<string, ItemUomEntry>>,
+): { list: string[]; base: string; qty: Record<string, number> } {
+  if (itemUoms && Object.prototype.hasOwnProperty.call(itemUoms, item.no)) {
+    const stored = itemUoms[item.no]
+    return {
+      list: [...(stored.list ?? [])],
+      base: stored.base || '',
+      qty: { ...(stored.qty ?? {}) },
+    }
+  }
+  const base = (item.uom || '').trim()
+  return { list: base ? [base] : [], base, qty: {} }
+}
+
+/** Automatically derive the master pack as the non-base unit holding the most base units (> 1). */
+export function itemMasterPack(state: ItemUomEntry, units: readonly Uom[]): string {
+  let best = ''
+  let bestSize = 1
+  for (const code of state.list) {
+    if (code === state.base) continue
+    const fixed = sizeInBase(code, units)
+    const manual = state.qty?.[code]
+    const size = fixed !== null ? fixed : manual !== undefined && Number.isFinite(manual) && manual > 0 ? manual : null
+    if (size !== null && size > bestSize) {
+      bestSize = size
+      best = code
+    }
+  }
+  return best
+}
+
+/** Build one register row per item × unit from items, global unit definitions, and optional per-item UoMs. */
+export function buildItemUnitRows(
+  items: readonly Pick<Item, 'no' | 'desc' | 'category' | 'uom'>[],
+  units: readonly Uom[],
+  itemUoms?: Readonly<Record<string, ItemUomEntry>>,
+): ItemUnitRow[] {
+  const byCode = new Map(units.map((u) => [u.code, u]))
+  const rows: ItemUnitRow[] = []
+  for (const it of items) {
+    const u = itemUomStateFor(it, itemUoms)
+    const pack = itemMasterPack(u, units)
+    for (const code of u.list) {
+      const def = byCode.get(code)
+      const isBase = u.base === code
+      const isPack = pack === code
+      const fixed = sizeInBase(code, units)
+      const manual = u.qty[code]
+      const qtyInBase = isBase
+        ? 1
+        : fixed !== null
+          ? fixed
+          : manual !== undefined && Number.isFinite(manual)
+            ? manual
+            : null
+      rows.push({
+        no: itemUnitKey(it.no, code),
+        itemNo: it.no,
+        itemDesc: it.desc,
+        category: itemCategoryParent(it.category),
+        code,
+        name: def?.name ?? '—',
+        cat: def?.cat ?? '',
+        catName: def?.cat ? categoryName(def.cat) : '—',
+        uqc: def?.uqc || 'OTH',
+        base: u.base || '',
+        qtyInBase,
+        fixed: fixed !== null,
+        role: isBase ? 'Base' : isPack ? 'Master pack' : 'Pack unit',
+        source: def?.custom ? 'Custom' : 'System',
+      })
+    }
+  }
+  return rows
+}
+
+/** Remove one unit from an item's UoM state, promoting the first remaining unit if the base was removed. */
+export function removeUnitFromItemUom(
+  state: ItemUomEntry,
+  code: string,
+): { list: string[]; base: string; qty: Record<string, number> } {
+  if (!state.list.includes(code)) {
+    return { list: [...state.list], base: state.base, qty: { ...(state.qty ?? {}) } }
+  }
+  const list = state.list.filter((c) => c !== code)
+  const base = state.base === code ? (list[0] ?? '') : state.base
+  const qty = { ...(state.qty ?? {}) }
+  delete qty[code]
+  if (base) delete qty[base]
+  return { list, base, qty }
+}

@@ -25,6 +25,7 @@ import { Route as ProductionAssemblyOrdersIndexRouteImport } from './routes/prod
 import { Route as ProductionAssemblyOrdersNoRouteImport } from './routes/production/assembly-orders/$no'
 import { Route as ProductionBillsOfMaterialsIndexRouteImport } from './routes/production/bills-of-materials/index'
 import { Route as ProductionBillsOfMaterialsNoRouteImport } from './routes/production/bills-of-materials/$no'
+import { Route as ProductionProductionOrdersIndexRouteImport } from './routes/production/production-orders/index'
 import { Route as PurchasingCarriersIndexRouteImport } from './routes/purchasing/carriers/index'
 import { Route as PurchasingChargesIndexRouteImport } from './routes/purchasing/charges/index'
 import { Route as PurchasingPurchaseLinesIndexRouteImport } from './routes/purchasing/purchase-lines/index'
@@ -40,6 +41,7 @@ import { Route as SalesCustomersNoRouteImport } from './routes/sales/customers/$
 import { Route as SalesSalesPricesIndexRouteImport } from './routes/sales/sales-prices/index'
 import { Route as WarehouseItemsIndexRouteImport } from './routes/warehouse/items/index'
 import { Route as WarehouseItemsNoRouteImport } from './routes/warehouse/items/$no'
+import { Route as WarehouseUnitsOfMeasureIndexRouteImport } from './routes/warehouse/units-of-measure/index'
 import { Route as PurchasingVendorsNoItemsRouteImport } from './routes/purchasing/vendors/$no_.items'
 import { Route as WarehouseItemsNoEditRouteImport } from './routes/warehouse/items/$no_.edit'
 
@@ -128,6 +130,12 @@ const ProductionBillsOfMaterialsNoRoute =
     path: '/production/bills-of-materials/$no',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ProductionProductionOrdersIndexRoute =
+  ProductionProductionOrdersIndexRouteImport.update({
+    id: '/production/production-orders/',
+    path: '/production/production-orders/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PurchasingCarriersIndexRoute = PurchasingCarriersIndexRouteImport.update({
   id: '/purchasing/carriers/',
   path: '/purchasing/carriers/',
@@ -209,6 +217,12 @@ const WarehouseItemsNoRoute = WarehouseItemsNoRouteImport.update({
   path: '/warehouse/items/$no',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WarehouseUnitsOfMeasureIndexRoute =
+  WarehouseUnitsOfMeasureIndexRouteImport.update({
+    id: '/warehouse/units-of-measure/',
+    path: '/warehouse/units-of-measure/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PurchasingVendorsNoItemsRoute =
   PurchasingVendorsNoItemsRouteImport.update({
     id: '/purchasing/vendors/$no_/items',
@@ -243,6 +257,7 @@ export interface FileRoutesByFullPath {
   '/people/users/': typeof PeopleUsersIndexRoute
   '/production/assembly-orders/': typeof ProductionAssemblyOrdersIndexRoute
   '/production/bills-of-materials/': typeof ProductionBillsOfMaterialsIndexRoute
+  '/production/production-orders/': typeof ProductionProductionOrdersIndexRoute
   '/purchasing/carriers/': typeof PurchasingCarriersIndexRoute
   '/purchasing/charges/': typeof PurchasingChargesIndexRoute
   '/purchasing/purchase-lines/': typeof PurchasingPurchaseLinesIndexRoute
@@ -253,6 +268,7 @@ export interface FileRoutesByFullPath {
   '/sales/customers/': typeof SalesCustomersIndexRoute
   '/sales/sales-prices/': typeof SalesSalesPricesIndexRoute
   '/warehouse/items/': typeof WarehouseItemsIndexRoute
+  '/warehouse/units-of-measure/': typeof WarehouseUnitsOfMeasureIndexRoute
   '/purchasing/vendors/$no/items': typeof PurchasingVendorsNoItemsRoute
   '/warehouse/items/$no/edit': typeof WarehouseItemsNoEditRoute
 }
@@ -277,6 +293,7 @@ export interface FileRoutesByTo {
   '/people/users': typeof PeopleUsersIndexRoute
   '/production/assembly-orders': typeof ProductionAssemblyOrdersIndexRoute
   '/production/bills-of-materials': typeof ProductionBillsOfMaterialsIndexRoute
+  '/production/production-orders': typeof ProductionProductionOrdersIndexRoute
   '/purchasing/carriers': typeof PurchasingCarriersIndexRoute
   '/purchasing/charges': typeof PurchasingChargesIndexRoute
   '/purchasing/purchase-lines': typeof PurchasingPurchaseLinesIndexRoute
@@ -287,6 +304,7 @@ export interface FileRoutesByTo {
   '/sales/customers': typeof SalesCustomersIndexRoute
   '/sales/sales-prices': typeof SalesSalesPricesIndexRoute
   '/warehouse/items': typeof WarehouseItemsIndexRoute
+  '/warehouse/units-of-measure': typeof WarehouseUnitsOfMeasureIndexRoute
   '/purchasing/vendors/$no/items': typeof PurchasingVendorsNoItemsRoute
   '/warehouse/items/$no/edit': typeof WarehouseItemsNoEditRoute
 }
@@ -313,6 +331,7 @@ export interface FileRoutesById {
   '/people/users/': typeof PeopleUsersIndexRoute
   '/production/assembly-orders/': typeof ProductionAssemblyOrdersIndexRoute
   '/production/bills-of-materials/': typeof ProductionBillsOfMaterialsIndexRoute
+  '/production/production-orders/': typeof ProductionProductionOrdersIndexRoute
   '/purchasing/carriers/': typeof PurchasingCarriersIndexRoute
   '/purchasing/charges/': typeof PurchasingChargesIndexRoute
   '/purchasing/purchase-lines/': typeof PurchasingPurchaseLinesIndexRoute
@@ -323,6 +342,7 @@ export interface FileRoutesById {
   '/sales/customers/': typeof SalesCustomersIndexRoute
   '/sales/sales-prices/': typeof SalesSalesPricesIndexRoute
   '/warehouse/items/': typeof WarehouseItemsIndexRoute
+  '/warehouse/units-of-measure/': typeof WarehouseUnitsOfMeasureIndexRoute
   '/purchasing/vendors/$no_/items': typeof PurchasingVendorsNoItemsRoute
   '/warehouse/items/$no_/edit': typeof WarehouseItemsNoEditRoute
 }
@@ -350,6 +370,7 @@ export interface FileRouteTypes {
     | '/people/users/'
     | '/production/assembly-orders/'
     | '/production/bills-of-materials/'
+    | '/production/production-orders/'
     | '/purchasing/carriers/'
     | '/purchasing/charges/'
     | '/purchasing/purchase-lines/'
@@ -360,6 +381,7 @@ export interface FileRouteTypes {
     | '/sales/customers/'
     | '/sales/sales-prices/'
     | '/warehouse/items/'
+    | '/warehouse/units-of-measure/'
     | '/purchasing/vendors/$no/items'
     | '/warehouse/items/$no/edit'
   fileRoutesByTo: FileRoutesByTo
@@ -384,6 +406,7 @@ export interface FileRouteTypes {
     | '/people/users'
     | '/production/assembly-orders'
     | '/production/bills-of-materials'
+    | '/production/production-orders'
     | '/purchasing/carriers'
     | '/purchasing/charges'
     | '/purchasing/purchase-lines'
@@ -394,6 +417,7 @@ export interface FileRouteTypes {
     | '/sales/customers'
     | '/sales/sales-prices'
     | '/warehouse/items'
+    | '/warehouse/units-of-measure'
     | '/purchasing/vendors/$no/items'
     | '/warehouse/items/$no/edit'
   id:
@@ -419,6 +443,7 @@ export interface FileRouteTypes {
     | '/people/users/'
     | '/production/assembly-orders/'
     | '/production/bills-of-materials/'
+    | '/production/production-orders/'
     | '/purchasing/carriers/'
     | '/purchasing/charges/'
     | '/purchasing/purchase-lines/'
@@ -429,6 +454,7 @@ export interface FileRouteTypes {
     | '/sales/customers/'
     | '/sales/sales-prices/'
     | '/warehouse/items/'
+    | '/warehouse/units-of-measure/'
     | '/purchasing/vendors/$no_/items'
     | '/warehouse/items/$no_/edit'
   fileRoutesById: FileRoutesById
@@ -454,6 +480,7 @@ export interface RootRouteChildren {
   PeopleUsersIndexRoute: typeof PeopleUsersIndexRoute
   ProductionAssemblyOrdersIndexRoute: typeof ProductionAssemblyOrdersIndexRoute
   ProductionBillsOfMaterialsIndexRoute: typeof ProductionBillsOfMaterialsIndexRoute
+  ProductionProductionOrdersIndexRoute: typeof ProductionProductionOrdersIndexRoute
   PurchasingCarriersIndexRoute: typeof PurchasingCarriersIndexRoute
   PurchasingChargesIndexRoute: typeof PurchasingChargesIndexRoute
   PurchasingPurchaseLinesIndexRoute: typeof PurchasingPurchaseLinesIndexRoute
@@ -464,6 +491,7 @@ export interface RootRouteChildren {
   SalesCustomersIndexRoute: typeof SalesCustomersIndexRoute
   SalesSalesPricesIndexRoute: typeof SalesSalesPricesIndexRoute
   WarehouseItemsIndexRoute: typeof WarehouseItemsIndexRoute
+  WarehouseUnitsOfMeasureIndexRoute: typeof WarehouseUnitsOfMeasureIndexRoute
   PurchasingVendorsNoItemsRoute: typeof PurchasingVendorsNoItemsRoute
   WarehouseItemsNoEditRoute: typeof WarehouseItemsNoEditRoute
 }
@@ -582,6 +610,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductionBillsOfMaterialsNoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/production/production-orders/': {
+      id: '/production/production-orders/'
+      path: '/production/production-orders'
+      fullPath: '/production/production-orders/'
+      preLoaderRoute: typeof ProductionProductionOrdersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/purchasing/carriers/': {
       id: '/purchasing/carriers/'
       path: '/purchasing/carriers'
@@ -687,6 +722,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WarehouseItemsNoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/warehouse/units-of-measure/': {
+      id: '/warehouse/units-of-measure/'
+      path: '/warehouse/units-of-measure'
+      fullPath: '/warehouse/units-of-measure/'
+      preLoaderRoute: typeof WarehouseUnitsOfMeasureIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/purchasing/vendors/$no_/items': {
       id: '/purchasing/vendors/$no_/items'
       path: '/purchasing/vendors/$no/items'
@@ -737,6 +779,7 @@ const rootRouteChildren: RootRouteChildren = {
   PeopleUsersIndexRoute: PeopleUsersIndexRoute,
   ProductionAssemblyOrdersIndexRoute: ProductionAssemblyOrdersIndexRoute,
   ProductionBillsOfMaterialsIndexRoute: ProductionBillsOfMaterialsIndexRoute,
+  ProductionProductionOrdersIndexRoute: ProductionProductionOrdersIndexRoute,
   PurchasingCarriersIndexRoute: PurchasingCarriersIndexRoute,
   PurchasingChargesIndexRoute: PurchasingChargesIndexRoute,
   PurchasingPurchaseLinesIndexRoute: PurchasingPurchaseLinesIndexRoute,
@@ -747,6 +790,7 @@ const rootRouteChildren: RootRouteChildren = {
   SalesCustomersIndexRoute: SalesCustomersIndexRoute,
   SalesSalesPricesIndexRoute: SalesSalesPricesIndexRoute,
   WarehouseItemsIndexRoute: WarehouseItemsIndexRoute,
+  WarehouseUnitsOfMeasureIndexRoute: WarehouseUnitsOfMeasureIndexRoute,
   PurchasingVendorsNoItemsRoute: PurchasingVendorsNoItemsRoute,
   WarehouseItemsNoEditRoute: WarehouseItemsNoEditRoute,
 }
