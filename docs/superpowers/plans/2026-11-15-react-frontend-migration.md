@@ -69,7 +69,7 @@ same turn a page is ported.**
 | Finance ▸ Chart of Accounts | ported |
 | People ▸ Contacts | ported |
 | Warehouse ▸ Items (list) | ported (item page pending) |
-| Production ▸ Bills of Materials (list) | ported (document pending) |
+| Production ▸ Bills of Materials (list + document) | ported |
 | Production ▸ Assembly Orders (list + document) | ported (full/partial Finish command, shortage guard, FinishDialog) |
 | Purchasing ▸ Carriers | ported (contact picker shared) |
 | Purchasing ▸ Purchase Prices | ported (list on the editor template + in-grid cell editing + "Items with no vendor price" tab) |

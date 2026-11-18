@@ -183,24 +183,25 @@ re-keyed on load. Committed sales stock is netted at the principal location (`lo
 
 ## React app (2026-11-17)
 
-List pages for **Production ▸ Bills of Materials** and **Production ▸ Assembly Orders**, plus the full **Assembly
-Order document** (`/production/assembly-orders/$no` and `/production/assembly-orders/new`) with its **Finish** dialog,
-are ported in `apps/web/`. The Bills of Materials document (`/production/bills-of-materials/$no`) remains a pending
-placeholder in a parallel task.
+List pages for **Production ▸ Bills of Materials** and **Production ▸ Assembly Orders**, the **Bill of materials**
+document editor (`/production/bills-of-materials/$no`, `new`) and the **Assembly Order document**
+(`/production/assembly-orders/$no`, `new`) with its **Finish** dialog are ported in `apps/web/`.
 
 ### Files & URLs
 
 - Schemas & API collections: [`bomSchema` / `assemblyOrderSchema`](../../apps/web/src/data/schemas/index.ts),
-  `api.boms` / `api.assemblyOrders` in [`apps/web/src/data/api/index.ts`](../../apps/web/src/data/api/index.ts).
+  `api.boms` / `api.assemblyOrders` / `api.items` in [`apps/web/src/data/api/index.ts`](../../apps/web/src/data/api/index.ts).
 - Transactional commands & query hooks: [`finishAssemblyOrder`](../../apps/web/src/data/api/commands.ts) and
   [`useFinishAssemblyOrder`](../../apps/web/src/data/queries/index.ts).
-- Domain helpers & unit tests: [`apps/web/src/domain/production.ts`](../../apps/web/src/domain/production.ts),
-  [`apps/web/src/domain/production.test.ts`](../../apps/web/src/domain/production.test.ts),
-  [`apps/web/src/domain/assembly-order.ts`](../../apps/web/src/domain/assembly-order.ts),
-  [`apps/web/src/domain/assembly-order.test.ts`](../../apps/web/src/domain/assembly-order.test.ts).
-- Bills of Materials list (`/production/bills-of-materials`, `?sel=<no>` preview; `/production/bills-of-materials/$no`
-  pending placeholder): [`dataset.ts`](../../apps/web/src/features/production/boms/dataset.ts),
+- Domain helpers & unit tests: [`production.ts`](../../apps/web/src/domain/production.ts) (+ test),
+  [`bom-document.ts`](../../apps/web/src/domain/bom-document.ts) (+ test),
+  [`assembly-order.ts`](../../apps/web/src/domain/assembly-order.ts) (+ test).
+- Bills of Materials list & document (`/production/bills-of-materials`, `?sel=<no>` preview; `/production/bills-of-materials/<no>`
+  and `/production/bills-of-materials/new`, optional `?item=` parent prefill):
+  [`dataset.ts`](../../apps/web/src/features/production/boms/dataset.ts),
   [`BomsPage.tsx`](../../apps/web/src/features/production/boms/BomsPage.tsx),
+  [`BomEditor.tsx`](../../apps/web/src/features/production/boms/BomEditor.tsx),
+  [`BomLines.tsx`](../../apps/web/src/features/production/boms/BomLines.tsx),
   [`index.tsx`](../../apps/web/src/routes/production/bills-of-materials/index.tsx),
   [`$no.tsx`](../../apps/web/src/routes/production/bills-of-materials/$no.tsx).
 - Assembly Orders list (`/production/assembly-orders`, `?sel=<no>` preview) & document
@@ -211,29 +212,68 @@ placeholder in a parallel task.
   [`FinishDialog.tsx`](../../apps/web/src/features/production/assembly-orders/FinishDialog.tsx),
   [`index.tsx`](../../apps/web/src/routes/production/assembly-orders/index.tsx),
   [`$no.tsx`](../../apps/web/src/routes/production/assembly-orders/$no.tsx).
-- Optional backward-compatible UI extensions: `notice` and `DrawerLine.rightTone` on
-  [`RecordDrawer.tsx`](../../apps/web/src/components/record-drawer/RecordDrawer.tsx); `icon` on
-  [`StatusPill.tsx`](../../apps/web/src/components/StatusPill.tsx) and `statusIcon` on
-  [`parts.tsx`](../../apps/web/src/components/document/parts.tsx).
-- Playwright specs: [`apps/web/e2e/production.spec.ts`](../../apps/web/e2e/production.spec.ts) (lists) and
-  [`apps/web/e2e/assembly-order-document.spec.ts`](../../apps/web/e2e/assembly-order-document.spec.ts) (AO document & Finish).
+- Template additions (optional, backward-compatible):
+  - [`RecordDrawer.tsx`](../../apps/web/src/components/record-drawer/RecordDrawer.tsx): `notice` and `DrawerLine.rightTone`.
+  - [`DocumentPage.tsx`](../../apps/web/src/components/document/DocumentPage.tsx) (`TotalsCard`): optional `title` and `ReactNode` row/total `value`.
+  - [`LineGrid.tsx`](../../apps/web/src/components/document/LineGrid.tsx): optional `lineNoun`, `addLabel`, `subRows`, `data-line-index`, and modifier-key guard in `onBodyKeyDown`.
+  - [`StatusPill.tsx`](../../apps/web/src/components/StatusPill.tsx) `icon` and [`parts.tsx`](../../apps/web/src/components/document/parts.tsx) `statusIcon`.
+- Playwright specs: [`production.spec.ts`](../../apps/web/e2e/production.spec.ts) (lists),
+  [`bom-document.spec.ts`](../../apps/web/e2e/bom-document.spec.ts) (BOM document),
+  [`assembly-order-document.spec.ts`](../../apps/web/e2e/assembly-order-document.spec.ts) (AO document & Finish).
 
 ### Behaviour & deliberate differences from prototype
 
-- **Same as prototype**:
-  - List pages: columns (widths, alignment, freeze, hidden defaults), sort order (`no` asc), search blobs,
-    system/default views (`All` / `Active` / `Drafts` / `Archived` for BOMs; `All orders` / `Open` / `Finished` /
-    `Cancelled` for Assembly Orders), filter columns, multi-level rolled-up BOM costs (materials + labour + overhead %,
-    depth cap 6), net stock availability netting `qtySO` at the active principal warehouse (`mainLocationId`), preview
-    drawer stats/lines/facts, assembly-order shortage warning banner, and append-only `NotesBlock` threads (`bom` and
-    `assemblyOrder`). Neither list page mutates stock or item costs.
+- **Same as prototype (lists)**: columns (widths, alignment, freeze, hidden defaults), sort order (`no` asc), search blobs,
+  system/default views (`All` / `Active` / `Drafts` / `Archived` for BOMs; `All orders` / `Open` / `Finished` /
+  `Cancelled` for Assembly Orders), filter columns, multi-level rolled-up BOM costs (materials + labour + overhead %,
+  depth cap 6), net stock availability netting `qtySO` at the active principal warehouse (`mainLocationId`), preview
+  drawer stats/lines/facts, assembly-order shortage warning banner, and append-only `NotesBlock` threads (`bom` and
+  `assemblyOrder`). Neither list page mutates stock or item costs.
+- **Same as prototype (BOM document)**:
+  - Header fields: `Makes` (`parentItem`), `Version`, `Status` (`Draft` / `Active` / `Archived`), `Effective from`,
+    `Effective to`, `Output per run` + output `UoM`.
+  - Line columns: `Component` (item + description + sub-assembly expand chevron up to depth 6), `UoM`, `Qty per`,
+    `Scrap %`, `Unit cost`, `Line cost`.
+  - `Operations` card rendered when `operations.length > 0` (`seq`, `name`, setup + run minutes).
+  - `Availability` card at principal warehouse (`mainLocationId`), showing buildable count and component shortages.
+  - `NotesBlock` (`entityType: 'bom'`) and `Cost rollup` card (`Materials`, editable `Labour` and `Overhead %`, `Unit cost`,
+    `Item cost today`, delta vs item cost, and `Apply as item cost` behind a `ConfirmDialog` — the only path that writes
+    to `item.cost`).
+  - `Archived` notice banner when `status === 'archived'`, `New assembly order` header action when `status === 'active' && !!parentItem`,
+    and footer buttons (`Archive version` when active; `Discard`, `Save`, and `Activate` when not active).
+  - **Activation rule (`bomActivate`)**: activating a BOM does **not** auto-archive the item's previously active BOM.
+    If another `active` BOM for the same `parentItem` has overlapping effective dates, activation is refused with:
+    `Another active BOM (<no> · <version>) already covers these dates. Archive it or set an end date first.`
+  - **Cycle guard (`bomCycle`)**: a BOM cannot reference its own `parentItem`, directly or through active sub-assemblies
+    (max depth 6), refused on Save and Activate with `This would make the item part of itself: <chain>`.
+  - **Validation messages**: `Choose the item this BOM makes.`, `Add at least one component.`,
+    `Every component needs a quantity greater than zero.`, `Component <item> is listed twice — combine the lines instead.`.
+- **Keyboard shortcuts (BOM document)**:
+  - `E`: focus and select the first component line's `Qty per` input (`[data-bom-first-qty="1"]`).
+  - `Alt+↑` / `Alt+↓`: move the focused component line up or down while keeping focus on that input.
+  - `↑` / `↓`: move focus to the same column input on the adjacent top-level component line.
+  - `Ctrl/Cmd+S`: save the BOM (works from inside inputs).
+  - `Esc`: close an open dialog/menu/add-line row, blur the focused field, or return to the BOM list.
+- **Deliberate differences from prototype**:
+  - Line actions use shared `LineGrid` controls (drag-to-reorder, `Alt+↑/↓`, selection bar duplicate/remove, `⋯` / context
+    menu, inline `+ Add component` search) instead of per-row arrow/delete buttons and a modal component picker.
+  - `draft-stash.ts` in `purchase-orders/` is typed strictly to `PurchaseOrder` and was not modified or reused, so
+    unsaved new BOM drafts do not persist across route navigation.
+  - `newBom` defaults `createdBy` to `''` (or active employee id) rather than `null` to satisfy `bomSchema` (`z.string()`).
+- **Delete rules (stricter than prototype)**:
+  - A BOM can be deleted only when `status !== 'active'` and no assembly order references it (`ao.bomId === bom.no`).
+  - An assembly order can be deleted only in its opening status (`planned` or `draft`).
+- **Growth `production` axis**: `apps/web` does not yet expose the `production` axis toggle, so `bomDataset({ showKind })`
+  and `BomEditor({ showProductionAxis })` default to `false` (hiding `Kind` and `Yield %` while keeping all 9 seeded BOM
+  rows, multi-level rollups such as `CMB-PWH-12` → `SBC-CONE-12`, and `Operations` display on `BOM00009`).
+- **Same as prototype (Assembly Order document)**:
   - Assembly Order document: item picker restricted to non-blocked items with an active BOM, BOM explosion and line
     rescaling when quantity changes in draft/planned, header card (`Item to assemble`, `Quantity`, `Output location`,
     `Due date`, `Assignee`, `Progress`), read-only exploded `Components` grid linking to item pages, shortage warning
     banner with buildable count, `BOM · version` header link, status workflow (`Draft` → `Release` → `Start` → `Finish`
     with full/partial output and component consumption), `Cancel order`, admin-gated `Reopen` (`owner`/`admin`),
     append-only `NotesBlock`, and `Cmd/Ctrl+Enter` / `Esc` shortcuts.
-- **Deliberate differences / tighter integrity rules**:
+- **Deliberate differences (Assembly Order document)**:
   - **All-or-nothing Finish & shortage refusal**: Instead of the prototype's silent `Math.max(0, ...)` clamp on
     component stock during Finish, `aoFinish` / `finishAssemblyOrder` validates every Finish input (`qtyFinished > 0`,
     not exceeding remaining quantity, non-negative consumed quantities, `allowOverConsume` guard, and net available
@@ -241,9 +281,6 @@ placeholder in a parallel task.
     on-hand stock never goes negative and no partial writes happen.
   - **Closed records are strictly read-only**: In `finished` and `cancelled` status, header scheduling fields (`Output
     location`, `Due date`, `Assignee`) are disabled and `Save` is hidden (fixing the prototype's omission).
-  - **Delete rules (stricter than prototype)**:
-    - A BOM can be deleted only when `status !== 'active'` and no assembly order references it (`ao.bomId === bom.no`).
-    - An assembly order can be deleted only in its opening status (`planned` or `draft`).
 - **Deferred / backend contract notes**:
   - **Growth `production` axis**: `apps/web` does not yet expose the `production` axis toggle, so `bomDataset({ showKind })`
     defaults `showKind` to `false` and `AssemblyOrderEditor` uses `DEFAULT_PRODUCTION_SETTINGS` (`outputLoc: 'WH-TVM'`,
@@ -256,12 +293,15 @@ placeholder in a parallel task.
     consumption overrides) must emit an immutable server-side audit event with actor, timestamp, location, and
     component/output deltas.
 
-### Persistence & tests
+### Persistence, backend rules & tests
 
-- Browser `localStorage` collections: `shelfree.v2.boms`, `shelfree.v2.assemblyOrders`, `shelfree.v2.items` (alongside
-  `shelfree.v2.notes`, `shelfree.v2.warehouses`, `shelfree.v2.employees`).
-- Covered by unit tests ([`production.test.ts`](../../apps/web/src/domain/production.test.ts),
-  [`assembly-order.test.ts`](../../apps/web/src/domain/assembly-order.test.ts)), schema seed validation (`seed.test.ts`),
-  and Playwright specs ([`production.spec.ts`](../../apps/web/e2e/production.spec.ts),
-  [`assembly-order-document.spec.ts`](../../apps/web/e2e/assembly-order-document.spec.ts)).
+- Browser `localStorage` collections: `shelfree.v2.boms` (saved via `useUpsert('boms')`), `shelfree.v2.items` (updated
+  only via the BOM's explicit `Apply cost` confirmation and the `finishAssemblyOrder` command), `shelfree.v2.assemblyOrders`,
+  `shelfree.v2.notes`, `shelfree.v2.warehouses`, `shelfree.v2.employees`.
+- Backend rules to enforce server-side: cycle detection across the full component graph, single active BOM per parent item
+  per overlapping effective-date range (no silent auto-archiving), server-side rollup and required-quantity recomputation,
+  Finish as one transaction reading production settings server-side, RBAC on `production` read/write, and immutable audit
+  events for BOM create/edit/activate/archive, `Apply as item cost`, and every assembly-order transition and finish.
+- Covered by unit tests (`production.test.ts`, `bom-document.test.ts`, `assembly-order.test.ts`), schema seed validation
+  (`seed.test.ts`), and Playwright specs (`production.spec.ts`, `bom-document.spec.ts`, `assembly-order-document.spec.ts`).
 
