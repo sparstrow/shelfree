@@ -21,6 +21,7 @@ import {
 } from '@/domain/vendor'
 import { fmtDate, int, todayLocal } from '@/lib/format'
 import { VendorOverview, type VendorDraft } from './VendorOverview'
+import { VendorContactsTab } from './tabs/VendorContactsTab'
 
 const BACK_TO = '/purchasing/vendors'
 
@@ -130,20 +131,25 @@ export function VendorProfilePage({ no }: { no: string }) {
         return { title: 'Vendor updated', description: `${next.no} · ${next.name}${vendorSavedNote(v, next, ws)}` }
       }}
     >
-      {(ctx, tab) =>
-        tab.id === 'overview' ? (
-          <VendorOverview
-            ctx={ctx}
-            stats={stats}
-            supply={vendorSupply(ctx.record, items.data ?? [], prices.data ?? [], stats.orders, today)}
-            activity={vendorActivity(ctx.record, stats, today)}
-            purchasePersonOptions={purchasePersonOptions}
-            workspaceTax={ws}
-          />
-        ) : (
-          <RecordTabPending label={tab.label} />
-        )
-      }
+      {(ctx, tab) => {
+        switch (tab.id) {
+          case 'overview':
+            return (
+              <VendorOverview
+                ctx={ctx}
+                stats={stats}
+                supply={vendorSupply(ctx.record, items.data ?? [], prices.data ?? [], stats.orders, today)}
+                activity={vendorActivity(ctx.record, stats, today)}
+                purchasePersonOptions={purchasePersonOptions}
+                workspaceTax={ws}
+              />
+            )
+          case 'contacts':
+            return <VendorContactsTab vendor={ctx.record} />
+          default:
+            return <RecordTabPending label={tab.label} />
+        }
+      }}
     </RecordPage>
   )
 }

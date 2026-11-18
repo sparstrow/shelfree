@@ -157,3 +157,18 @@ Ported to `apps/web` at `/people/contacts`:
   and customers in sync via `useUpsert`.
 - Tests: unit tests in `privacy.test.ts` and `contacts.test.ts`; end-to-end coverage in
   [`apps/web/e2e/contacts.spec.ts`](../../apps/web/e2e/contacts.spec.ts).
+
+## React app — shared contact picker and Vendor Contacts tab (2026-11-17)
+
+- `components/lookup/ContactPicker.tsx` is the one picker for the whole app (prototype `lk*`):
+  search by name / number / phone / email, ↑/↓/Enter/Esc, mouse, inline "Create …" (name, phone,
+  email) that creates the contact (`useUpsert('contacts')`) and links it. Props: `value`,
+  `onChange(contactNo, contact?)`, `exclude`, `allowNone`, `title`, `placeholder`.
+- Forms use it through the field type `lookup` (`source: 'contacts'`) in
+  `components/record-fields/model.ts` / `FieldRows.tsx` — view shows the contact's name and phone.
+- Vendor profile › Contacts (`features/purchasing/vendors/tabs/VendorContactsTab.tsx`): lists the
+  vendor's links (role, Primary), adds a link through the picker, sets primary, unlinks
+  (unlink ≠ delete), shows the shared-edit warning. Link helpers are pure in `domain/contacts.ts`.
+- Tests: `e2e/vendor-contacts.spec.ts`, `e2e/carriers.spec.ts`.
+- Backend: linking / unlinking is `PATCH /vendors/:no/contacts` (or link-table endpoints) with
+  exactly one primary per party; creating inline is `POST /contacts` then link, in one transaction.

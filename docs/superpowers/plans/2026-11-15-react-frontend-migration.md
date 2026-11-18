@@ -70,5 +70,6 @@ same turn a page is ported.**
 | Warehouse ▸ Items (list) | ported (item page pending) |
 | Production ▸ Bills of Materials (list) | ported (document pending) |
 | Production ▸ Assembly Orders (list) | ported (document pending) |
-| Purchasing ▸ Purchase Prices, Carriers | pending (next) |
+| Purchasing ▸ Carriers | ported (contact picker shared) |
+| Purchasing ▸ Purchase Prices | pending (next) |
 | Every other prototype page | pending |
