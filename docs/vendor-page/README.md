@@ -281,8 +281,6 @@ The Vendor profile is the first user of the shared **Record page** template (`ap
   | `1`–`9`, `0` | Jump to tab 1–10 |
   | `E` | Edit |
   | `Ctrl/Cmd+S` | Save changes (also from inside a field; confirms a pending "Save anyway") |
-  | `Ctrl/Cmd+Enter` | Add note (when typing in the new-note box on Notes & activity) |
-  | `Enter` / `Esc` | Confirm / cancel reason when marking a note invalid on Notes & activity |
   | `Esc` | Cancel edit; otherwise back to Vendors with the row selected |
 
   None of these fire while typing in a field, except `Esc` and `Ctrl/Cmd+S` while editing. Shortcuts are also on the buttons' tooltips.
@@ -314,6 +312,24 @@ Pending: tabs 2–10 (Address & payment, Items supplied, Purchase orders, Purcha
 - The template owns edit state (`draft`, `errors`, `formError`) so a draft survives tab switches; saving from any tab validates the whole form and jumps to the tab holding the first error.
 - Warnings that don't block saving (duplicate GSTIN etc.) are deferred until the GSTIN field gets server lookups (GSTN public search).
 - Notes thread (`NotesBlock`, entity `vendor`) lives on the **Notes & activity** tab in the prototype, not on Overview, so it arrives with that tab.
+
+## React app (2026-11-17) — Items supplied, Purchase orders, Purchase receipts, Performance
+
+- **URLs**: `/purchasing/vendors/$no?tab=items` (key `3`), `?tab=orders` (`4`), `?tab=receipts` (`5`), `?tab=performance` (`7`).
+- **Files**: `features/purchasing/vendors/tabs/VendorItemsTab.tsx`, `VendorOrdersTab.tsx`,
+  `VendorReceiptsTab.tsx`, `VendorPerformanceTab.tsx`; pure rules in `domain/vendor-activity.ts`
+  (+ test): `vendorItemsSupplied`, `purchasePriceStatus`, `vendorOrderGroup` / `vendorOrderRows`,
+  `vendorReceiptRows`, `vendorPerformance`, `formatDeliveryDelta`; tests `e2e/vendor-tabs-b.spec.ts`.
+- **Same as prototype**: read-only lists with the prototype's filter chips and counts (orders:
+  All / Open / Received & closed / Cancelled — Draft, Released and Partially received count as
+  Open); rows are focusable buttons that open `/purchasing/purchase-orders/<no>` and
+  `/purchasing/purchase-receipts/<no>`; empty states use the prototype copy; tab badges show the
+  counts. Performance: on-time %, average delivery delta, rejected quantity, late open orders.
+- **Persistence**: read-only from `shelfree.v2.purchaseOrders`, `shelfree.v2.purchaseReceipts`,
+  `shelfree.v2.purchasePrices`, `shelfree.v2.items`.
+- **Backend**: `GET /vendors/:no/items`, `/orders?group=`, `/receipts?status=`, `/performance`
+  should be computed server-side (paged, tenant-scoped, `vendors.view` + `purchasing.view`);
+  the client-side derivations here are the reference implementation.
 
 ## React app (2026-11-17)
 

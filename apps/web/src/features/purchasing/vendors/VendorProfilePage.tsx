@@ -25,6 +25,10 @@ import { VendorDetailsTab } from './tabs/VendorDetailsTab'
 import { VendorDocsTab } from './tabs/VendorDocsTab'
 import { VendorNotesTab } from './tabs/VendorNotesTab'
 import { VendorPayablesTab } from './tabs/VendorPayablesTab'
+import { VendorItemsTab } from './tabs/VendorItemsTab'
+import { VendorOrdersTab } from './tabs/VendorOrdersTab'
+import { VendorPerformanceTab } from './tabs/VendorPerformanceTab'
+import { VendorReceiptsTab } from './tabs/VendorReceiptsTab'
 
 const BACK_TO = '/purchasing/vendors'
 
@@ -156,6 +160,30 @@ export function VendorProfilePage({ no }: { no: string }) {
             return <VendorNotesTab vendorNo={ctx.record.no} activity={vendorActivity(ctx.record, stats, today)} />
           case 'docs':
             return <VendorDocsTab />
+          case 'items':
+            return (
+              <VendorItemsTab
+                vendor={ctx.record}
+                items={items.data ?? []}
+                prices={prices.data ?? []}
+                orders={stats.orders}
+                today={today}
+              />
+            )
+          case 'orders':
+            return (
+              <VendorOrdersTab
+                vendor={ctx.record}
+                orders={stats.orders}
+                receipts={receipts.data ?? []}
+                employees={employees.data ?? []}
+                today={today}
+              />
+            )
+          case 'receipts':
+            return <VendorReceiptsTab vendorNo={ctx.record.no} receipts={stats.receipts} />
+          case 'performance':
+            return <VendorPerformanceTab vendor={ctx.record} stats={stats} items={items.data ?? []} />
           default:
             return <RecordTabPending label={tab.label} />
         }
