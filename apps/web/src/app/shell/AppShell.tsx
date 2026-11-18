@@ -28,7 +28,7 @@ export function AppShell() {
 
   return (
     <TooltipProvider delayDuration={400}>
-      <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
+      <div className="flex h-screen w-full overflow-clip bg-background text-foreground">
         <Sidebar />
         <main className="flex min-h-0 min-w-0 flex-1 flex-col">
           <TabStrip />

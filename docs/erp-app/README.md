@@ -608,3 +608,5 @@ them. Full behaviour, files, persistence and backend notes:
 - Backend: `/me/views` and `/me/favorites` (per user, session-scoped); see the favourites doc.
 - `useUi` lost `favorites` / `toggleFavorite` and gained `setFavOpen`. The Departments page uses the same
   favourites hook as the sidebar.
+
+**Shell layout (2026-11-18):** the app shell and `html`/`body` use `overflow: clip`, so focusing a field or opening a popover can never scroll the document or the shell (it used to shift the whole app by up to 80 px). The top bar is a container: below ~670 px wide the New button shows its icon only (label kept as `title` / `aria-label`) and the page search shrinks to 120 px.
