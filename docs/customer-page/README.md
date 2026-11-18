@@ -270,3 +270,26 @@ The Customer profile is built on the shared **Record page** template (`apps/web/
   - `Credit hold` enforcement (`creditHold === true` blocking order confirmation) must run server-side when Sales Orders confirmation is implemented.
   - PII / localStorage check: no new personal-data fields introduced; phone/email are not masked on the customer record itself (per PII policy: masked in grids/exports, full on the record); no secrets in client storage (`shelfree.v2.*` holds demo data only).
 - **Tests**: Vitest unit tests in `apps/web/src/domain/customer.test.ts` and `apps/web/src/data/schemas/seed.test.ts`; Playwright e2e tests in `apps/web/e2e/customer-profile.spec.ts` and `apps/web/e2e/customers.spec.ts`.
+
+## React app — Sales prices & Contacts tabs (2026-11-17)
+
+Wired the two remaining tabs on `/sales/customers/$no` (`?tab=prices` and `?tab=contacts`), and connected `customerOrderTotal` / `customerDocuments` to agreed customer pricing.
+
+- **Files**:
+  - `apps/web/src/features/sales/customers/customer-tabs/CustomerPricesTab.tsx`
+  - `apps/web/src/features/sales/customers/customer-tabs/CustomerContactsTab.tsx`
+  - `apps/web/src/features/sales/customers/CustomerProfilePage.tsx` (wired `prices` and `contacts` tabs and passed `customerPrices` into `customerDocuments`)
+  - `apps/web/src/domain/customer.ts` + `customer.test.ts` (`customerOrderTotal` and `customerDocuments` resolve agreed customer prices via `resolveCustomerPrice` when pricing context is provided, falling back to `item.price`).
+- **Same as prototype**:
+  - *Sales prices* tab lists the customer's agreed prices (`Item no.`, `Description`, `From qty`, `Price ₹`, `vs list`, `Starts`, `Ends`, `Status`), supports inline cell editing (`CellEditor` with `Enter`/`Tab`/`Esc`), inline *New price* and *Add quantity tier* drafts (`Esc` closes draft before returning to Customers), *Remove* with Undo, eligibility status pill + *Own agreed prices* switch (`customer.pricingEligible`), and *Open in Sales prices* (`/sales/sales-prices?customer=<no>`).
+  - *Contacts* tab lists linked contacts (`Name` linking to `/people/contacts?sel=<no>`, `Also on N` shared badge, `Primary` badge, `Role`, full formatted `Phone`, `Email`), links existing or newly quick-created contacts via the shared `ContactPicker`, switches primary, edits shared person fields + per-link role with the shared-edit warning and primary-mirror sync across linked customers/vendors, and unlinks without deleting from People ▸ Contacts (promoting the next link if primary was unlinked).
+  - *Order history* totals resolve agreed customer prices (including quantity tiers) on `orderDate` before falling back to `item.price`.
+- **Deliberate changes**:
+  - *Sales prices* tab uses `DEFAULT_SALES_PRICING_SETTINGS` (`enabled: true`, `mode: 'selected'`) without a capability-axis off state (tiers parked per `CLAUDE.md`) and uses an inline draft card above the table for *New price* / *Add quantity tier* alongside *Open in Sales prices* for full `ListPage` filtering/views.
+  - `CustomerOverviewTab` Pricing summary copy was left untouched in this pass.
+- **Persistence**: `shelfree.v2.customerPrices`, `shelfree.v2.customers` (`pricingEligible`, `contacts[]`, and mirrored `contact`/`phone`/`email`), `shelfree.v2.contacts`, `shelfree.v2.vendors` (mirror sync on shared primary contact edits).
+- **Backend rules & security gate (`docs/security/README.md`)**:
+  - Customer price CRUD (`GET/POST/PATCH/DELETE /customers/:no/prices` / `/customer-prices`) and `pricingEligible` toggles must be tenant-scoped, RBAC-gated (`sales.prices.edit` / `customers.edit`), validated against date overlaps and `min_qty >= 1` / `price >= 0`, and audited.
+  - Contact linking (`POST/PATCH/DELETE /customers/:no/contacts`) maps to `contact_links`, enforces single `is_primary`, tenant isolation on both sides, unlink ≠ delete, primary mirror consistency, and emits audit events on link/unlink/role/primary changes and shared contact PII edits.
+  - Phone and email remain PII: masked in grids/exports, full on the profile's Contacts tab for authorized readers, and included in data-subject export/erasure.
+- **Tests**: `apps/web/src/domain/customer.test.ts`, `apps/web/e2e/customer-prices-contacts.spec.ts`.

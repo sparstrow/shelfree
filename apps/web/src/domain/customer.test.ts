@@ -1,4 +1,4 @@
-import type { Customer, Item, SalesInvoice, SalesOrder } from '@/data/schemas'
+import type { Customer, CustomerPrice, Item, SalesInvoice, SalesOrder } from '@/data/schemas'
 import {
   applyCustomerForm,
   customerActivity,
@@ -148,6 +148,22 @@ describe('customerOrderTotal / customerDocuments / customerDocStatusTone', () =>
   it('calculates order totals from item list prices', () => {
     expect(customerOrderTotal(order(), items)).toBe(24 * 399 + 40 * 69)
     expect(customerOrderTotal(order({ lines: [['MISSING', 5]] }), items)).toBe(0)
+  })
+
+  it('resolves agreed customer prices and quantity tiers when customerPrices are passed', () => {
+    const prices: CustomerPrice[] = [
+      { id: 'CP1', customer: 'CUS00001', item: 'ASH-PWH-18', price: 360, minQty: 1, effFrom: '2026-04-01', effTo: '', uom: '', currency: 'INR', note: '' },
+      { id: 'CP2', customer: 'CUS00001', item: 'ASH-PWH-18', price: 340, minQty: 50, effFrom: '2026-04-01', effTo: '', uom: '', currency: 'INR', note: '' },
+    ]
+    // 24 < 50 -> ₹360; SBC-CONE-12 has no override -> list ₹69
+    expect(customerOrderTotal(order(), items, { customer: customer(), prices })).toBe(24 * 360 + 40 * 69)
+    // 60 >= 50 -> bulk tier ₹340
+    expect(customerOrderTotal(order({ lines: [['ASH-PWH-18', 60]] }), items, { customer: customer(), prices })).toBe(60 * 340)
+    // Ineligible customer -> falls back to list ₹399
+    expect(customerOrderTotal(order(), items, { customer: customer({ pricingEligible: false }), prices })).toBe(24 * 399 + 40 * 69)
+    // customerDocuments applies the same resolved price
+    const docs = customerDocuments(customer(), [order()], [], items, prices)
+    expect(docs[0].amount).toBe(24 * 360 + 40 * 69)
   })
 
   it('merges orders and invoices for the customer only, sorted newest first', () => {

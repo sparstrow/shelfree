@@ -246,3 +246,32 @@ Follows the quiet-page rule (CLAUDE.md; reference `docs/tax-settings/README.md` 
 - **Backend:** no change — "Use default" writes the same settings keys as the controls
   (`customerPricingMode`, `customerPricingFallback`, `customerPricingBlockUnpriced`) and must emit
   the same audit event as any other change to them.
+
+## React app (2026-11-17)
+
+Ported to `apps/web` at `/sales/sales-prices` (`?tab=list|customer|check`, `?sel=CP00001` opens a customer price's drawer, `?customer=CUS00001` / `?item=ASH-PWH-18` filter Customer prices, and `?new=1` opens the New customer price drawer pre-filled).
+
+- **Files:**
+  - `apps/web/src/data/schemas/index.ts` — `customerPriceSchema` and `CustomerPrice` matching `seedCustomerPrices()`.
+  - `apps/web/src/data/api/index.ts` — `customerPrices` collection (`key: 'customerPrices'`, `idOf: (r) => r.id`).
+  - `apps/web/src/domain/sales-prices.ts` + `sales-prices.test.ts` — `DEFAULT_SALES_PRICING_SETTINGS`, `isCustomerPricingEligible`, `eligibleCustomers`, `validCustomerPrices`, `isCustomerPriceActiveOn`, `customerPriceStatus`, `resolveCustomerPrice`, `buildListPriceRows`, `commitListPrice`, `customerPriceNextNo`, `priceDeltaVsList`, `priceDeltaVsListText`, `blankCustomerPrice`, `startCustomerPriceTier`, `normalizeCustomerPrice`, `validateCustomerPrice`, `toCustomerPrice`, `commitCustomerPriceCell`.
+  - `apps/web/src/features/sales/sales-prices/dataset.ts` (`listPriceDataset`, `customerPriceDataset`) and `SalesPricesPage.tsx` (*List prices* tab on `ListPage` with in-grid `List price` editing, *Customer prices* tab on `ListPage` with `EditableDrawer` + in-grid `column.edit` + `T` add quantity tier + delete with Undo, and *Price check* tab).
+  - `apps/web/src/routes/sales/sales-prices/index.tsx`.
+- **Same as prototype:**
+  - *List prices*: columns (`Item`, `Description`, `UoM`, `Unit cost`, inline-editable `List price`, `Margin %`, `Price status`, `Customer prices`, hidden `Markup %` / `Category`), views (`All list prices`, `Needs a price`, `Below cost`, `Thin margin` sorted ascending, `Has agreed prices`), warning dot on unpriced / below-cost rows, row open navigates to `/warehouse/items/$no`, delete/duplicate omitted.
+  - *Customer prices*: 11 seeded rows (`CP00001`–`CP00011`), orphan filtering via `validCustomerPrices`, `% vs list`, `Active` / `Scheduled` / `Expired` status pills, inline editable cells (`From qty`, `Price ₹`, `Starts`, `Ends`, `Note`), non-eligible customer warning dot/notice, quantity tier duplication (`2×` highest `minQty` at `95%` price), non-overlapping date validation per `(customer, item, minQty)`, delete with Undo.
+  - *Resolution* (`resolveCustomerPrice`): unknown item → `none`; ineligible customer → `list`; eligible customer → highest active `minQty ≤ qty` (`break` or `customer`); missing → `blocked` / `list` fallback / `manual`.
+  - *Shortcuts*: `1` / `2` / `3` switch tabs, `N` new customer price, `T` add quantity tier, `E` edit drawer, `Ctrl/Cmd+S` save, `Esc` cancel/close, `/` search, `Enter`/`Tab`/`Esc` in-grid cell edit.
+- **Deliberate changes:**
+  - Per `CLAUDE.md` (tiers parked for POC), customer pricing is always unlocked (`DEFAULT_SALES_PRICING_SETTINGS`: `enabled: true`, `mode: 'selected'`, `fallbackToList: false`, `blockUnpriced: false`) until Settings ▸ Configuration ▸ Sales pricing is ported; no axis-off lock UI is rendered.
+  - *Customer prices* uses the shared `ListPage` + `DataGrid` + `EditableDrawer` template instead of a bespoke HTML table, gaining views (`All customer prices`, `Active`, `Scheduled`, `Expired`, `By customer`), filter builder, column visibility, CSV export, and click/Enter cell editing (`CellEditor`).
+  - *Price check* and the rule summary card live on a dedicated *Price check* tab instead of above the Customer prices grid.
+  - `Thin margin` filters out `No price` rows (`priceState is not No price` + `margin < 25`) so unpriced raw materials do not appear as thin-margin items.
+  - Overlap validation uses `datesOverlap` per `(customer, item, minQty)` so historical non-overlapping windows on the same tier are permitted.
+- **Persistence:** `shelfree.v2.customerPrices` (key `id`), `shelfree.v2.items` (inline list-price edits update `item.price`).
+- **Backend rules & security gate (`docs/security/README.md`):**
+  - `POST/PATCH/DELETE /customer-prices` must validate customer and item exist, `minQty` integer `>= 1`, `price >= 0`, `effTo >= effFrom` when both present, and enforce an exclusion constraint against overlapping date windows for `(tenant_id, customer_id, item_id, min_qty, currency, uom)`.
+  - `PATCH /items/:no` for list-price edits must validate `price >= 0` and emit an item-price audit event.
+  - `POST /pricing/resolve` (and order/invoice line pricing) must compute `price` and `priceType` server-side from tenant-scoped `customer_prices` and workspace settings.
+  - Create/edit/delete and eligibility changes must emit immutable audit events, enforce `sales.prices.edit` RBAC and tenant isolation, and keep commercial pricing data out of unauthenticated endpoints; no PII or secrets in localStorage.
+- **Tests:** `apps/web/src/domain/sales-prices.test.ts`, `apps/web/src/data/schemas/seed.test.ts`, `apps/web/e2e/sales-prices.spec.ts`.
