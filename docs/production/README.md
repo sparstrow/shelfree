@@ -255,6 +255,7 @@ document editor (`/production/bills-of-materials/$no`, `new`) and the **Assembly
   - `Ctrl/Cmd+S`: save the BOM (works from inside inputs).
   - `Esc`: close an open dialog/menu/add-line row, blur the focused field, or return to the BOM list.
 - **Deliberate differences from prototype**:
+  - BOM and Assembly Order documents show no header subtitle; the prototype's explanatory line was removed under Quiet pages (2026-11-18).
   - Line actions use shared `LineGrid` controls (drag-to-reorder, `Alt+↑/↓`, selection bar duplicate/remove, `⋯` / context
     menu, inline `+ Add component` search) instead of per-row arrow/delete buttons and a modal component picker.
   - `draft-stash.ts` in `purchase-orders/` is typed strictly to `PurchaseOrder` and was not modified or reused, so
