@@ -1,5 +1,4 @@
 import {
-  Bookmark,
   Check,
   ChevronDown,
   ChevronLeft,
@@ -34,7 +33,12 @@ import {
   useState,
 } from 'react'
 import { toast } from 'sonner'
+import { useGridViews } from '@/app/stores/grid-views'
 import { StatusPill } from '@/components/StatusPill'
+import { ViewsMenu } from '@/components/saved-views/ViewsMenu'
+import { useFavoriteActions } from '@/components/saved-views/use-favorite-actions'
+import { usePageIdentity } from '@/components/saved-views/use-page-identity'
+import { useViewActions } from '@/components/saved-views/use-view-actions'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -51,8 +55,18 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { useList } from '@/data/queries'
+import type { SavedView } from '@/data/schemas'
+import {
+  type GridDefaults,
+  type GridSnapshot,
+  isViewDirty,
+  snapshotFromView,
+  viewsForPage,
+} from '@/domain/saved-views'
 import { int, money } from '@/lib/format'
 import { isTypingTarget } from '@/lib/keyboard'
+import { useLatest, useLatestCallback } from '@/lib/use-latest-callback'
 import { cn } from '@/lib/utils'
 import { CellEditor } from './CellEditor'
 import { FilterChips } from './FilterChips'
@@ -235,6 +249,128 @@ export function DataGrid<T>({
     if (view.sorts) setSorts(view.sorts)
   }
 
+  // ── saved views (the user's own, per page) ─────────────────────────────────
+  const identity = usePageIdentity()
+  const savedList = useList('savedViews')
+  const saved = useMemo(() => viewsForPage(savedList.data ?? [], identity.pageKey), [savedList.data, identity.pageKey])
+  const favoriteActions = useFavoriteActions()
+  const intent = useGridViews((s) => s.intent)
+  const clearIntent = useGridViews((s) => s.clearIntent)
+  const setActiveView = useGridViews((s) => s.setActive)
+  const [saveSignal, setSaveSignal] = useState(0)
+  const startedRef = useRef(false)
+
+  const defaults = useMemo<GridDefaults>(
+    () => ({
+      columns: dataset.columns.map((c) => ({ key: c.key, width: c.width, visible: c.visible, frozen: c.frozen })),
+      sort: dataset.defaultSort ?? { key: 'no', dir: 'asc' },
+    }),
+    [dataset.columns, dataset.defaultSort],
+  )
+  const snapshot = useMemo<GridSnapshot>(
+    () => ({
+      filters: filters.map(({ id: _id, ...rest }) => rest),
+      sorts,
+      hidden: [...hidden],
+      compact,
+    }),
+    [filters, sorts, hidden, compact],
+  )
+  const snapshotRef = useLatest(snapshot)
+  const viewActions = useViewActions(identity, defaults, () => snapshotRef.current)
+
+  const activeSaved = saved.find((v) => v.id === viewId)
+  const activeBuiltIn = dataset.views.find((v) => v.id === viewId)
+  const dirty = activeSaved
+    ? isViewDirty(snapshotFromView(activeSaved, defaults), snapshot)
+    : activeBuiltIn
+      ? isViewDirty({ filters: activeBuiltIn.filters, ...(activeBuiltIn.sorts ? { sorts: activeBuiltIn.sorts } : {}) }, snapshot)
+      : false
+
+  const applySaved = (view: SavedView) => {
+    const next = snapshotFromView(view, defaults)
+    setViewId(view.id)
+    changeFilters(next.filters.map((f) => ({ ...f, id: nextFilterId() })) as GridFilter[])
+    setSorts(next.sorts)
+    setHidden(new Set(next.hidden))
+    setCompact(next.compact)
+    setSelected(new Set())
+  }
+  const applySavedLatest = useLatestCallback(applySaved)
+
+  // A view favourite was opened (its grid applies the view), else the page's default view opens on arrival.
+  useEffect(() => {
+    if (!savedList.isSuccess) return
+    if (intent && intent.pageKey === identity.pageKey) {
+      clearIntent()
+      startedRef.current = true
+      const view = saved.find((v) => v.id === intent.viewId)
+      if (view) applySavedLatest(view)
+      return
+    }
+    if (startedRef.current) return
+    startedRef.current = true
+    if (initialFilters?.length) return
+    const preferred = saved.find((v) => v.isDefaultFor)
+    if (preferred) applySavedLatest(preferred)
+  }, [savedList.isSuccess, saved, intent, identity.pageKey, clearIntent, applySavedLatest, initialFilters])
+
+  // Tell the sidebar which saved view this grid shows (its favourite lights up).
+  const activeSavedId = activeSaved?.id ?? null
+  useEffect(() => {
+    setActiveView(identity.pageKey, activeSavedId)
+    return () => setActiveView(identity.pageKey, null)
+  }, [identity.pageKey, activeSavedId, setActiveView])
+
+  const toggleViewFavorite = (view: SavedView) => favoriteActions.toggleView(view)
+  const pinBuiltIn = async (view: (typeof dataset.views)[number]) => {
+    // Pinning a built-in view the second time must not pile up copies: reuse the one already made.
+    const made = saved.find((v) => v.autoCreated && v.name === view.name)
+    if (made) return favoriteActions.toggleView(made)
+    await viewActions.pinBuiltIn(view.name, {
+      ...snapshotRef.current,
+      filters: view.filters,
+      sorts: view.sorts ?? snapshotRef.current.sorts,
+    })
+  }
+  const deleteView = async (view: SavedView) => {
+    await viewActions.remove(view)
+    if (viewId === view.id) setViewId(dataset.views[0]?.id ?? 'all')
+  }
+  const saveAs = async (name: string) => {
+    const view = await viewActions.saveAs(name)
+    if (view) setViewId(view.id)
+    return view
+  }
+
+  // Ctrl/Cmd+S saves into the active view (or opens "save as"), Ctrl/Cmd+Shift+S always opens "save as",
+  // Ctrl/Cmd+D pins the page or the view you are looking at.
+  const onViewKey = useLatestCallback(async (e: globalThis.KeyboardEvent) => {
+    if (e.defaultPrevented || e.altKey || !(e.metaKey || e.ctrlKey)) return
+    const key = e.key.toLowerCase()
+    if (key !== 's' && key !== 'd') return
+    if (isTypingTarget(e.target) || document.querySelector('[role="alertdialog"]')) return
+    e.preventDefault()
+    if (key === 's') {
+      if (e.shiftKey || !activeSaved) setSaveSignal((n) => n + 1)
+      else await viewActions.update(activeSaved)
+      return
+    }
+    if (activeSaved && !dirty) return toggleViewFavorite(activeSaved)
+    if (filters.length > 0 && (!activeSaved || dirty)) {
+      const view = await viewActions.pinCurrent()
+      setViewId(view.id)
+      return
+    }
+    if (activeBuiltIn && activeBuiltIn.id !== dataset.views[0]?.id) return pinBuiltIn(activeBuiltIn)
+    if (identity.module) favoriteActions.togglePage(identity.module, identity.page, identity.pageLabel)
+  })
+  useEffect(() => {
+    const handler = (e: globalThis.KeyboardEvent) => void onViewKey(e)
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onViewKey])
+
   // ── in-place cell editing (columns with `edit`) ────────────────────────────
   const cellRefs = useRef(new Map<string, HTMLDivElement>())
   const editableColumns = columns.filter((c) => c.edit)
@@ -410,7 +546,6 @@ export function DataGrid<T>({
     slice.total === 0
       ? `No ${dataset.nounPlural}`
       : `Showing ${int(slice.page * pageSize + 1)}–${int(slice.page * pageSize + slice.rows.length)} of ${int(slice.total)} ${slice.total === 1 ? dataset.noun : dataset.nounPlural}`
-  const activeView = dataset.views.find((v) => v.id === viewId)
   const rowActions = (row: T) => actions.filter((a) => !a.disabled?.(row))
 
   return (
@@ -421,28 +556,25 @@ export function DataGrid<T>({
       {/* ── Toolbar ── */}
       <div className="relative z-20 flex-none border-b border-border bg-panel">
         <div className="flex flex-wrap items-center gap-2 px-5 py-[11px]">
-          {dataset.views.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button type="button" className={toolButton} title="Saved views">
-                  <Bookmark className="size-[13px] text-muted-foreground" strokeWidth={2} />
-                  {activeView?.name ?? 'Views'}
-                  <ChevronDown className="size-[11px] opacity-70" strokeWidth={2} />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-[212px] rounded-[10px] p-1.5">
-                <DropdownMenuLabel className="px-2 pt-[5px] pb-1.5 text-[10.5px] font-semibold tracking-[0.06em] text-muted-foreground">
-                  VIEWS
-                </DropdownMenuLabel>
-                {dataset.views.map((view) => (
-                  <DropdownMenuItem key={view.id} className="gap-[9px] text-[12.5px]" onSelect={() => applyView(view.id)}>
-                    <span className="flex-1">{view.name}</span>
-                    {view.id === viewId && <Check className="size-[13px] text-primary" strokeWidth={2.6} />}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          <ViewsMenu
+            builtIn={dataset.views}
+            saved={saved}
+            activeId={viewId}
+            label={activeSaved?.name ?? activeBuiltIn?.name ?? 'Views'}
+            dirty={dirty}
+            saveSignal={saveSignal}
+            isFavorite={(view) => !!favoriteActions.viewFavorite(view.id)}
+            onApplyBuiltIn={applyView}
+            onApplySaved={applySaved}
+            onSaveAs={saveAs}
+            onUpdate={(view) => void viewActions.update(view)}
+            onRename={(view, name) => void viewActions.rename(view, name)}
+            onDuplicate={(view) => void viewActions.duplicate(view)}
+            onToggleDefault={(view) => void viewActions.toggleDefault(view)}
+            onToggleFavorite={toggleViewFavorite}
+            onDelete={(view) => void deleteView(view)}
+            onPinBuiltIn={(view) => void pinBuiltIn(view)}
+          />
 
           <Popover>
             <PopoverTrigger asChild>

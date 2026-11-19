@@ -6,6 +6,8 @@
  */
 import {
   type AssemblyOrder,
+  type Favorite,
+  type SavedView,
   type Item,
   type ItemUnitSet,
   type PurchaseReceipt,
@@ -13,8 +15,11 @@ import {
   itemUnitSetSchema,
 } from '@/data/schemas'
 import { DEFAULT_PRODUCTION_SETTINGS, aoFinish } from '@/domain/assembly-order'
+import { dropFavorite, favoritesOfView, nextFavoriteOrder, renumberFavorites, sortFavorites } from '@/domain/favorites'
 import { poStatusAfterReceipts } from '@/domain/purchase-order'
 import { postReceiptError, stockToAdd } from '@/domain/purchase-receipt'
+import { type ViewStateData, dedupeViewName, withDefaultView } from '@/domain/saved-views'
+import { CURRENT_USER_ID, newId } from './favorites'
 import {
   type ItemUomUpdateResult,
   allUnits,
@@ -110,6 +115,160 @@ export async function finishAssemblyOrder(
   if (result.updatedItems.length) await api.items.upsertMany(result.updatedItems)
   await api.assemblyOrders.upsert(result.order)
   return result.order
+}
+
+// ── Saved views & favourites (per user) ─────────────────────────────────────
+// Backend: `/me/views` and `/me/favorites`, always scoped to the session user.
+
+export interface NewSavedView extends ViewStateData {
+  name: string
+  module: string
+  page: string
+  pageKey: string
+  path: string
+  pageLabel: string
+  autoCreated?: boolean
+}
+
+const namesOnPage = (views: readonly SavedView[], pageKey: string, exceptId?: string) =>
+  views.filter((v) => v.pageKey === pageKey && v.id !== exceptId).map((v) => v.name)
+
+/**
+ * `POST /me/views`. The name is made unique on its page (`Open`, `Open 2`…),
+ * and `pin` also adds the new view to the favourites, in one step.
+ */
+export async function createSavedView(
+  input: NewSavedView,
+  pin = false,
+): Promise<{ view: SavedView; favorite: Favorite | null }> {
+  const views = await api.savedViews.list()
+  const now = Date.now()
+  const { autoCreated, ...rest } = input
+  const view: SavedView = {
+    ...rest,
+    id: newId('v'),
+    userId: CURRENT_USER_ID,
+    name: dedupeViewName(input.name.trim(), namesOnPage(views, input.pageKey)),
+    scope: 'private',
+    isDefaultFor: false,
+    autoCreated: !!autoCreated,
+    createdAt: now,
+    updatedAt: now,
+    deletedAt: null,
+  }
+  await api.savedViews.upsert(view)
+  const favorite = pin ? await addFavoriteView(view.id) : null
+  return { view, favorite }
+}
+
+/** `PUT /me/views/{id}` — save the grid's current state into the view (name, default flag and pins stay). */
+export async function updateSavedViewState(id: string, state: ViewStateData): Promise<SavedView | null> {
+  const current = await api.savedViews.get(id)
+  if (!current) return null
+  return api.savedViews.upsert({ ...current, ...state, updatedAt: Date.now() })
+}
+
+/** `PATCH /me/views/{id}` — rename; a name already used on the page gets a number. */
+export async function renameSavedView(id: string, name: string): Promise<SavedView | null> {
+  const nm = name.trim()
+  const [current, views] = await Promise.all([api.savedViews.get(id), api.savedViews.list()])
+  if (!nm || !current || nm === current.name) return current
+  const next = {
+    ...current,
+    name: dedupeViewName(nm, namesOnPage(views, current.pageKey, id)),
+    autoCreated: false,
+    updatedAt: Date.now(),
+  }
+  return api.savedViews.upsert(next)
+}
+
+/** `POST /me/views/{id}/duplicate`. */
+export async function duplicateSavedView(id: string): Promise<SavedView | null> {
+  const [current, views] = await Promise.all([api.savedViews.get(id), api.savedViews.list()])
+  if (!current) return null
+  const now = Date.now()
+  return api.savedViews.upsert({
+    ...current,
+    id: newId('v'),
+    name: dedupeViewName(current.name + ' copy', namesOnPage(views, current.pageKey)),
+    isDefaultFor: false,
+    autoCreated: false,
+    createdAt: now,
+    updatedAt: now,
+  })
+}
+
+/** `PUT /me/views/{id}/default` — makes it the page's one default, or clears it. Returns whether it is now the default. */
+export async function toggleDefaultSavedView(id: string): Promise<{ view: SavedView; on: boolean } | null> {
+  const views = await api.savedViews.list()
+  const view = views.find((v) => v.id === id)
+  if (!view) return null
+  const on = !view.isDefaultFor
+  const next = withDefaultView(views, id, on).filter((v) => v.pageKey === view.pageKey)
+  await api.savedViews.upsertMany(next)
+  return { view, on }
+}
+
+/** `DELETE /me/views/{id}` — also drops the favourites that point at it; returns both so Undo can put them back. */
+export async function deleteSavedView(id: string): Promise<{ view: SavedView; favorites: Favorite[] } | null> {
+  const [view, favs] = await Promise.all([api.savedViews.get(id), api.favorites.list()])
+  if (!view) return null
+  const dropped = favoritesOfView(favs, id)
+  await Promise.all(dropped.map((f) => api.favorites.remove(f.id)))
+  await api.savedViews.remove(id)
+  return { view, favorites: dropped }
+}
+
+export async function restoreSavedView(view: SavedView, favorites: Favorite[]): Promise<void> {
+  await api.savedViews.upsert(view)
+  if (favorites.length) await api.favorites.upsertMany(favorites)
+}
+
+/** `POST /me/favorites` for a page. No-op when it is already a favourite. */
+export async function addFavoritePage(module: string, page: string): Promise<Favorite> {
+  const favs = await api.favorites.list()
+  const found = favs.find((f) => f.kind === 'page' && f.module === module && f.page === page)
+  if (found) return found
+  return api.favorites.upsert({
+    id: newId('f'),
+    userId: CURRENT_USER_ID,
+    kind: 'page',
+    module,
+    page,
+    order: nextFavoriteOrder(favs),
+    createdAt: Date.now(),
+  })
+}
+
+/** `POST /me/favorites` for a saved view. No-op when it is already a favourite. */
+export async function addFavoriteView(viewId: string): Promise<Favorite> {
+  const favs = await api.favorites.list()
+  const found = favs.find((f) => f.kind === 'view' && f.viewId === viewId)
+  if (found) return found
+  return api.favorites.upsert({
+    id: newId('f'),
+    userId: CURRENT_USER_ID,
+    kind: 'view',
+    viewId,
+    order: nextFavoriteOrder(favs),
+    createdAt: Date.now(),
+  })
+}
+
+/** `PUT /me/favorites/order` — the whole sequence in one write. */
+export async function saveFavoriteOrder(ordered: Favorite[]): Promise<void> {
+  await api.favorites.upsertMany(renumberFavorites(ordered))
+}
+
+/** Drag `fromId` onto `toId`. */
+export async function dropFavoriteOn(fromId: string, toId: string): Promise<void> {
+  await saveFavoriteOrder(dropFavorite(await api.favorites.list(), fromId, toId))
+}
+
+/** Put a removed favourite back where it was (Undo). */
+export async function restoreFavorite(favorite: Favorite): Promise<void> {
+  const favs = await api.favorites.list()
+  await saveFavoriteOrder(sortFavorites([...favs.filter((f) => f.id !== favorite.id), favorite]))
 }
 
 export type ItemUnitAction =

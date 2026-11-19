@@ -16,6 +16,7 @@ import {
   customerPriceSchema,
   customerSchema,
   employeeSchema,
+  favoriteSchema,
   itemSchema,
   itemUnitSetSchema,
   noteSchema,
@@ -23,6 +24,7 @@ import {
   purchasePriceSchema,
   purchaseReceiptSchema,
   salesInvoiceSchema,
+  savedViewSchema,
   salesOrderSchema,
   uomSchema,
   userSchema,
@@ -155,6 +157,20 @@ export const api = {
     schema: uomSchema,
     seed: seedUnitsOfMeasure,
     idOf: (r) => r.code,
+  }),
+  /** Per-user: grid views a user saved. Backend: scoped to the signed-in user. */
+  savedViews: createCollection({
+    key: 'savedViews',
+    schema: savedViewSchema,
+    seed: () => [],
+    idOf: (r) => r.id,
+  }),
+  /** Per-user: sidebar favourites (pages and saved views). */
+  favorites: createCollection({
+    key: 'favorites',
+    schema: favoriteSchema,
+    seed: () => [],
+    idOf: (r) => r.id,
   }),
   itemUnits: createCollection({
     key: 'itemUnits',

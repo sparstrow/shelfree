@@ -254,3 +254,83 @@ Entities: `favorites` and `saved_views`, both scoped by `user_id` **and**
   save time.
 - **localStorage:** stores only navigation preferences — no tokens, no secrets,
   no record payloads.
+
+
+## React app (2026-11-18)
+
+User-saved grid views and sidebar favourites are ported to `apps/web`. Every list page gets them from the
+shared grid and sidebar; no page has code of its own for them.
+
+**Files**
+
+| Concern | File |
+|---|---|
+| Rules: name de-dup, view and grid state both ways, dirty check, one default per page | `src/domain/saved-views.ts` (+ test) |
+| Rules: order, drag drop, move, cap / overflow | `src/domain/favorites.ts` (+ test) |
+| Entity schemas `savedViewSchema`, `favoriteSchema` | `src/data/schemas/index.ts` |
+| Collections `savedViews`, `favorites`; commands (create, update, rename, duplicate, default, delete + restore, add and reorder favourites) | `src/data/api/index.ts`, `src/data/api/commands.ts` |
+| One-time move of the old favourites | `src/data/api/favorites.ts` (+ test) |
+| Query hooks | `src/data/queries/favorites.ts` |
+| Views menu (toolbar) | `src/components/saved-views/ViewsMenu.tsx`, wired in `components/data-grid/DataGrid.tsx` |
+| Toast and command glue | `src/components/saved-views/use-view-actions.ts`, `use-favorite-actions.ts`, `use-page-identity.ts` |
+| Sidebar Favorites section, right-click menus, rename, drag | `src/app/shell/Sidebar.tsx` |
+| Short-lived hand-offs (open a view favourite, which view a grid shows, rename in progress); not saved | `src/app/stores/grid-views.ts` |
+| Shortcuts catalogue entry | `src/components/saved-views/shortcut-meta.ts` -> `src/app/shortcuts.ts` |
+
+**Behaviour**
+
+- *Views menu* (a Radix dropdown menu in the toolbar, so every row is a menu item reachable with the arrow
+  keys): VIEWS (built-in, from the dataset) and MY VIEWS (saved). Each saved view has apply, make default
+  (check), pin (star), rename (pencil, in place), duplicate and delete (with Undo; the menu closes so the toast
+  is reachable). Footer: *Save changes to this view* (a saved view is active) and *Save as new view* (name box,
+  Enter saves). A dot on the button marks a grid that has moved away from its active view (filters, sort, shown
+  columns, density). Built-in views are unchanged and can be pinned (this makes a private copy).
+- *What a saved view holds:* filters, sorts, columns (key, width, visible, frozen), density, groupBy, collapsed.
+  The grid uses filters, sorts, column visibility and density today; the rest is stored for when it does.
+  Columns are re-applied by key, so a column added or removed later never breaks a view.
+- *Names* are made unique per page and user (`Open`, `Open 2`...) on save, rename and duplicate (`... copy`).
+- *Default view:* at most one per page and user; it is applied when the page opens, unless the page opens with
+  its own filters (a deep link).
+- *Deleting a view* removes the favourites that point at it; Undo puts back both.
+- *Favourites:* pages (star beside a sidebar link, Departments, Ctrl/Cmd+D) and saved views (star in the Views
+  menu). Rows: click opens (a view favourite opens its page with the view applied), the star unpins (Undo), drag
+  to reorder, inline rename for views (right-click > Rename; pinning unsaved filters opens it straight away).
+  Cap 10, then *Show all (n)* / *Show fewer*. Empty text "Star a page or view to pin it here."
+- *Sidebar right-click menu* (Radix context menu; Shift+F10 or the Menu key opens it from the keyboard, Esc
+  closes it): a sidebar page - Add to / Remove from favorites, Open in new tab; a favourite - Rename (views),
+  Open in new tab, Move up, Move down, Remove.
+- *Keys:* Ctrl/Cmd+S (update the active view, else *Save as*), Ctrl/Cmd+Shift+S (*Save as*), Ctrl/Cmd+D (pin
+  the page or view; unsaved filters are saved as `<Page> · my view` first), Ctrl/Cmd+1...9 (open favourite N),
+  Ctrl/Cmd+Alt+F (focus the first favourite). Not fired while typing in a field. Listed under *Favorites &
+  saved views* in Settings > Keyboard shortcuts.
+
+**Persistence (frontend today):** `shelfree.v2.savedViews` and `shelfree.v2.favorites` (JSON arrays shaped as
+the Data model above, plus `path` and `pageLabel` on a view and `userId` on both). They are per-user data, not
+UI preferences; `shelfree.v2.ui` keeps only the sidebar section's open / closed flag. *Migration:* the first
+React build kept page favourites in `shelfree.v2.ui` > `state.favorites`; when the app starts they are copied
+into `shelfree.v2.favorites` in order and removed from the preferences (nobody loses favourites; running it
+again does nothing). Not in scope here: the Settings > Favorites & views pages (cap, label, on / off), so the
+cap and the label are constants (`DEFAULT_FAVORITES_CAP`, `FAVORITES_LABEL`) until that page returns.
+
+**Backend-build notes** (per user - `user_id` from the session, never from the client - and workspace):
+
+- `GET /me/views`, `POST /me/views`, `PUT /me/views/{id}` (save the grid state into the view), `PATCH
+  /me/views/{id}` (rename), `POST /me/views/{id}/duplicate`, `PUT /me/views/{id}/default` (toggle; clears the
+  page's previous default in the same transaction), `DELETE /me/views/{id}` (soft delete; also hides the
+  favourites that point at it, restored by undo).
+- `GET /me/favorites`, `POST /me/favorites` (`kind: page` with `module` + `page`, or `kind: view` with
+  `viewId`; adding an existing one is a no-op), `DELETE /me/favorites/{id}`, `PUT /me/favorites/order` (the
+  whole ordered list; the server renumbers 0...n-1).
+- Rules the server enforces: `name` non-empty and unique per (user, `pageKey`), made unique with a number;
+  at most one `isDefaultFor` per (user, `pageKey`); a favourite points at a view the same user owns; filter
+  keys the page does not have are dropped, not errors; a favourite for a page the user cannot open is hidden.
+  `pageKey` is `module/page`, or the URL path for a page outside the sidebar; `path` is where the view opens
+  and `pageLabel` is the favourite's second line.
+- Audit: create, rename and delete of a saved view (see `docs/security/README.md`). No PII beyond the
+  user-written name.
+
+**Decisions & deferred-to-backend:** a grid's page identity is fixed when it mounts (the old page's grid is on
+screen for a moment while the router moves on, and must not take the new page's view). Opening a view favourite
+hands the view to the grid through a short-lived store, because grid state is local today; when grid state
+moves into the URL this becomes a `?view=` link. Ctrl/Cmd+1...9 may be taken by the browser's own tab
+switching in some browsers. The Views menu closes after Delete because an open menu blocks the toast's Undo.
