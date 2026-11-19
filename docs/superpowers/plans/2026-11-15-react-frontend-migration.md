@@ -38,12 +38,14 @@ same turn a page is ported.**
 
 ## Known gaps in what is done (fix next)
 
-- Grid features still to port: filter side panel, bulk edit / bulk delete. (Ported:
+- Grid features still to port: ~~filter side panel~~, bulk edit / bulk delete. (Ported:
   in-cell editing; user-saved views and sidebar favourites — views, rename, drag
   reorder, right-click menu — 2026-11-18; column menu (sort / pin / move / hide /
   group / autofit / reset), resize, drag reorder, pinned left + right, group by,
   find in view (Ctrl/Cmd+F), footer aggregate picker — 2026-11-18, all in the shared
-  `DataGrid`; a saved view now stores and applies that layout. The favourites cap,
+  `DataGrid`; a saved view now stores and applies that layout; 320 px **Filters side
+  panel** with column search, collapsible sections, memoized enum counts, range/date
+  editors, and responsive Sheet fallback — 2026-11-18. The favourites cap,
   the "Favorites" label and the Settings ▸ Favorites & views page wait for the
   Settings redesign.)
 - Grid parity notes: find opens with Ctrl/Cmd+F only (the prototype also used `/`; here `/`

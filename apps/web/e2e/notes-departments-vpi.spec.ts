@@ -19,12 +19,11 @@ test.describe('Notes page', () => {
     await page.getByRole('menuitem', { name: 'All notes' }).click()
     await expect(page.getByText('Showing 1–20 of 42 notes')).toBeVisible()
 
-    // Filter by Record type via Add filter.
-    await page.getByRole('button', { name: 'Add filter' }).click()
-    await page.getByRole('dialog').getByRole('button', { name: 'Record', exact: true }).click()
-    await page.keyboard.press('Escape')
-    await page.getByRole('button', { name: 'choose…' }).click()
-    await page.getByRole('checkbox', { name: 'Vendor', exact: true }).click()
+    // Filter by Record type in the Filters side panel.
+    await page.getByRole('button', { name: /^Add filter/ }).click()
+    const record = page.getByRole('complementary', { name: 'Filters' }).getByRole('region', { name: 'Record', exact: true })
+    await record.getByRole('button', { name: /^Record/ }).click()
+    await record.getByLabel('Vendor', { exact: true }).click()
     await page.keyboard.press('Escape')
     await expect(page.getByText('Showing 1–3 of 3 notes')).toBeVisible()
     await page.getByRole('button', { name: 'Clear all' }).click()
