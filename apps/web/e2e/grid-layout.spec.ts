@@ -178,10 +178,12 @@ test.describe('Grid layout: columns, grouping, find, totals', () => {
     await page.getByRole('menuitemradio', { name: 'Max' }).click()
     await expect(total).not.toHaveText(sum ?? '')
     await expect(total).toContainText('₹')
+    await expect(page.getByRole('menu')).toHaveCount(0)
 
     await total.click()
     await page.getByRole('menuitemradio', { name: 'Count' }).click()
     await expect(total).toHaveText('10')
+    await expect(page.getByRole('menu')).toHaveCount(0)
 
     // A text column only offers None and Count.
     await page.locator('[data-footer-key="vendor"]').click()
