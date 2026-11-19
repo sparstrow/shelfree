@@ -10,19 +10,15 @@ const viewsMenu = (page: Page) => page.getByRole('menu')
 const viewRow = (page: Page, name: string) => viewsMenu(page).getByRole('group', { name, exact: true })
 const favRows = (page: Page) => page.locator('[data-fav-row]')
 
-/** Filter the grid to vendors whose No. contains `text` (adds the filter on first use, edits it after). */
+/** Filter the grid to vendors whose No. contains `text`, through the Filters side panel. */
 async function filterNo(page: Page, text: string) {
-  if (await page.getByRole('button', { name: 'Remove No. filter' }).count()) {
-    await page.getByTitle('Edit value').click()
-  } else {
-    await page.getByRole('button', { name: 'Add filter' }).click()
-    await page.getByRole('dialog').getByRole('button', { name: 'No.', exact: true }).click()
-    await page.keyboard.press('Escape')
-    await page.getByTitle('Edit value').click()
-  }
-  await page.getByLabel('No. value').fill(text)
+  await page.getByRole('button', { name: /^Add filter/ }).click()
+  const section = page.getByRole('complementary', { name: 'Filters' }).getByRole('region', { name: 'No.', exact: true })
+  const toggle = section.getByRole('button', { name: /^No\./ })
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click()
+  await section.getByLabel('No. value', { exact: true }).fill(text)
   await page.keyboard.press('Escape')
-  await expect(page.getByLabel('No. value')).toHaveCount(0)
+  await expect(page.getByRole('complementary', { name: 'Filters' })).toHaveCount(0)
 }
 
 async function openViews(page: Page) {

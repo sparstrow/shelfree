@@ -58,7 +58,7 @@ export interface CellEdit {
   commit: (row: never, value: string) => string | void | Promise<string | void>
 }
 
-export type FilterKind = 'text' | 'enum' | 'num'
+export type FilterKind = 'text' | 'enum' | 'num' | 'date'
 
 export interface FilterColumn {
   key: string
@@ -120,6 +120,8 @@ export interface Dataset<T> {
   searchBlob: (row: T) => string
   views: GridView[]
   filterColumns: FilterColumn[]
+  /** Show the Filter side panel from the toolbar (default true). Set false for the compact popover picker. */
+  filterPanel?: boolean
   defaultSort?: SortSpec
   /** Optional row warning flag shown as a dot before the first column's text (the string as `title`). */
   rowFlag?: (row: T) => string | null
@@ -144,6 +146,13 @@ export const OPS_BY_KIND: Record<FilterKind, { op: FilterOp; label: string }[]> 
     { op: '<', label: '<' },
     { op: 'between', label: 'between' },
   ],
+  date: [
+    { op: '=', label: 'on' },
+    { op: '<', label: 'before' },
+    { op: '>', label: 'after' },
+    { op: 'between', label: 'between' },
+    { op: 'isEmpty', label: 'is empty' },
+  ],
 }
 
 export function opLabel(kind: FilterKind, op: FilterOp): string {
@@ -153,14 +162,19 @@ export function opLabel(kind: FilterKind, op: FilterOp): string {
 export function defaultFilter(column: FilterColumn, id: string): GridFilter {
   if (column.type === 'enum') return { id, key: column.key, op: 'isAny', value: [] }
   if (column.type === 'num') return { id, key: column.key, op: '>', value: '' }
+  if (column.type === 'date') return { id, key: column.key, op: '=', value: '' }
   return { id, key: column.key, op: 'contains', value: '' }
 }
+
+const hasText = (v: unknown): boolean => v !== undefined && String(v).trim() !== ''
+const isIsoDateText = (s: string): boolean => /^\d{4}-\d{2}-\d{2}/.test(s.trim())
 
 /** A filter with no value yet matches everything (it is still being edited). */
 export function filterIsBlank(filter: Omit<GridFilter, 'id'>): boolean {
   if (filter.op === 'isEmpty') return false
   if (Array.isArray(filter.value)) return filter.value.length === 0
-  return filter.value === undefined || String(filter.value).trim() === ''
+  if (filter.op === 'between') return !hasText(filter.value) && !hasText(filter.value2)
+  return !hasText(filter.value)
 }
 
 export function matchFilter(raw: RawValue, filter: Omit<GridFilter, 'id'>): boolean {
@@ -169,17 +183,40 @@ export function matchFilter(raw: RawValue, filter: Omit<GridFilter, 'id'>): bool
   if (filterIsBlank(filter)) return true
   if (op === 'isAny') return Array.isArray(value) && value.includes(String(raw))
   if (op === 'isNot') return Array.isArray(value) ? !value.includes(String(raw)) : raw !== value
-  const num = Number(raw)
-  const v1 = Number(value)
-  const v2 = Number(value2)
-  if (op === '=') return num === v1
-  if (op === '≠') return num !== v1
-  if (op === '>') return num > v1
-  if (op === '<') return num < v1
-  if (op === 'between') {
-    if (value2 === undefined || String(value2).trim() === '') return num >= v1
-    return num >= Math.min(v1, v2) && num <= Math.max(v1, v2)
+
+  if (op === '=' || op === '≠' || op === '>' || op === '<' || op === 'between') {
+    const s1 = String(value ?? '').trim()
+    const s2 = String(value2 ?? '').trim()
+    const sr = raw == null ? '' : String(raw).trim()
+    if (isIsoDateText(s1) || isIsoDateText(s2) || isIsoDateText(sr)) {
+      if (!sr) return op === '≠'
+      if (op === '=') return sr === s1
+      if (op === '≠') return sr !== s1
+      if (op === '>') return sr > s1
+      if (op === '<') return sr < s1
+      if (s1 && s2) {
+        const lo = s1 <= s2 ? s1 : s2
+        const hi = s1 <= s2 ? s2 : s1
+        return sr >= lo && sr <= hi
+      }
+      if (s1) return sr >= s1
+      if (s2) return sr <= s2
+      return true
+    }
+
+    const num = Number(raw)
+    const v1 = Number(value)
+    const v2 = Number(value2)
+    if (op === '=') return num === v1
+    if (op === '≠') return num !== v1
+    if (op === '>') return num > v1
+    if (op === '<') return num < v1
+    if (hasText(value) && hasText(value2)) return num >= Math.min(v1, v2) && num <= Math.max(v1, v2)
+    if (hasText(value)) return num >= v1
+    if (hasText(value2)) return num <= v2
+    return true
   }
+
   const sr = String(raw).toLowerCase()
   const sv = String(value ?? '').toLowerCase()
   if (op === 'contains') return sr.includes(sv)

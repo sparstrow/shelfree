@@ -654,4 +654,26 @@ logic is `src/domain/grid-layout.ts` (tested in `grid-layout.test.ts`); view map
   needs `groupBy` (group headers with counts) and aggregate queries over the whole filtered set. Security
   checklist: no PII or new compliance surface (view state only); nothing sensitive in localStorage.
 
+### Grid: filter side panel (2026-11-18)
+
+What changed (strictly inside `components/data-grid/`, `components/saved-views/ViewsMenu.tsx`, `domain/grid-filters.ts`, `shortcut-meta.ts`, `docs/`, and Playwright specs — zero list-page edits):
+
+- **Toolbar Filter toggle & layout**: the toolbar **Filter** button (with active-filter count badge and active tint)
+  toggles `components/data-grid/FilterPanel.tsx` (`320 px` `<aside>` docked beside the grid and preview drawer in the
+  flex row without overlapping `{drawer}`). Opening **Filter** closes the Columns and Views popovers, and opening
+  Columns or Views closes the Filter panel (`ViewsMenu` gains optional controlled `open`/`onOpenChange` props).
+- **Opt-out & backward compatibility**: `DataGrid` and `Dataset` accept an optional `filterPanel?: boolean` flag
+  (default `true`); setting `filterPanel={false}` keeps the compact "Add filter" popover picker.
+- **Panel UI & shared value editors**: header with funnel badge, `"Filters"`, `"Narrow down the list"` / `"n filter(s) active"` subtitle, and `X` close (`Close (Esc)`); sticky `"Search filters"` column search with `"No filters match “…”."` empty state; collapsible column sections (columns with an active filter start open on open; active count badge + per-section `Clear`; Enter/Space toggles sections, Tab moves between them); footer with `Clear all` and `Done`.
+- **Shared editors & live updates**: value editors were extracted into `components/data-grid/FilterValueEditor.tsx` so
+  both `FilterPanel` and `FilterChips` share the same `enum` multi-select checkboxes (with memoized single-pass row
+  counts `enumValueCounts` shown in the panel), `text`, numeric `num` / `between` ("From"/"to"/"To" incl. upper-only
+  bounds), and ISO `date` range filters in `model.ts`. Changes update `DataGrid` `filters` live, reset paging to
+  page 0, keep `FilterChips` synced, mark saved/built-in views dirty, and reset cleanly on view switch.
+- **Responsive Sheet & keyboard / Esc**: `shouldDockFilterPanelInline` + `ResizeObserver` switch the panel to a
+  right-side `Sheet` (`components/ui/sheet.tsx`) where `320 px` beside the grid/drawer does not fit. Pressing `Esc`
+  closes the panel (after open Find bar or floating menus/selects, before preview drawer/selection) and returns
+  focus to the toolbar **Filter** button. New panel gestures/keys are listed in `components/data-grid/shortcut-meta.ts`.
+- **Persistence / backend notes**: `filters` remain client-side view snapshot state in `shelfree.v2.savedViews` (no new localStorage keys or backend fields). Security checklist: read-only filtering over already-loaded rows, no raw HTML/DOM injection, no PII stored outside memory/saved view filters.
+
 **Shell layout (2026-11-18):** the app shell and `html`/`body` use `overflow: clip`, so focusing a field or opening a popover can never scroll the document or the shell (it used to shift the whole app by up to 80 px). The top bar is a container: below ~670 px wide the New button shows its icon only (label kept as `title` / `aria-label`) and the page search shrinks to 120 px.
