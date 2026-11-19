@@ -6,17 +6,32 @@
  */
 import {
   type AssemblyOrder,
+  type Customer,
   type Favorite,
-  type SavedView,
   type Item,
   type ItemUnitSet,
+  type PurchaseOrder,
   type PurchaseReceipt,
+  type SavedView,
+  type Vendor,
   itemSchema,
   itemUnitSetSchema,
 } from '@/data/schemas'
 import { DEFAULT_PRODUCTION_SETTINGS, aoFinish } from '@/domain/assembly-order'
+import { nextDupNo } from '@/domain/bulk-actions'
 import { dropFavorite, favoritesOfView, nextFavoriteOrder, renumberFavorites, sortFavorites } from '@/domain/favorites'
-import { poStatusAfterReceipts } from '@/domain/purchase-order'
+import {
+  duplicatePurchaseOrder,
+  poCanCancel,
+  poCanClose,
+  poCanLock,
+  poCanReopen,
+  poLockState,
+  poNextNo,
+  poReceiptProgress,
+  poStatusAfterReceipts,
+} from '@/domain/purchase-order'
+import { applyIssueTransition, poCanBulkIssue, priceLine } from '@/domain/purchase-order-editing'
 import { postReceiptError, stockToAdd } from '@/domain/purchase-receipt'
 import { type ViewStateData, dedupeViewName, withDefaultView } from '@/domain/saved-views'
 import { CURRENT_USER_ID, newId } from './favorites'
@@ -33,7 +48,8 @@ import {
   itemUomValidate,
   syncItemBaseUnit,
 } from '@/domain/units-of-measure'
-import { api } from './index'
+import { type Api, type CollectionName, api } from './index'
+import { settingsApi } from './settings'
 
 export class CommandError extends Error {}
 
@@ -490,4 +506,367 @@ export function saveItemWithUnits(item: Item): Promise<ItemUnitsSyncResult> {
     }
     return { item: nextItem, unitSet: nextSet }
   })
+}
+
+// ── Grid bulk actions (multi-record commands) ────────────────────────────────
+// Backend: each command below is ONE transactional endpoint that re-validates
+// every target record server-side and writes one audit event per changed record.
+
+type CollectionRecord<K extends CollectionName> = Awaited<ReturnType<Api[K]['list']>>[number]
+
+/** Write several records to one collection in a single batch (also used for Undo). */
+export async function bulkUpsertCollection<K extends CollectionName>(
+  collection: K,
+  records: readonly CollectionRecord<K>[],
+): Promise<CollectionRecord<K>[]> {
+  if (records.length === 0) return []
+  return (api[collection].upsertMany as (rows: CollectionRecord<K>[]) => Promise<CollectionRecord<K>[]>)(
+    [...records],
+  )
+}
+
+/** Delete several records from one collection (`DELETE /<collection>/bulk`). */
+export async function bulkDeleteCollection<K extends CollectionName>(
+  collection: K,
+  ids: readonly string[],
+): Promise<void> {
+  for (const id of ids) {
+    await api[collection].remove(id)
+  }
+}
+
+export type PoBulkStatusAction = 'issue' | 'cancel' | 'close'
+export type PoBulkLockAction = 'reopen' | 'lock'
+export type PoBulkEditFieldKey = 'expectedDate' | 'orderDate' | 'location' | 'buyer'
+
+export interface BulkPurchaseOrderMutationResult {
+  updated: PurchaseOrder[]
+  previous: PurchaseOrder[]
+  skipped: number
+}
+
+/**
+ * `POST /purchase-orders/bulk-status` — apply Issue / Cancel / Close to every
+ * eligible order in `nos`, skipping ineligible ones.
+ */
+export async function bulkPurchaseOrderStatus(
+  nos: readonly string[],
+  action: PoBulkStatusAction,
+): Promise<BulkPurchaseOrderMutationResult> {
+  const [orders, receipts, vendors, warehouses, settings] = await Promise.all([
+    api.purchaseOrders.list(),
+    api.purchaseReceipts.list(),
+    api.vendors.list(),
+    api.warehouses.list(),
+    settingsApi.get(),
+  ])
+  const selected = new Set(nos)
+  const vendorByNo = new Map(vendors.map((v) => [v.no, v]))
+  const updated: PurchaseOrder[] = []
+  const previous: PurchaseOrder[] = []
+  let skipped = 0
+
+  for (const po of orders) {
+    if (!selected.has(po.no)) continue
+    const vendor = vendorByNo.get(po.vendor)
+    const eligible =
+      action === 'issue'
+        ? poCanBulkIssue(po, vendor, warehouses, settings)
+        : action === 'cancel'
+          ? poCanCancel(po, receipts)
+          : poCanClose(po)
+    if (!eligible) {
+      skipped += 1
+      continue
+    }
+    previous.push(po)
+    if (action === 'issue') {
+      updated.push(applyIssueTransition(po, vendor, settings))
+    } else if (action === 'cancel') {
+      updated.push({ ...po, status: 'Cancelled' })
+    } else {
+      updated.push({ ...po, status: 'Closed' })
+    }
+  }
+
+  if (updated.length > 0) await api.purchaseOrders.upsertMany(updated)
+  return { updated, previous, skipped }
+}
+
+/**
+ * `POST /purchase-orders/bulk-lock` — reopen locked issued orders or lock
+ * reopened issued orders in one batch.
+ */
+export async function bulkPurchaseOrderLock(
+  nos: readonly string[],
+  action: PoBulkLockAction,
+): Promise<BulkPurchaseOrderMutationResult> {
+  const orders = await api.purchaseOrders.list()
+  const selected = new Set(nos)
+  const updated: PurchaseOrder[] = []
+  const previous: PurchaseOrder[] = []
+  let skipped = 0
+
+  for (const po of orders) {
+    if (!selected.has(po.no)) continue
+    const eligible = action === 'reopen' ? poCanReopen(po) : poCanLock(po)
+    if (!eligible) {
+      skipped += 1
+      continue
+    }
+    previous.push(po)
+    updated.push({
+      ...po,
+      locked: action === 'lock',
+      reopened: action === 'reopen',
+    })
+  }
+
+  if (updated.length > 0) await api.purchaseOrders.upsertMany(updated)
+  return { updated, previous, skipped }
+}
+
+export interface BulkEditPurchaseOrdersInput {
+  nos: readonly string[]
+  field: PoBulkEditFieldKey
+  value: string
+  reopen: boolean
+}
+
+export interface BulkEditPurchaseOrdersResult {
+  updated: PurchaseOrder[]
+  previous: PurchaseOrder[]
+  edited: number
+  reopened: number
+  skipped: number
+}
+
+/**
+ * `PATCH /purchase-orders/bulk` — update one header column across selected orders,
+ * optionally reopening locked issued orders in the same transaction.
+ */
+export async function bulkEditPurchaseOrders(
+  input: BulkEditPurchaseOrdersInput,
+): Promise<BulkEditPurchaseOrdersResult> {
+  const orders = await api.purchaseOrders.list()
+  const selected = new Set(input.nos)
+  const updated: PurchaseOrder[] = []
+  const previous: PurchaseOrder[] = []
+  let reopened = 0
+  let skipped = 0
+
+  for (const po of orders) {
+    if (!selected.has(po.no)) continue
+    const ls = poLockState(po)
+    if (ls === 'final' || (ls === 'locked' && !input.reopen)) {
+      skipped += 1
+      continue
+    }
+    previous.push(po)
+    let next: PurchaseOrder = { ...po }
+    if (ls === 'locked') {
+      next = { ...next, locked: false, reopened: true }
+      reopened += 1
+    }
+    if (input.field === 'buyer') {
+      next = { ...next, buyer: input.value || null }
+    } else {
+      next = { ...next, [input.field]: input.value }
+    }
+    updated.push(next)
+  }
+
+  if (updated.length > 0) await api.purchaseOrders.upsertMany(updated)
+  return { updated, previous, edited: updated.length, reopened, skipped }
+}
+
+export interface BulkEditPurchaseLinesInput {
+  lineIds: readonly string[]
+  qty: number
+  reopen: boolean
+}
+
+export interface BulkEditPurchaseLinesResult {
+  updated: PurchaseOrder[]
+  previous: PurchaseOrder[]
+  edited: number
+  reopened: number
+  skipped: number
+  short: number
+}
+
+/**
+ * `PATCH /purchase-orders/lines:bulk` — update `qty` across selected purchase
+ * lines, optionally reopening locked orders, skipping final orders and any line
+ * where `qty` is below what has already been received. Draft lines re-price.
+ */
+export async function bulkEditPurchaseLines(
+  input: BulkEditPurchaseLinesInput,
+): Promise<BulkEditPurchaseLinesResult> {
+  const [orders, receipts, prices, settings] = await Promise.all([
+    api.purchaseOrders.list(),
+    api.purchaseReceipts.list(),
+    api.purchasePrices.list(),
+    settingsApi.get(),
+  ])
+  const byPo = new Map<string, Set<number>>()
+  for (const id of input.lineIds) {
+    const sep = id.lastIndexOf('-')
+    if (sep <= 0) continue
+    const poNo = id.slice(0, sep)
+    const idx = Number(id.slice(sep + 1)) - 1
+    if (!Number.isInteger(idx) || idx < 0) continue
+    const set = byPo.get(poNo) ?? new Set<number>()
+    set.add(idx)
+    byPo.set(poNo, set)
+  }
+
+  const updated: PurchaseOrder[] = []
+  const previous: PurchaseOrder[] = []
+  let edited = 0
+  let reopened = 0
+  let skipped = 0
+  let short = 0
+
+  for (const po of orders) {
+    const indices = byPo.get(po.no)
+    if (!indices || indices.size === 0) continue
+    const ls = poLockState(po)
+    if (ls === 'final' || (ls === 'locked' && !input.reopen)) {
+      skipped += indices.size
+      continue
+    }
+    const prog = poReceiptProgress(po, receipts)
+    let poEdited = 0
+    const nextLines = (po.lines || []).map((line, i) => {
+      if (!indices.has(i)) return line
+      if ((prog[i]?.received ?? 0) > input.qty) {
+        short += 1
+        skipped += 1
+        return line
+      }
+      poEdited += 1
+      edited += 1
+      const nextLine = { ...line, qty: input.qty }
+      return po.status === 'Draft' ? priceLine(nextLine, po, { prices, settings }) : nextLine
+    })
+    if (poEdited === 0) continue
+    previous.push(po)
+    let nextPo: PurchaseOrder = { ...po, lines: nextLines }
+    if (ls === 'locked') {
+      nextPo = { ...nextPo, locked: false, reopened: true }
+      reopened += 1
+    }
+    updated.push(nextPo)
+  }
+
+  if (updated.length > 0) await api.purchaseOrders.upsertMany(updated)
+  return { updated, previous, edited, reopened, skipped, short }
+}
+
+/** `POST /purchase-orders/duplicate` — clone orders as fresh Drafts with sequential numbers. */
+export async function duplicatePurchaseOrders(
+  nos: readonly string[],
+  today: string,
+): Promise<{ created: PurchaseOrder[] }> {
+  const orders = await api.purchaseOrders.list()
+  const byNo = new Map(orders.map((p) => [p.no, p]))
+  const running: Pick<PurchaseOrder, 'no'>[] = orders.map((p) => ({ no: p.no }))
+  const created: PurchaseOrder[] = []
+
+  for (const no of nos) {
+    const src = byNo.get(no)
+    if (!src) continue
+    const nextNumber = poNextNo(running)
+    running.push({ no: nextNumber })
+    created.push(duplicatePurchaseOrder(src, nextNumber, today))
+  }
+
+  if (created.length > 0) await api.purchaseOrders.upsertMany(created)
+  return { created }
+}
+
+/**
+ * `POST /items/duplicate` — clone items with `-COPY` numbers and `" (copy)"` descriptions.
+ * Each copy also gets a copy of the source's unit set (base, pack units, conversions).
+ */
+export async function duplicateItems(nos: readonly string[]): Promise<{ created: Item[] }> {
+  const [items, unitSets] = await Promise.all([api.items.list(), api.itemUnits.list()])
+  const byNo = new Map(items.map((r) => [r.no, r]))
+  const setByNo = new Map(unitSets.map((s) => [s.itemNo, s]))
+  const taken = items.map((r) => r.no)
+  const created: Item[] = []
+  const createdSets: ItemUnitSet[] = []
+
+  for (const no of nos) {
+    const src = byNo.get(no)
+    if (!src) continue
+    const copyNo = nextDupNo(taken, src.no)
+    taken.push(copyNo)
+    created.push({
+      ...structuredClone(src),
+      no: copyNo,
+      desc: `${src.desc || ''} (copy)`,
+    })
+    const set = setByNo.get(src.no)
+    if (set) createdSets.push({ ...structuredClone(set), itemNo: copyNo })
+  }
+
+  if (created.length > 0) await api.items.upsertMany(created)
+  if (createdSets.length > 0) await api.itemUnits.upsertMany(createdSets)
+  return { created }
+}
+
+/** Undo of a duplicate: remove the copied items and their unit sets (`DELETE /items/bulk`). */
+export async function removeDuplicatedItems(nos: readonly string[]): Promise<void> {
+  for (const no of nos) {
+    await api.items.remove(no)
+    await api.itemUnits.remove(no)
+  }
+}
+
+/** `POST /customers/duplicate` — clone customers with `-COPY` numbers and `" (copy)"` names. */
+export async function duplicateCustomers(nos: readonly string[]): Promise<{ created: Customer[] }> {
+  const customers = await api.customers.list()
+  const byNo = new Map(customers.map((r) => [r.no, r]))
+  const taken = customers.map((r) => r.no)
+  const created: Customer[] = []
+
+  for (const no of nos) {
+    const src = byNo.get(no)
+    if (!src) continue
+    const copyNo = nextDupNo(taken, src.no)
+    taken.push(copyNo)
+    created.push({
+      ...structuredClone(src),
+      no: copyNo,
+      name: `${src.name || ''} (copy)`,
+    })
+  }
+
+  if (created.length > 0) await api.customers.upsertMany(created)
+  return { created }
+}
+
+/** `POST /vendors/duplicate` — clone vendors with `-COPY` numbers and `" (copy)"` names. */
+export async function duplicateVendors(nos: readonly string[]): Promise<{ created: Vendor[] }> {
+  const vendors = await api.vendors.list()
+  const byNo = new Map(vendors.map((r) => [r.no, r]))
+  const taken = vendors.map((r) => r.no)
+  const created: Vendor[] = []
+
+  for (const no of nos) {
+    const src = byNo.get(no)
+    if (!src) continue
+    const copyNo = nextDupNo(taken, src.no)
+    taken.push(copyNo)
+    created.push({
+      ...structuredClone(src),
+      no: copyNo,
+      name: `${src.name || ''} (copy)`,
+    })
+  }
+
+  if (created.length > 0) await api.vendors.upsertMany(created)
+  return { created }
 }

@@ -1,11 +1,13 @@
 import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import { AlertTriangle } from 'lucide-react'
 import { useMemo } from 'react'
+import { toast } from 'sonner'
 import { type ListPreview, ListPage } from '@/components/list-page/ListPage'
 import { useCollectionDelete } from '@/components/list-page/use-collection-delete'
 import { NotesBlock } from '@/components/notes/NotesBlock'
-import { useList } from '@/data/queries'
+import { useBulkRemove, useBulkUpsert, useDuplicateItems, useList, useRemoveDuplicatedItems } from '@/data/queries'
 import type { Item } from '@/data/schemas'
+import { pluralNoun } from '@/domain/bulk-actions'
 import {
   isItemLowStock,
   itemAvailable,
@@ -32,6 +34,10 @@ export function ItemsPage() {
   const orders = useList('purchaseOrders')
   const receipts = useList('purchaseReceipts')
   const notes = useList('notes')
+  const { mutateAsync: runDuplicate } = useDuplicateItems()
+  const { mutateAsync: undoDuplicate } = useRemoveDuplicatedItems()
+  const { mutateAsync: runBulkRemove } = useBulkRemove('items')
+  const { mutateAsync: runBulkUpsert } = useBulkUpsert('items')
 
   const warehouseList = useMemo(() => warehouses.data ?? [], [warehouses.data])
 
@@ -47,6 +53,17 @@ export function ItemsPage() {
     blockedReason: (it) => itemDeleteBlockedReason(it, orders.data ?? [], receipts.data ?? []),
     describe: (it) => `${it.no} · ${it.desc}`,
   })
+
+  const duplicate = async (selected: Item[]): Promise<string[]> => {
+    const res = await runDuplicate(selected.map((it) => it.no))
+    const made = res.created.map((it) => it.no)
+    if (made.length === 0) return []
+    toast(`${pluralNoun(made.length, 'item', 'items')} duplicated`, {
+      description: made.join(', '),
+      action: { label: 'Undo', onClick: () => void undoDuplicate(made) },
+    })
+    return made
+  }
 
   const preview = (it: Item): ListPreview => {
     const onHand = itemOnHand(it)
@@ -147,6 +164,12 @@ export function ItemsPage() {
         run: () => void navigate({ to: '/warehouse/items/$no', params: { no: 'new' } }),
       }}
       remove={remove}
+      duplicate={duplicate}
+      openInTabs
+      bulkDelete={{
+        run: (list) => runBulkRemove(list.map((it) => it.no)),
+        undo: (list) => runBulkUpsert(list),
+      }}
       preview={preview}
       initialActiveId={sel ?? null}
       emptyText="No items yet. Use New item to add the first one."

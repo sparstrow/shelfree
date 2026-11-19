@@ -1,10 +1,12 @@
 import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import { useMemo } from 'react'
+import { toast } from 'sonner'
 import { type ListPreview, ListPage } from '@/components/list-page/ListPage'
 import { NotesBlock } from '@/components/notes/NotesBlock'
 import { useCollectionDelete } from '@/components/list-page/use-collection-delete'
+import { useBulkRemove, useBulkUpsert, useDuplicateVendors, useList } from '@/data/queries'
 import type { Vendor } from '@/data/schemas'
-import { useList } from '@/data/queries'
+import { pluralNoun } from '@/domain/bulk-actions'
 import { vendorGstType, vendorGstTypeInfo } from '@/domain/gst'
 import { vendorLocation, vendorStatus, vendorSuppliesLabel } from '@/domain/vendor'
 import { EM_DASH, money } from '@/lib/format'
@@ -20,6 +22,9 @@ export function VendorsPage() {
   const employees = useList('employees')
   const orders = useList('purchaseOrders')
   const receipts = useList('purchaseReceipts')
+  const { mutateAsync: runDuplicate } = useDuplicateVendors()
+  const { mutateAsync: runBulkRemove } = useBulkRemove('vendors')
+  const { mutateAsync: runBulkUpsert } = useBulkUpsert('vendors')
 
   const dataset = useMemo(
     () =>
@@ -45,6 +50,17 @@ export function VendorsPage() {
       referencedVendors.has(v.no) ? 'This vendor has purchase orders or receipts — block it instead' : null,
     describe: (v) => `${v.no} · ${v.name}`,
   })
+
+  const duplicate = async (selected: Vendor[]): Promise<string[]> => {
+    const res = await runDuplicate(selected.map((v) => v.no))
+    const made = res.created.map((v) => v.no)
+    if (made.length === 0) return []
+    toast(`${pluralNoun(made.length, 'vendor', 'vendors')} duplicated`, {
+      description: made.join(', '),
+      action: { label: 'Undo', onClick: () => void runBulkRemove(made) },
+    })
+    return made
+  }
 
   const preview = (v: Vendor): ListPreview => {
     const overdue = v.overdue || 0
@@ -113,6 +129,12 @@ export function VendorsPage() {
         run: () => void navigate({ to: '/purchasing/vendors/$no', params: { no: 'new' } }),
       }}
       remove={remove}
+      duplicate={duplicate}
+      openInTabs
+      bulkDelete={{
+        run: (list) => runBulkRemove(list.map((v) => v.no)),
+        undo: (list) => runBulkUpsert(list),
+      }}
       preview={preview}
       initialActiveId={sel ?? null}
       emptyText="No vendors yet. Use New vendor to add the first one."

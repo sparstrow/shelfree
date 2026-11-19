@@ -17,7 +17,13 @@ import { toast } from 'sonner'
 import { TopBar } from '@/app/shell/TopBar'
 import { useUi } from '@/app/stores/ui'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { DataGrid, type GridAction, type GridBulkAction } from '@/components/data-grid/DataGrid'
+import {
+  DataGrid,
+  type GridAction,
+  type GridBulkAction,
+  type GridBulkEdit,
+  type GridBulkOp,
+} from '@/components/data-grid/DataGrid'
 import type { Dataset, GridFilter } from '@/components/data-grid/model'
 import { EditableDrawer, type EditorField } from '@/components/record-drawer/EditableDrawer'
 import {
@@ -29,6 +35,8 @@ import {
   drawerPrimaryButton,
   drawerSecondaryButton,
 } from '@/components/record-drawer/RecordDrawer'
+import { pluralNoun } from '@/domain/bulk-actions'
+import { int } from '@/lib/format'
 import { isTypingTarget } from '@/lib/keyboard'
 import type { ShortcutMeta } from '@/lib/shortcuts'
 
@@ -44,6 +52,17 @@ export interface ListContext<T> {
 }
 
 export type ListBulkAction<T> = GridBulkAction<T>
+export type ListBulkEdit<T> = GridBulkEdit<T>
+export type ListBulkOp<T> = GridBulkOp<T>
+
+export interface ListBulkDelete<T> {
+  /** Remove the eligible rows in one batch/command. */
+  run: (rows: T[]) => Promise<unknown>
+  /** Restore the removed rows (the toast's Undo). */
+  undo: (rows: T[]) => void | Promise<unknown>
+  /** Extra sentence in the confirm dialog. */
+  note?: string
+}
 
 export interface ListAction<T> {
   label: string
@@ -152,6 +171,20 @@ export interface ListPageProps<T> {
   actions?: ListAction<T>[]
   /** Action buttons shown in the bulk bar when rows are selected. */
   bulkActions?: ListBulkAction<T>[]
+  /** One-column bulk edit dialog across selected rows (bulk bar "Edit" + multi-row menu "Edit column…"). */
+  bulkEdit?: ListBulkEdit<T>
+  /** Duplicate one or more rows (returns the created record ids). Also adds Duplicate to the single-row menu when `editor` is absent. */
+  duplicate?: (rows: T[]) => Promise<string[]>
+  /** Bulk status transitions shown in the bulk bar (when 1+ apply) and multi-row context menu. */
+  statusOps?: readonly ListBulkOp<T>[]
+  /** Bulk lock/reopen transitions shown in the bulk bar (when 1+ apply) and multi-row context menu. */
+  lockOps?: readonly ListBulkOp<T>[]
+  /** Per-row bulk-delete eligibility (`true` when deletable, or a reason string). Enables bulk delete when set. */
+  canDelete?: (row: T) => true | string
+  /** Enable bulk delete in the bulk bar and multi-row menu (`true` reuses `remove`, or pass a batch `{ run, undo }`). */
+  bulkDelete?: boolean | ListBulkDelete<T>
+  /** Allow opening multiple selected rows in new browser tabs from the multi-row context menu (uses `recordPath`). */
+  openInTabs?: boolean
   shortcuts?: ListShortcut<T>[]
   /** Preview drawer contents. Omit for lists without a preview. */
   preview?: (row: T) => ListPreview
@@ -184,6 +217,13 @@ export function ListPage<T>({
   remove,
   actions = [],
   bulkActions = [],
+  bulkEdit,
+  duplicate,
+  statusOps,
+  lockOps,
+  canDelete,
+  bulkDelete,
+  openInTabs = false,
   shortcuts = [],
   preview,
   editor,
@@ -199,6 +239,12 @@ export function ListPage<T>({
   const openTab = useUi((s) => s.openTab)
   const [activeId, setActiveId] = useState<string | null>(initialActiveId)
   const [deleting, setDeleting] = useState<T | null>(null)
+  const [bulkDeleting, setBulkDeleting] = useState<{
+    eligible: T[]
+    skipped: number
+    reason: string
+    clearSelection: () => void
+  } | null>(null)
   const [editing, setEditing] = useState<Editing<T> | null>(() =>
     editor && initialDraft ? { mode: 'new', draft: initialDraft, orig: null, errors: {}, formError: '' } : null,
   )
@@ -242,6 +288,90 @@ export function ListPage<T>({
       action: { label: 'Undo', onClick: () => remove.undo(row) },
     })
   }
+
+  // ── bulk delete & open in browser tabs (opt-in per page) ───────────────────
+  const hasBulkDelete =
+    ((bulkDelete !== undefined && bulkDelete !== false) || !!canDelete) &&
+    (typeof bulkDelete === 'object' || !!remove)
+
+  const effectiveCanDelete: ((row: T) => true | string) | undefined = canDelete
+    ? canDelete
+    : remove?.blockedReason
+      ? (row) => remove.blockedReason?.(row) ?? true
+      : undefined
+
+  const startBulkDelete = (
+    eligible: T[],
+    allSelected: T[],
+    { clearSelection }: { clearSelection: () => void },
+  ) => {
+    if (allSelected.length === 0) return
+    const blockedReason = effectiveCanDelete
+      ? (allSelected.map(effectiveCanDelete).find((v): v is string => typeof v === 'string') ?? '')
+      : ''
+    if (eligible.length === 0) {
+      toast('Can’t delete', {
+        description: blockedReason || `None of the selected ${dataset.nounPlural} can be deleted.`,
+      })
+      return
+    }
+    setBulkDeleting({
+      eligible,
+      skipped: allSelected.length - eligible.length,
+      reason: blockedReason,
+      clearSelection,
+    })
+  }
+
+  const confirmBulkDelete = async () => {
+    const pending = bulkDeleting
+    if (!pending) return
+    const batch = typeof bulkDelete === 'object' ? bulkDelete : null
+    if (!batch && !remove) return
+    setBulkDeleting(null)
+    const ids = new Set(pending.eligible.map(dataset.idOf))
+    if (activeId && ids.has(activeId)) setActiveId(null)
+    try {
+      if (batch) {
+        await batch.run(pending.eligible)
+      } else if (remove) {
+        for (const row of pending.eligible) await remove.run(row)
+      }
+    } catch {
+      toast(`Could not delete the selected ${dataset.nounPlural}`, {
+        description: 'Check your connection and try again.',
+      })
+      return
+    }
+    pending.clearSelection()
+    toast(`${pluralNoun(pending.eligible.length, noun, dataset.nounPlural)} deleted`, {
+      description:
+        pending.skipped > 0
+          ? `${int(pending.skipped)} skipped${pending.reason ? ` — ${pending.reason}` : ''}`
+          : pending.eligible.map(dataset.idOf).join(', '),
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          if (batch) void batch.undo(pending.eligible)
+          else if (remove) pending.eligible.forEach((row) => remove.undo(row))
+        },
+      },
+    })
+  }
+
+  const openSelectedInTabs =
+    openInTabs && recordPath
+      ? (selected: T[]) => {
+          for (const row of selected) {
+            window.open(recordPath(row), '_blank', 'noopener,noreferrer')
+          }
+          if (selected.length > 1) {
+            toast(`Opened ${int(selected.length)} tabs`, {
+              description: selected.map(dataset.idOf).join(', '),
+            })
+          }
+        }
+      : undefined
 
   // ── editor (reference lists) ────────────────────────────────────────────────
   const startNew = (draft?: T) => {
@@ -348,6 +478,17 @@ export function ListPage<T>({
   }
   if (open) gridActions.push({ label: openLabel ?? `Open ${noun}`, icon: ExternalLink, onSelect: open })
   if (openInNewTab) gridActions.push({ label: 'Open in new tab', icon: ExternalLink, onSelect: openInNewTab })
+  if (duplicate && !editor) {
+    gridActions.push({
+      label: 'Duplicate',
+      icon: CopyPlus,
+      onSelect: (row) => {
+        void duplicate([row]).then((made) => {
+          if (made.length === 1) setActiveId(made[0])
+        })
+      },
+    })
+  }
   for (const a of actions) {
     gridActions.push({ label: a.label, icon: a.icon, disabled: a.when ? (row) => !a.when?.(row) : undefined, onSelect: (row) => a.run(row, listContext) })
   }
@@ -515,6 +656,13 @@ export function ListPage<T>({
         onOpen={open ?? (editor ? startEdit : (row) => setActiveId(dataset.idOf(row)))}
         actions={gridActions}
         bulkActions={bulkActions}
+        bulkEdit={bulkEdit}
+        onDuplicate={duplicate}
+        statusOps={statusOps}
+        lockOps={lockOps}
+        onOpenInTabs={openSelectedInTabs}
+        onBulkDelete={hasBulkDelete ? startBulkDelete : undefined}
+        canDelete={hasBulkDelete ? effectiveCanDelete : undefined}
         drawer={drawer}
         emptyText={emptyText}
         showTotals={showTotals}
@@ -534,6 +682,35 @@ export function ListPage<T>({
           confirmLabel={`Delete ${noun}`}
           onConfirm={confirmDelete}
           onCancel={() => setDeleting(null)}
+        />
+      )}
+      {hasBulkDelete && (
+        <ConfirmDialog
+          open={!!bulkDeleting}
+          danger
+          title={bulkDeleting ? `Delete ${pluralNoun(bulkDeleting.eligible.length, noun, dataset.nounPlural)}?` : ''}
+          description={
+            bulkDeleting ? (
+              <>
+                {pluralNoun(bulkDeleting.eligible.length, noun, dataset.nounPlural)} will be removed
+                {bulkDeleting.skipped > 0
+                  ? ` (${int(bulkDeleting.skipped)} skipped${bulkDeleting.reason ? ` — ${bulkDeleting.reason}` : ''})`
+                  : ''}
+                .
+                {(typeof bulkDelete === 'object' ? bulkDelete.note : remove?.note)
+                  ? ` ${typeof bulkDelete === 'object' ? bulkDelete.note : remove?.note}`
+                  : ''}{' '}
+                You can undo this right after deleting.
+              </>
+            ) : null
+          }
+          confirmLabel={
+            bulkDeleting
+              ? `Delete ${pluralNoun(bulkDeleting.eligible.length, noun, dataset.nounPlural)}`
+              : 'Delete'
+          }
+          onConfirm={() => void confirmBulkDelete()}
+          onCancel={() => setBulkDeleting(null)}
         />
       )}
     </>

@@ -134,3 +134,58 @@ export function poStatusAfterReceipts(
   if (progress.some((r) => r.received > 0)) return 'Partially received'
   return po.status === 'Draft' ? 'Draft' : 'Issued'
 }
+
+/** True when any non-cancelled goods receipt exists against this order. */
+export function poHasActiveReceipt(
+  poNo: string,
+  receipts: readonly Pick<PurchaseReceipt, 'po' | 'status'>[],
+): boolean {
+  return receipts.some((r) => r.po === poNo && r.status !== 'Cancelled')
+}
+
+/** Only Draft and Issued orders with no non-cancelled goods receipts can be cancelled. */
+export function poCanCancel(
+  po: Pick<PurchaseOrder, 'no' | 'status'>,
+  receipts: readonly Pick<PurchaseReceipt, 'po' | 'status'>[],
+): boolean {
+  return (po.status === 'Draft' || po.status === 'Issued') && !poHasActiveReceipt(po.no, receipts)
+}
+
+/** Only Partially received or Received orders can be closed. */
+export function poCanClose(po: Pick<PurchaseOrder, 'status'>): boolean {
+  return po.status === 'Partially received' || po.status === 'Received'
+}
+
+/** Only locked Issued orders can be reopened. */
+export function poCanReopen(po: Pick<PurchaseOrder, 'status' | 'locked'>): boolean {
+  return poLockState(po) === 'locked'
+}
+
+/** Only reopened Issued orders can be locked (drafts lock when issued). */
+export function poCanLock(po: Pick<PurchaseOrder, 'status' | 'locked'>): boolean {
+  return po.status === 'Issued' && poLockState(po) === 'open'
+}
+
+/**
+ * Clone a purchase order as a new Draft: fresh order number, today's order date,
+ * expected date cleared, lines copied, lock/reopen/tax snapshot dropped so they
+ * are freshly stamped on save/issue.
+ */
+export function duplicatePurchaseOrder(source: PurchaseOrder, no: string, today: string): PurchaseOrder {
+  const {
+    reopened: _reopened,
+    locked: _locked,
+    taxCalc: _taxCalc,
+    roundTotal: _roundTotal,
+    taxCalcSrc: _taxCalcSrc,
+    ...rest
+  } = source
+  return {
+    ...rest,
+    no,
+    status: 'Draft',
+    orderDate: today,
+    expectedDate: '',
+    lines: (source.lines || []).map((line) => ({ ...line })),
+  }
+}

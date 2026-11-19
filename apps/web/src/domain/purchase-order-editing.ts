@@ -161,6 +161,28 @@ export function canIssue(po: PurchaseOrder, interState: CompositionInterState | 
   return !!po.vendor && po.lines.length > 0 && !interState?.block
 }
 
+/** Bulk-issue eligibility: Draft with a vendor, at least one line, and no blocking composition inter-state error. */
+export function poCanBulkIssue(
+  po: PurchaseOrder,
+  vendor: Vendor | undefined,
+  warehouses: readonly Warehouse[],
+  settings: Settings,
+): boolean {
+  return po.status === 'Draft' && canIssue(po, compositionInterState(po, vendor, warehouses, settings))
+}
+
+/** Apply the Issued transition: status Issued, locked, tax stamped (if missing), and vendor GST snapshot refreshed. */
+export function applyIssueTransition(
+  po: PurchaseOrder,
+  vendor: Vendor | undefined,
+  settings: Settings,
+): PurchaseOrder {
+  let next: PurchaseOrder = { ...po, status: 'Issued', locked: true, reopened: false }
+  if (next.vendor && !next.taxCalc) next = stampTax(next, vendor, settings)
+  if (vendor) next = { ...next, ...gstSnapshot(vendor) }
+  return next
+}
+
 export interface TaxNote {
   text: string
   /** A draft whose stamped method differs from the vendor's current one. */

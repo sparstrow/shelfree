@@ -92,7 +92,14 @@ None — always recomputed from `purchaseOrders` (`shelfree.po.v2`).
 Ported to `apps/web`: `/purchasing/purchase-lines`, `?item=RM-LID-PWH` opens it
 filtered to one item. Rows are derived by `domain/purchase-lines.ts`
 (`purchaseLineRows`) from orders, posted receipts and the price list — still
-never stored. Read-only: the row menu offers *Open purchase order* and *View
-order in list*; double-click / Enter opens the order. Backend: a read-only
-`GET /purchase-lines?item=&po=&status=` view over `purchase_order_lines`.
-Tests: `apps/web/e2e/purchase-lines.spec.ts`.
+never stored. The row menu offers *Open purchase order* and *View order in
+list*; double-click / Enter opens the order. **Bulk edit (2026-11-18):**
+selecting 1+ lines enables *Edit* / *Edit column…* for **Qty ordered** via
+`bulkEditPurchaseLines` (`data/api/commands.ts`): splits lines by their parent
+PO's lock state, offers *Reopen N order(s) & apply* for locked orders, skips
+final orders and any line whose new quantity is below what is already received,
+re-prices Draft lines from vendor price tiers, and offers an Undo toast.
+Backend: `GET /purchase-lines?item=&po=&status=` plus transactional
+`PATCH /purchase-orders/lines:bulk` with per-line lock + received-qty
+re-validation and one audit event per modified PO.
+Tests: `apps/web/e2e/purchase-lines.spec.ts`, `src/domain/bulk-actions.test.ts`.

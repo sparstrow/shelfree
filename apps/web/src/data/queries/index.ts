@@ -5,9 +5,24 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type Api, type CollectionName, api } from '@/data/api'
 import {
+  type BulkEditPurchaseLinesInput,
+  type BulkEditPurchaseOrdersInput,
   type FinishAssemblyOrderInput,
   type ItemUnitAction,
+  type PoBulkLockAction,
+  type PoBulkStatusAction,
+  bulkDeleteCollection,
+  bulkEditPurchaseLines,
+  bulkEditPurchaseOrders,
+  bulkPurchaseOrderLock,
+  bulkPurchaseOrderStatus,
   bulkRemoveItemUnits,
+  bulkUpsertCollection,
+  duplicateCustomers,
+  duplicateItems,
+  duplicatePurchaseOrders,
+  removeDuplicatedItems,
+  duplicateVendors,
   finishAssemblyOrder,
   postPurchaseReceipt,
   restoreItemUnits,
@@ -161,5 +176,115 @@ export function useSaveItemWithUnits() {
         ),
       )
     },
+  })
+}
+
+/** Upsert several records in one collection (used for bulk restores / Undo). */
+export function useBulkUpsert<K extends CollectionName>(name: K) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (records: readonly RecordOf<K>[]) => bulkUpsertCollection(name, records),
+    onSuccess: () => client.invalidateQueries({ queryKey: [name] }),
+  })
+}
+
+/** Remove several records in one collection. */
+export function useBulkRemove<K extends CollectionName>(name: K) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (ids: readonly string[]) => bulkDeleteCollection(name, ids),
+    onSuccess: () => client.invalidateQueries({ queryKey: [name] }),
+  })
+}
+
+/** Apply Issue / Cancel / Close across selected purchase orders. */
+export function useBulkPurchaseOrderStatus() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ nos, action }: { nos: readonly string[]; action: PoBulkStatusAction }) =>
+      bulkPurchaseOrderStatus(nos, action),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['purchaseOrders'] }),
+  })
+}
+
+/** Reopen or lock selected purchase orders. */
+export function useBulkPurchaseOrderLock() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ nos, action }: { nos: readonly string[]; action: PoBulkLockAction }) =>
+      bulkPurchaseOrderLock(nos, action),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['purchaseOrders'] }),
+  })
+}
+
+/** Bulk-edit one header column across selected purchase orders. */
+export function useBulkEditPurchaseOrders() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (input: BulkEditPurchaseOrdersInput) => bulkEditPurchaseOrders(input),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['purchaseOrders'] }),
+  })
+}
+
+/** Bulk-edit ordered quantity across selected purchase lines (updates their parent orders). */
+export function useBulkEditPurchaseLines() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (input: BulkEditPurchaseLinesInput) => bulkEditPurchaseLines(input),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['purchaseOrders'] }),
+  })
+}
+
+/** Duplicate selected purchase orders as Drafts. */
+export function useDuplicatePurchaseOrders() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ nos, today }: { nos: readonly string[]; today: string }) =>
+      duplicatePurchaseOrders(nos, today),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['purchaseOrders'] }),
+  })
+}
+
+/** Duplicate selected items with `-COPY` numbers. */
+export function useDuplicateItems() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (nos: readonly string[]) => duplicateItems(nos),
+    onSuccess: () =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: ['items'] }),
+        client.invalidateQueries({ queryKey: ['itemUnits'] }),
+      ]),
+  })
+}
+
+/** Undo a duplicate: remove the copied items and their unit sets. */
+export function useRemoveDuplicatedItems() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (nos: readonly string[]) => removeDuplicatedItems(nos),
+    onSuccess: () =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: ['items'] }),
+        client.invalidateQueries({ queryKey: ['itemUnits'] }),
+      ]),
+  })
+}
+
+/** Duplicate selected customers with `-COPY` numbers. */
+export function useDuplicateCustomers() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (nos: readonly string[]) => duplicateCustomers(nos),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['customers'] }),
+  })
+}
+
+/** Duplicate selected vendors with `-COPY` numbers. */
+export function useDuplicateVendors() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (nos: readonly string[]) => duplicateVendors(nos),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['vendors'] }),
   })
 }
