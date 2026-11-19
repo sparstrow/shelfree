@@ -7,6 +7,8 @@
  * value and a display text for each cell.
  */
 
+import type { AggKind } from '@/domain/grid-layout'
+
 export type ColumnType = 'mono' | 'text' | 'pill' | 'num'
 export type AggFmt = 'int' | 'money'
 
@@ -22,11 +24,15 @@ export interface GridColumn {
   align: 'left' | 'right'
   type: ColumnType
   sortable: boolean
-  /** Footer aggregate. */
-  agg?: 'sum' | null
+  /** Footer aggregate shown by default (the user can pick another one per column). */
+  agg?: AggKind | null
   aggFmt?: AggFmt | null
   /** Render the value in the muted colour (secondary figures). */
   muted?: boolean
+  /** Set to `false` to keep this column out of Group by. */
+  groupable?: boolean
+  /** Set to `false` to stop the column menu hiding it. */
+  hideable?: boolean
   /** Opt in to editing this column's cells right in the grid (see `CellEdit`). */
   edit?: CellEdit
 }

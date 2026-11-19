@@ -110,7 +110,9 @@ result objects as search hits, so arrow-key navigation and Enter work unchanged.
 | `filters` | `{key,op,value}[]` | same shape as the live filter bar |
 | `sorts` | `{key,dir}[]` | multi-sort preserved; `sortKey`/`sortDir` mirror `sorts[0]` |
 | `columns` | `{key,width,visible,frozen}[]` | re-applied by key onto the page's current column set, so schema changes don't break old views |
-| `groupBy`, `collapsed` | string / string[] | grouping state |
+| `groupBy`, `collapsed` | string / string[] | grouping: the column key, and the keys (`String(raw value)`) of the collapsed groups. Filled by the React grid since 2026-11-18 |
+| `aggregates` | map key → `none \| count \| sum \| avg \| min \| max` (optional) | footer aggregate override per column key; columns not listed use the dataset default |
+| `columns[]` order | array order | column display order (the array is in the order the grid shows the columns); `width` and `frozen` are the user's resized width and pin (left / right / null) |
 | `density` | `'default' \| 'compact'` | |
 | `isDefaultFor` | boolean | at most one `true` per (user, `pageKey`) |
 | `autoCreated` | boolean | born from a favorited ad-hoc state |

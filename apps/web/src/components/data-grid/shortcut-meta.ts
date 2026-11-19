@@ -14,4 +14,13 @@ export const DATA_GRID_SHORTCUTS: readonly ShortcutEntry[] = [
   { combo: 'Shift + click a header', desc: 'Add the column as a secondary sort; numbered badges show sort priority.' },
   { combo: 'Alt + ← / Alt + →', desc: 'Previous / next page of rows — same as the arrows in the pagination bar below the table.' },
   { combo: 'Right-click a row', desc: 'Row menu — the page’s row actions.' },
+  { combo: 'Right-click a header / header ▾ button', desc: 'Column menu — sort, pin left / right, move left / right, hide, group by, autofit, autofit all, reset layout.' },
+  { combo: 'Drag a column header', desc: 'Reorder columns (the column menu’s Move left / Move right does the same from the keyboard).' },
+  { combo: 'Drag a column edge', desc: 'Resize the column.' },
+  { combo: 'Double-click a column edge', desc: 'Autofit that column to its contents.' },
+  { combo: 'Click a group row', desc: 'When the grid is grouped: collapse or expand that group. Arrow keys and selection skip group rows.' },
+  { combo: 'Ctrl/Cmd + F', desc: 'Find in view — highlight matching cells in the rows shown and jump between them (the grid keeps every row).' },
+  { combo: 'Enter / Shift + Enter (in find)', desc: 'Next / previous match.' },
+  { combo: 'Esc (in find)', desc: 'Close find. With find open and focus in the grid, Esc closes the preview drawer first, then find, then clears the selection.' },
+  { combo: 'Click a footer cell', desc: 'When the totals row is on (Columns ▸ Totals row): choose that column’s aggregate — None, Count, Sum, Average, Min or Max.' },
 ]
