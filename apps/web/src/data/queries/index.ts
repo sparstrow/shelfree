@@ -6,8 +6,13 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import { type Api, type CollectionName, api } from '@/data/api'
 import {
   type FinishAssemblyOrderInput,
+  type ItemUnitAction,
+  bulkRemoveItemUnits,
   finishAssemblyOrder,
   postPurchaseReceipt,
+  restoreItemUnits,
+  saveItemWithUnits,
+  updateItemUnits,
 } from '@/data/api/commands'
 
 type RecordOf<K extends CollectionName> = Awaited<ReturnType<Api[K]['list']>>[number]
@@ -83,5 +88,78 @@ export function useFinishAssemblyOrder() {
           client.invalidateQueries({ queryKey: [name] }),
         ),
       ),
+  })
+}
+
+/** Update an item's unit set and keep `item.uom` in step (`itemUnits` + `items`). */
+export function useUpdateItemUnits() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ itemNo, action }: { itemNo: string; action: ItemUnitAction }) =>
+      updateItemUnits(itemNo, action),
+    onSuccess: (result) => {
+      client.setQueryData(queryKeys.detail('itemUnits', result.unitSet.itemNo), result.unitSet)
+      client.setQueryData(queryKeys.detail('items', result.item.no), result.item)
+      return Promise.all(
+        (['itemUnits', 'items'] as const).map((name) =>
+          client.invalidateQueries({ queryKey: [name] }),
+        ),
+      )
+    },
+  })
+}
+
+/** Bulk-remove item-unit pairs and keep affected items' `uom` in step. */
+export function useBulkRemoveItemUnits() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: bulkRemoveItemUnits,
+    onSuccess: (result) => {
+      for (const entry of result.updated) {
+        client.setQueryData(queryKeys.detail('itemUnits', entry.unitSet.itemNo), entry.unitSet)
+        client.setQueryData(queryKeys.detail('items', entry.item.no), entry.item)
+      }
+      return Promise.all(
+        (['itemUnits', 'items'] as const).map((name) =>
+          client.invalidateQueries({ queryKey: [name] }),
+        ),
+      )
+    },
+  })
+}
+
+/** Restore item unit sets (Undo) and keep each item's `uom` in step. */
+export function useRestoreItemUnits() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: restoreItemUnits,
+    onSuccess: (results) => {
+      for (const entry of results) {
+        client.setQueryData(queryKeys.detail('itemUnits', entry.unitSet.itemNo), entry.unitSet)
+        client.setQueryData(queryKeys.detail('items', entry.item.no), entry.item)
+      }
+      return Promise.all(
+        (['itemUnits', 'items'] as const).map((name) =>
+          client.invalidateQueries({ queryKey: [name] }),
+        ),
+      )
+    },
+  })
+}
+
+/** Create or update an item and keep its unit set aligned with `item.uom`. */
+export function useSaveItemWithUnits() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: saveItemWithUnits,
+    onSuccess: (result) => {
+      client.setQueryData(queryKeys.detail('itemUnits', result.unitSet.itemNo), result.unitSet)
+      client.setQueryData(queryKeys.detail('items', result.item.no), result.item)
+      return Promise.all(
+        (['itemUnits', 'items'] as const).map((name) =>
+          client.invalidateQueries({ queryKey: [name] }),
+        ),
+      )
+    },
   })
 }

@@ -81,7 +81,7 @@ same turn a page is ported.**
 | People ▸ Users | ported (in-place drawer with module permissions matrix, bulk actions, protected delete) |
 | People ▸ Employees | ported (in-place drawer, masked grid & export PII, bulk actions, reference-safe delete) |
 | Warehouse ▸ Items (list + item profile + item card) | ported |
-| Warehouse ▸ Units of Measure (item units) | ported (`/warehouse/units-of-measure` on `ListPage`, derived from `items` + `unitsOfMeasure`) |
+| Warehouse ▸ Units of Measure (item units) | ported (`/warehouse/units-of-measure` on `ListPage`, backed by `shelfree.v2.itemUnits`, shared with Item profile ▸ Units of measure) |
 | Production ▸ Bills of Materials (list + document) | ported |
 | Production ▸ Assembly Orders (list + document) | ported (full/partial Finish command, shortage guard, FinishDialog) |
 | Production ▸ Production Orders | ported (`/production/production-orders` renders shared `AssemblyOrdersPage`) |

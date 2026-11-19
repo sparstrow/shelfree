@@ -653,3 +653,5 @@ logic is `src/domain/grid-layout.ts` (tested in `grid-layout.test.ts`); view map
   and footer aggregates are computed client-side over the loaded rows today; with server paging the backend
   needs `groupBy` (group headers with counts) and aggregate queries over the whole filtered set. Security
   checklist: no PII or new compliance surface (view state only); nothing sensitive in localStorage.
+
+**Shell layout (2026-11-18):** the app shell and `html`/`body` use `overflow: clip`, so focusing a field or opening a popover can never scroll the document or the shell (it used to shift the whole app by up to 80 px). The top bar is a container: below ~670 px wide the New button shows its icon only (label kept as `title` / `aria-label`) and the page search shrinks to 120 px.

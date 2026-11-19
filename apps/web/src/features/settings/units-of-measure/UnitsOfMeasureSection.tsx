@@ -47,6 +47,7 @@ function Th({ children, help }: { children: string; help?: string }) {
 export function UnitsOfMeasureSection() {
   const custom = useList('unitsOfMeasure')
   const items = useList('items')
+  const unitSets = useList('itemUnits')
   const upsert = useUpsert('unitsOfMeasure')
   const remove = useRemove('unitsOfMeasure')
   const [cat, setCat] = useState('all')
@@ -56,7 +57,7 @@ export function UnitsOfMeasureSection() {
   const searchRef = useRef<HTMLInputElement>(null)
 
   const all = useMemo(() => allUnits(custom.data ?? []), [custom.data])
-  const used = useMemo(() => countByUnit(items.data ?? []), [items.data])
+  const used = useMemo(() => countByUnit(items.data ?? [], unitSets.data ?? []), [items.data, unitSets.data])
   const rows = useMemo(() => filterUnits(all, { cat, query }), [all, cat, query])
   const activeUnit = rows.find((u) => u.code === active)
   const loading = custom.isLoading || items.isLoading

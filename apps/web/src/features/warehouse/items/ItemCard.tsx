@@ -8,7 +8,7 @@ import { HelpTarget } from '@/components/help/HelpTarget'
 import type { HelpEntry, HelpMap } from '@/components/help/types'
 import { Switch } from '@/components/ui/switch'
 import { CommandError } from '@/data/api/commands'
-import { useList, useUpsert } from '@/data/queries'
+import { useList, useSaveItemWithUnits } from '@/data/queries'
 import type { Item, Vendor } from '@/data/schemas'
 import {
   COSTING_METHODS,
@@ -171,7 +171,8 @@ interface ItemCardFormProps {
 
 function ItemCardForm({ mode, items, vendors, saved }: ItemCardFormProps) {
   const navigate = useNavigate()
-  const upsert = useUpsert('items')
+  // Saves the item and its unit set together, so the set's base always equals `item.uom`.
+  const upsert = useSaveItemWithUnits()
 
   const editing = mode === 'edit'
   const lockedNo = saved?.no ?? ''

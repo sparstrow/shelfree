@@ -1,11 +1,20 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { api } from '@/data/api'
+import {
+  CommandError,
+  bulkRemoveItemUnits,
+  restoreItemUnits,
+  saveItemWithUnits,
+  updateItemUnits,
+} from '@/data/api/commands'
 import {
   DEFAULT_UNITS,
   type Uom,
   allUnits,
+  applyItemUnitSet,
   blankDraft,
   buildItemUnitRows,
+  buildItemUnitSummary,
   codeLocked,
   conversionText,
   countByUnit,
@@ -13,13 +22,22 @@ import {
   draftFromUnit,
   factorFromConv,
   filterUnits,
+  fixedSizeInItemBase,
   formatFactor,
   itemMasterPack,
   itemUnitKey,
+  itemUomAdd,
+  itemUomBaseSize,
+  itemUomComputePack,
+  itemUomDefault,
+  itemUomRemove,
+  itemUomSetBase,
+  itemUomSetQty,
   itemUomStateFor,
   removeUnitFromItemUom,
   sizeInBase,
   suggestUqc,
+  syncItemBaseUnit,
   unitFromDraft,
   uqcLabel,
   validateDraft,
@@ -196,5 +214,205 @@ describe('warehouse item unit register', () => {
       base: '',
       qty: {},
     })
+  })
+})
+
+describe('item unit set rules and sync helpers', () => {
+  it('adds units with duplicate check, sets qty with validation, and derives master pack', () => {
+    let set = itemUomDefault('ASH-PWH-18', 'nos')
+    expect(set).toEqual({ itemNo: 'ASH-PWH-18', list: ['NOS'], base: 'NOS', pack: '', qty: {} })
+
+    const dup = itemUomAdd(set, 'NOS', all)
+    expect(dup.ok).toBe(false)
+
+    const addedDoz = itemUomAdd(set, 'DOZ', all)
+    expect(addedDoz.ok).toBe(true)
+    if (!addedDoz.ok) return
+    set = addedDoz.unitSet
+    expect(set.pack).toBe('DOZ')
+
+    const addedBox = itemUomAdd(set, 'BOX', all)
+    expect(addedBox.ok).toBe(true)
+    if (!addedBox.ok) return
+    set = addedBox.unitSet
+
+    // Invalid conversions are refused.
+    expect(itemUomSetQty(set, 'BOX', 0, all).ok).toBe(false)
+    expect(itemUomSetQty(set, 'BOX', -4, all).ok).toBe(false)
+    expect(itemUomSetQty(set, 'BOX', 'abc', all).ok).toBe(false)
+    expect(itemUomSetQty(set, 'NOS', 12, all).ok).toBe(false)
+    expect(itemUomSetQty(set, 'DOZ', 24, all).ok).toBe(false)
+
+    const withBox = itemUomSetQty(set, 'BOX', 24, all)
+    expect(withBox.ok).toBe(true)
+    if (!withBox.ok) return
+    set = withBox.unitSet
+    expect(set.pack).toBe('BOX')
+    expect(itemUomComputePack(set, all)).toBe('BOX')
+
+    const summary = buildItemUnitSummary(set, all)
+    expect(summary.packLabel).toBe('Box (BOX)')
+    expect(summary.packSize).toBe(24)
+    expect(summary.availableToAdd.some((u) => u.code === 'PNL')).toBe(true)
+    expect(summary.availableToAdd.some((u) => u.code === 'BOX')).toBe(false)
+
+    // Clearing BOX qty falls back to DOZ as master pack.
+    const cleared = itemUomSetQty(set, 'BOX', null, all)
+    expect(cleared.ok).toBe(true)
+    if (cleared.ok) expect(cleared.unitSet.pack).toBe('DOZ')
+  })
+
+  it('computes fixed conversions relative to the active base and prevents cross-category fixed guesses', () => {
+    expect(fixedSizeInItemBase('G', 'KG', all)).toBe(0.001)
+    expect(fixedSizeInItemBase('KG', 'G', all)).toBe(1000)
+    expect(fixedSizeInItemBase('PNL', 'NOS', all)).toBe(1)
+    expect(fixedSizeInItemBase('KG', 'NOS', all)).toBeNull()
+    expect(fixedSizeInItemBase('DOZ', 'BOX', all)).toBeNull()
+
+    let set = itemUomDefault('RM-CONE-BULK', 'KG')
+    const addedG = itemUomAdd(set, 'G', all)
+    expect(addedG.ok).toBe(true)
+    if (!addedG.ok) return
+    set = addedG.unitSet
+    // G is 0.001 KG (<= 1), so it is not promoted to Master pack.
+    expect(set.pack).toBe('')
+    expect(itemUomBaseSize(set, 'G', all)).toBe(0.001)
+
+    const asG = itemUomSetBase(set, 'G', all)
+    expect(asG.ok).toBe(true)
+    if (!asG.ok) return
+    expect(asG.unitSet.base).toBe('G')
+    expect(asG.unitSet.pack).toBe('KG')
+    expect(itemUomBaseSize(asG.unitSet, 'KG', all)).toBe(1000)
+
+    expect(itemUomSetBase(set, 'DOZ', all).ok).toBe(false)
+  })
+
+  it('promotes the next unit on base removal, clears pack and qty, and aligns item.uom via one helper', async () => {
+    const items = await api.items.list()
+    const item = items.find((it) => it.no === 'ASH-PWH-18')!
+
+    let set = itemUomDefault(item.no, item.uom)
+    set = (itemUomAdd(set, 'DOZ', all) as { ok: true; unitSet: typeof set }).unitSet
+    set = (itemUomAdd(set, 'BOX', all) as { ok: true; unitSet: typeof set }).unitSet
+    set = (itemUomSetQty(set, 'BOX', 24, all) as { ok: true; unitSet: typeof set }).unitSet
+
+    // Removing base NOS promotes DOZ to base and keeps BOX as master pack.
+    const removedBase = itemUomRemove(set, 'NOS', all)
+    expect(removedBase.ok).toBe(true)
+    if (!removedBase.ok) return
+    expect(removedBase.unitSet).toEqual({
+      itemNo: 'ASH-PWH-18',
+      list: ['DOZ', 'BOX'],
+      base: 'DOZ',
+      pack: 'BOX',
+      qty: { BOX: 24 },
+    })
+
+    const aligned = applyItemUnitSet(item, removedBase.unitSet)
+    expect(aligned.item.uom).toBe('DOZ')
+    expect(aligned.unitSet.base).toBe('DOZ')
+
+    // Removing the master pack clears pack when no other pack unit > 1 remains.
+    const removedPack = itemUomRemove(removedBase.unitSet, 'BOX', all)
+    expect(removedPack.ok).toBe(true)
+    if (!removedPack.ok) return
+    expect(removedPack.unitSet).toEqual({
+      itemNo: 'ASH-PWH-18',
+      list: ['DOZ'],
+      base: 'DOZ',
+      pack: '',
+      qty: {},
+    })
+
+    // Syncing from an item card edit attaches the new base unit and keeps both aligned.
+    const cardSync = syncItemBaseUnit({ ...item, uom: 'PCS' }, removedPack.unitSet, all)
+    expect(cardSync.item.uom).toBe('PCS')
+    expect(cardSync.unitSet).toEqual({
+      itemNo: 'ASH-PWH-18',
+      list: ['PCS', 'DOZ'],
+      base: 'PCS',
+      pack: 'DOZ',
+      qty: {},
+    })
+  })
+})
+
+describe('itemUnits store and atomic commands', () => {
+  afterEach(async () => {
+    await Promise.all([api.itemUnits.reset(), api.items.reset()])
+  })
+
+  it('seeds one base-only unit set per seeded item', async () => {
+    const [items, sets] = await Promise.all([api.items.list(), api.itemUnits.list()])
+    expect(sets).toHaveLength(items.length)
+    for (const item of items) {
+      const set = sets.find((s) => s.itemNo === item.no)
+      expect(set).toEqual({
+        itemNo: item.no,
+        list: [item.uom],
+        base: item.uom,
+        pack: '',
+        qty: {},
+      })
+    }
+  })
+
+  it('persists unit edits and keeps item.uom in step on base changes, bulk remove, undo, and item save', async () => {
+    await updateItemUnits('ASH-PWH-18', { type: 'add', code: 'BOX' })
+    const afterQty = await updateItemUnits('ASH-PWH-18', { type: 'setQty', code: 'BOX', qty: 24 })
+    expect(afterQty.unitSet.pack).toBe('BOX')
+    expect(afterQty.item.uom).toBe('NOS')
+
+    // Changing base updates both itemUnits and item.uom.
+    const afterBase = await updateItemUnits('ASH-PWH-18', { type: 'setBase', code: 'BOX' })
+    expect(afterBase.unitSet.base).toBe('BOX')
+    expect(afterBase.item.uom).toBe('BOX')
+    expect((await api.items.get('ASH-PWH-18'))?.uom).toBe('BOX')
+    expect((await api.itemUnits.get('ASH-PWH-18'))?.base).toBe('BOX')
+
+    // Invalid command fails without partial writes.
+    await expect(updateItemUnits('ASH-PWH-18', { type: 'setQty', code: 'NOS', qty: 0 })).rejects.toThrow(CommandError)
+    expect((await api.items.get('ASH-PWH-18'))?.uom).toBe('BOX')
+
+    // Bulk removing both units on ASH-PWH-18 clears both list and item.uom; restore puts them back.
+    const bulk = await bulkRemoveItemUnits([
+      { itemNo: 'ASH-PWH-18', code: 'BOX' },
+      { itemNo: 'ASH-PWH-18', code: 'NOS' },
+    ])
+    expect(bulk.updated[0].unitSet.list).toEqual([])
+    expect((await api.items.get('ASH-PWH-18'))?.uom).toBe('')
+
+    await restoreItemUnits(bulk.previousSets)
+    expect((await api.items.get('ASH-PWH-18'))?.uom).toBe('BOX')
+    expect((await api.itemUnits.get('ASH-PWH-18'))?.list).toEqual(['NOS', 'BOX'])
+
+    // Saving a new item through saveItemWithUnits creates its unit set too.
+    const sample = (await api.items.get('ASH-PWH-18'))!
+    const created = await saveItemWithUnits({ ...sample, no: 'ASH-NEW-1', uom: 'DOZ' })
+    expect(created.unitSet).toEqual({
+      itemNo: 'ASH-NEW-1',
+      list: ['DOZ'],
+      base: 'DOZ',
+      pack: '',
+      qty: {},
+    })
+    expect((await api.itemUnits.get('ASH-NEW-1'))?.base).toBe('DOZ')
+  })
+})
+
+describe('countByUnit with stored unit sets', () => {
+  it('counts pack units once per item alongside the base unit', () => {
+    const items = [
+      { no: 'A', uom: 'NOS' },
+      { no: 'B', uom: 'NOS' },
+    ]
+    const sets = [
+      { itemNo: 'A', list: ['NOS', 'BOX'] },
+      { itemNo: 'B', list: ['NOS'] },
+    ]
+    const used = countByUnit(items, sets)
+    expect(used.get('NOS')).toBe(2)
+    expect(used.get('BOX')).toBe(1)
   })
 })
