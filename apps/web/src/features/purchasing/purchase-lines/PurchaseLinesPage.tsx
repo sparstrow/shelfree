@@ -1,10 +1,12 @@
 import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import { Eye } from 'lucide-react'
 import { useMemo } from 'react'
+import { toast } from 'sonner'
 import type { Dataset } from '@/components/data-grid/model'
-import { ListPage } from '@/components/list-page/ListPage'
+import { type ListBulkEdit, ListPage } from '@/components/list-page/ListPage'
+import { useBulkEditPurchaseLines, useBulkUpsert, useList } from '@/data/queries'
 import { type Employee, PO_STATUSES, type Vendor } from '@/data/schemas'
-import { useList } from '@/data/queries'
+import { pluralNoun } from '@/domain/bulk-actions'
 import { type PurchaseLineRow, driftText, purchaseLineRows } from '@/domain/purchase-lines'
 import { EM_DASH, fmtDate, int, money, todayLocal } from '@/lib/format'
 
@@ -120,6 +122,8 @@ export function PurchaseLinesPage() {
   const prices = useList('purchasePrices')
   const vendors = useList('vendors')
   const employees = useList('employees')
+  const { mutateAsync: runBulkEditLines } = useBulkEditPurchaseLines()
+  const { mutateAsync: runBulkUpsertOrders } = useBulkUpsert('purchaseOrders')
 
   const loaded = orders.data && receipts.data && prices.data
   const rows = useMemo(
@@ -129,6 +133,45 @@ export function PurchaseLinesPage() {
   const dataset = useMemo(
     () => purchaseLineDataset(vendors.data ?? [], employees.data ?? [], rows ?? []),
     [vendors.data, employees.data, rows],
+  )
+
+  const bulkEdit = useMemo<ListBulkEdit<PurchaseLineRow>>(
+    () => ({
+      fields: [{ key: 'qty', label: 'Qty ordered', kind: 'num', min: 1, step: 1 }],
+      lockState: (r) => (r.lock === 'Open' ? 'open' : r.lock === 'Locked' ? 'locked' : 'final'),
+      lockGroup: (r) => r.po,
+      lockedText: (t) =>
+        `${pluralNoun(t.locked.length, 'line', 'lines')} on ${pluralNoun(t.lockedGroups, 'locked order', 'locked orders')} — reopen to edit`,
+      finalText: (t) => `${int(t.final.length)} can’t be edited — their orders are received, closed or cancelled`,
+      reopenLabel: (t) =>
+        `Reopen ${pluralNoun(t.lockedGroups, 'order', 'orders')} & apply to ${int(t.open.length + t.locked.length)}`,
+      apply: async (selected, field, value, { reopen }) => {
+        const res = await runBulkEditLines({
+          lineIds: selected.map((r) => r.id),
+          qty: Number(value),
+          reopen,
+        })
+        if (res.edited === 0) {
+          return res.short
+            ? 'Nothing changed — the new quantity is below what’s already received.'
+            : 'Nothing to change.'
+        }
+        const desc = [
+          res.reopened ? `${pluralNoun(res.reopened, 'order', 'orders')} reopened` : '',
+          res.skipped ? `${int(res.skipped)} skipped` : '',
+        ]
+          .filter(Boolean)
+          .join(' · ')
+        toast(`${field.label} updated on ${pluralNoun(res.edited, 'line', 'lines')}`, {
+          description: desc || res.updated.map((p) => p.no).join(', '),
+          action: {
+            label: 'Undo',
+            onClick: () => void runBulkUpsertOrders(res.previous),
+          },
+        })
+      },
+    }),
+    [runBulkEditLines, runBulkUpsertOrders],
   )
 
   return (
@@ -142,6 +185,7 @@ export function PurchaseLinesPage() {
       onRefresh={() => Promise.all([orders.refetch(), receipts.refetch(), prices.refetch()])}
       recordPath={(r) => `/purchasing/purchase-orders/${r.po}`}
       openLabel="Open purchase order"
+      bulkEdit={bulkEdit}
       actions={[
         { label: 'View order in list', icon: Eye, run: (r) => void navigate({ to: '/purchasing/purchase-orders', search: { sel: r.po } }) },
       ]}
