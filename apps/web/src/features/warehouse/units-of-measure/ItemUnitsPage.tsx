@@ -1,11 +1,17 @@
 import { Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { type ListBulkAction, type ListDelete, type ListPreview, ListPage } from '@/components/list-page/ListPage'
-import { useList, useUpsert } from '@/data/queries'
-import type { Item } from '@/data/schemas'
-import { type ItemUnitRow, allUnits, buildItemUnitRows, formatFactor } from '@/domain/units-of-measure'
+import { useBulkRemoveItemUnits, useList, useRestoreItemUnits, useUpdateItemUnits } from '@/data/queries'
+import type { ItemUnitSet } from '@/data/schemas'
+import {
+  type ItemUnitRow,
+  allUnits,
+  buildItemUnitRows,
+  formatFactor,
+  itemUomDefault,
+} from '@/domain/units-of-measure'
 import { EM_DASH } from '@/lib/format'
 import { itemUnitDataset } from './dataset'
 
@@ -16,22 +22,36 @@ export interface ItemUnitsPageProps {
 
 /**
  * Warehouse ▸ Units of Measure — register of every unit registered on an item.
- * Exceptions to the list template: derived from items + global units, so no New
- * button here (units are defined in Settings ▸ Units of measure and attached on
- * the item profile's Units of measure tab); opening a row goes directly to that tab.
+ * Exceptions to the list template: derived from `itemUnits` + `items` + global
+ * units, so no New button here (units are defined in Settings ▸ Units of measure
+ * and attached on the item profile's Units of measure tab); opening a row goes
+ * directly to that tab.
  */
 export function ItemUnitsPage({ sel }: ItemUnitsPageProps = {}) {
   const items = useList('items')
+  const itemUnits = useList('itemUnits')
   const customUnits = useList('unitsOfMeasure')
-  const upsertItem = useUpsert('items')
+  const updateItemUnits = useUpdateItemUnits()
+  const bulkRemoveUnits = useBulkRemoveItemUnits()
+  const restoreItemUnits = useRestoreItemUnits()
   const [bulkDeleting, setBulkDeleting] = useState<{ rows: ItemUnitRow[]; clearSelection: () => void } | null>(null)
+  const lastRemovedRef = useRef(new Map<string, ItemUnitSet>())
 
   const itemList = useMemo(() => items.data ?? [], [items.data])
   const units = useMemo(() => allUnits(customUnits.data ?? []), [customUnits.data])
 
+  const itemUnitsMap = useMemo(() => {
+    const map: Record<string, ItemUnitSet> = {}
+    for (const entry of itemUnits.data ?? []) map[entry.itemNo] = entry
+    return map
+  }, [itemUnits.data])
+
   const rows = useMemo(
-    () => (items.data && customUnits.data ? buildItemUnitRows(items.data, units) : undefined),
-    [items.data, customUnits.data, units],
+    () =>
+      items.data && itemUnits.data && customUnits.data
+        ? buildItemUnitRows(items.data, units, itemUnitsMap)
+        : undefined,
+    [items.data, itemUnits.data, customUnits.data, units, itemUnitsMap],
   )
   const dataset = useMemo(() => itemUnitDataset(rows ?? []), [rows])
 
@@ -39,12 +59,24 @@ export function ItemUnitsPage({ sel }: ItemUnitsPageProps = {}) {
     describe: (r) => `${r.code} · ${r.name} on ${r.itemNo}`,
     run: async (row) => {
       const item = itemList.find((it) => it.no === row.itemNo)
-      if (!item || item.uom !== row.code) return
-      await upsertItem.mutateAsync({ ...item, uom: '' })
+      const prev = itemUnitsMap[row.itemNo] ?? itemUomDefault(row.itemNo, item?.uom ?? '')
+      lastRemovedRef.current.set(row.no, structuredClone(prev))
+      try {
+        await updateItemUnits.mutateAsync({ itemNo: row.itemNo, action: { type: 'remove', code: row.code } })
+      } catch (err) {
+        lastRemovedRef.current.delete(row.no)
+        throw err
+      }
     },
     undo: (row) => {
-      const item = itemList.find((it) => it.no === row.itemNo)
-      if (item) upsertItem.mutate({ ...item, uom: row.code })
+      const prev = lastRemovedRef.current.get(row.no)
+      if (!prev) return
+      lastRemovedRef.current.delete(row.no)
+      void restoreItemUnits.mutateAsync([prev]).catch(() => {
+        toast.error('Could not restore item unit', {
+          description: 'Check your connection and try again.',
+        })
+      })
     },
   }
 
@@ -61,16 +93,14 @@ export function ItemUnitsPage({ sel }: ItemUnitsPageProps = {}) {
     if (!bulkDeleting) return
     const { rows: selectedRows, clearSelection } = bulkDeleting
     setBulkDeleting(null)
-    const snapshots = new Map<string, Item>()
-    for (const row of selectedRows) {
-      if (snapshots.has(row.itemNo)) continue
-      const item = itemList.find((it) => it.no === row.itemNo)
-      if (item && item.uom === row.code) snapshots.set(row.itemNo, item)
-    }
-    const affected = [...snapshots.values()]
-    if (affected.length === 0) return
+    if (selectedRows.length === 0) return
+
+    let previousSets: ItemUnitSet[]
     try {
-      await Promise.all(affected.map((item) => upsertItem.mutateAsync({ ...item, uom: '' })))
+      const res = await bulkRemoveUnits.mutateAsync(
+        selectedRows.map((row) => ({ itemNo: row.itemNo, code: row.code })),
+      )
+      previousSets = res.previousSets
     } catch {
       toast.error('Could not remove selected item units', {
         description: 'Check your connection and try again.',
@@ -78,11 +108,15 @@ export function ItemUnitsPage({ sel }: ItemUnitsPageProps = {}) {
       return
     }
     clearSelection()
-    toast(`${affected.length} ${affected.length === 1 ? 'item unit' : 'item units'} removed`, {
+    toast(`${selectedRows.length} ${selectedRows.length === 1 ? 'item unit' : 'item units'} removed`, {
       action: {
         label: 'Undo',
         onClick: () => {
-          for (const prev of affected) upsertItem.mutate(prev)
+          void restoreItemUnits.mutateAsync(previousSets).catch(() => {
+            toast.error('Could not restore item units', {
+              description: 'Check your connection and try again.',
+            })
+          })
         },
       },
     })
@@ -127,9 +161,9 @@ export function ItemUnitsPage({ sel }: ItemUnitsPageProps = {}) {
       <ListPage
         dataset={dataset}
         rows={rows}
-        isLoading={items.isPending || customUnits.isPending}
-        error={items.error ?? customUnits.error}
-        onRefresh={() => Promise.all([items.refetch(), customUnits.refetch()])}
+        isLoading={items.isPending || itemUnits.isPending || customUnits.isPending}
+        error={items.error ?? itemUnits.error ?? customUnits.error}
+        onRefresh={() => Promise.all([items.refetch(), itemUnits.refetch(), customUnits.refetch()])}
         recordPath={(r) => `/warehouse/items/${r.itemNo}?tab=units`}
         openLabel="Open on item"
         remove={remove}

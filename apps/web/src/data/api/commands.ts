@@ -4,13 +4,35 @@
  * and re-validate everything server-side. The mock versions here apply the
  * same domain rules to the local collections.
  */
-import type { AssemblyOrder, Favorite, PurchaseReceipt, SavedView } from '@/data/schemas'
+import {
+  type AssemblyOrder,
+  type Favorite,
+  type SavedView,
+  type Item,
+  type ItemUnitSet,
+  type PurchaseReceipt,
+  itemSchema,
+  itemUnitSetSchema,
+} from '@/data/schemas'
 import { DEFAULT_PRODUCTION_SETTINGS, aoFinish } from '@/domain/assembly-order'
 import { dropFavorite, favoritesOfView, nextFavoriteOrder, renumberFavorites, sortFavorites } from '@/domain/favorites'
 import { poStatusAfterReceipts } from '@/domain/purchase-order'
 import { postReceiptError, stockToAdd } from '@/domain/purchase-receipt'
 import { type ViewStateData, dedupeViewName, withDefaultView } from '@/domain/saved-views'
 import { CURRENT_USER_ID, newId } from './favorites'
+import {
+  type ItemUomUpdateResult,
+  allUnits,
+  applyItemUnitSet,
+  itemUomAdd,
+  itemUomDefault,
+  itemUomNormalize,
+  itemUomRemove,
+  itemUomSetBase,
+  itemUomSetQty,
+  itemUomValidate,
+  syncItemBaseUnit,
+} from '@/domain/units-of-measure'
 import { api } from './index'
 
 export class CommandError extends Error {}
@@ -247,4 +269,225 @@ export async function dropFavoriteOn(fromId: string, toId: string): Promise<void
 export async function restoreFavorite(favorite: Favorite): Promise<void> {
   const favs = await api.favorites.list()
   await saveFavoriteOrder(sortFavorites([...favs.filter((f) => f.id !== favorite.id), favorite]))
+}
+
+export type ItemUnitAction =
+  | { type: 'add'; code: string }
+  | { type: 'remove'; code: string }
+  | { type: 'setBase'; code: string }
+  | { type: 'setQty'; code: string; qty: number | string | null }
+  | { type: 'replace'; unitSet: ItemUnitSet }
+
+export interface ItemUnitsSyncResult {
+  item: Item
+  unitSet: ItemUnitSet
+}
+
+interface ItemUnitChange {
+  prevItem: Item
+  prevSet: ItemUnitSet | null
+  nextItem: Item
+  nextSet: ItemUnitSet
+}
+
+let itemUnitsQueue: Promise<unknown> = Promise.resolve()
+
+function enqueueItemUnits<T>(task: () => Promise<T>): Promise<T> {
+  const next = itemUnitsQueue.then(task, task)
+  itemUnitsQueue = next.then(
+    () => undefined,
+    () => undefined,
+  )
+  return next
+}
+
+async function persistItemUnitChanges(changes: readonly ItemUnitChange[]): Promise<void> {
+  if (changes.length === 0) return
+  const nextSets = changes.map((c) => c.nextSet)
+  const changedItems = changes.filter((c) => c.nextItem.uom !== c.prevItem.uom).map((c) => c.nextItem)
+
+  await api.itemUnits.upsertMany(nextSets)
+  if (changedItems.length === 0) return
+
+  try {
+    await api.items.upsertMany(changedItems)
+  } catch (err) {
+    const toRestore = changes.flatMap((c) => (c.prevSet ? [c.prevSet] : []))
+    const toRemove = changes.filter((c) => c.prevSet === null).map((c) => c.nextSet.itemNo)
+    if (toRestore.length) await api.itemUnits.upsertMany(toRestore).catch(() => {})
+    for (const id of toRemove) await api.itemUnits.remove(id).catch(() => {})
+    throw err
+  }
+}
+
+/**
+ * Update one item's unit set and keep `item.uom` equal to `unitSet.base`
+ * (`PATCH /items/{no}/units`). Writes both or neither.
+ */
+export function updateItemUnits(itemNo: string, action: ItemUnitAction): Promise<ItemUnitsSyncResult> {
+  return enqueueItemUnits(async () => {
+    const [item, existingSet, customUnits] = await Promise.all([
+      api.items.get(itemNo),
+      api.itemUnits.get(itemNo),
+      api.unitsOfMeasure.list(),
+    ])
+    if (!item) throw new CommandError(`Item ${itemNo} not found.`)
+
+    const units = allUnits(customUnits)
+    const current = itemUomNormalize(existingSet ?? itemUomDefault(item.no, item.uom), units)
+
+    let result: ItemUomUpdateResult
+    switch (action.type) {
+      case 'add':
+        result = itemUomAdd(current, action.code, units)
+        break
+      case 'remove':
+        result = itemUomRemove(current, action.code, units)
+        break
+      case 'setBase':
+        result = itemUomSetBase(current, action.code, units)
+        break
+      case 'setQty':
+        result = itemUomSetQty(current, action.code, action.qty, units)
+        break
+      case 'replace':
+        if (action.unitSet.itemNo !== item.no) {
+          throw new CommandError(`Unit set ${action.unitSet.itemNo} does not match item ${item.no}.`)
+        }
+        result = itemUomValidate(action.unitSet, units)
+        break
+    }
+    if (!result.ok) throw new CommandError(result.error)
+
+    const synced = applyItemUnitSet(item, result.unitSet)
+    const nextItem = itemSchema.parse(synced.item)
+    const nextSet = itemUnitSetSchema.parse(synced.unitSet)
+
+    await persistItemUnitChanges([{ prevItem: item, prevSet: existingSet, nextItem, nextSet }])
+    return { item: nextItem, unitSet: nextSet }
+  })
+}
+
+/**
+ * Remove one or more `(itemNo, code)` pairs in a single transaction
+ * (`DELETE /item-units/bulk`), keeping every affected item's `uom` in step.
+ */
+export function bulkRemoveItemUnits(
+  targets: readonly { itemNo: string; code: string }[],
+): Promise<{ updated: ItemUnitsSyncResult[]; previousSets: ItemUnitSet[] }> {
+  return enqueueItemUnits(async () => {
+    if (targets.length === 0) return { updated: [], previousSets: [] }
+    const [items, existingSets, customUnits] = await Promise.all([
+      api.items.list(),
+      api.itemUnits.list(),
+      api.unitsOfMeasure.list(),
+    ])
+    const units = allUnits(customUnits)
+    const itemsByNo = new Map(items.map((it) => [it.no, it]))
+    const setsByNo = new Map(existingSets.map((s) => [s.itemNo, s]))
+
+    const grouped = new Map<string, string[]>()
+    for (const target of targets) {
+      const codes = grouped.get(target.itemNo) ?? []
+      if (!codes.includes(target.code)) codes.push(target.code)
+      grouped.set(target.itemNo, codes)
+    }
+
+    const previousSets: ItemUnitSet[] = []
+    const changes: ItemUnitChange[] = []
+    for (const [itemNo, codes] of grouped) {
+      const item = itemsByNo.get(itemNo)
+      if (!item) throw new CommandError(`Item ${itemNo} not found.`)
+      const prevSetRaw = setsByNo.get(itemNo) ?? null
+      let current = itemUomNormalize(prevSetRaw ?? itemUomDefault(item.no, item.uom), units)
+      previousSets.push(current)
+
+      for (const code of codes) {
+        const res = itemUomRemove(current, code, units)
+        if (!res.ok) throw new CommandError(res.error)
+        current = res.unitSet
+      }
+
+      const synced = applyItemUnitSet(item, current)
+      changes.push({
+        prevItem: item,
+        prevSet: prevSetRaw,
+        nextItem: itemSchema.parse(synced.item),
+        nextSet: itemUnitSetSchema.parse(synced.unitSet),
+      })
+    }
+
+    await persistItemUnitChanges(changes)
+    return {
+      updated: changes.map((c) => ({ item: c.nextItem, unitSet: c.nextSet })),
+      previousSets,
+    }
+  })
+}
+
+/**
+ * Restore saved per-item unit set snapshots (used for Undo), keeping each
+ * item's `uom` in step. Writes all or none.
+ */
+export function restoreItemUnits(previousSets: readonly ItemUnitSet[]): Promise<ItemUnitsSyncResult[]> {
+  return enqueueItemUnits(async () => {
+    if (previousSets.length === 0) return []
+    const [items, existingSets, customUnits] = await Promise.all([
+      api.items.list(),
+      api.itemUnits.list(),
+      api.unitsOfMeasure.list(),
+    ])
+    const units = allUnits(customUnits)
+    const itemsByNo = new Map(items.map((it) => [it.no, it]))
+    const setsByNo = new Map(existingSets.map((s) => [s.itemNo, s]))
+
+    const byItem = new Map<string, ItemUnitSet>()
+    for (const s of previousSets) byItem.set(s.itemNo, s)
+
+    const changes: ItemUnitChange[] = []
+    for (const prev of byItem.values()) {
+      const item = itemsByNo.get(prev.itemNo)
+      if (!item) throw new CommandError(`Item ${prev.itemNo} not found.`)
+      const validated = itemUomValidate(prev, units)
+      if (!validated.ok) throw new CommandError(validated.error)
+      const synced = applyItemUnitSet(item, validated.unitSet)
+      changes.push({
+        prevItem: item,
+        prevSet: setsByNo.get(prev.itemNo) ?? null,
+        nextItem: itemSchema.parse(synced.item),
+        nextSet: itemUnitSetSchema.parse(synced.unitSet),
+      })
+    }
+
+    await persistItemUnitChanges(changes)
+    return changes.map((c) => ({ item: c.nextItem, unitSet: c.nextSet }))
+  })
+}
+
+/**
+ * Create or update an item record and keep its unit set in step with `item.uom`
+ * (`POST /items` / `PATCH /items/{no}`). Writes both or neither.
+ */
+export function saveItemWithUnits(item: Item): Promise<ItemUnitsSyncResult> {
+  return enqueueItemUnits(async () => {
+    const [existingItem, existingSet, customUnits] = await Promise.all([
+      api.items.get(item.no),
+      api.itemUnits.get(item.no),
+      api.unitsOfMeasure.list(),
+    ])
+    const units = allUnits(customUnits)
+    const synced = syncItemBaseUnit(item, existingSet, units)
+    const nextItem = itemSchema.parse(synced.item)
+    const nextSet = itemUnitSetSchema.parse(synced.unitSet)
+
+    await api.items.upsert(nextItem)
+    try {
+      await api.itemUnits.upsert(nextSet)
+    } catch (err) {
+      if (existingItem) await api.items.upsert(existingItem).catch(() => {})
+      else await api.items.remove(nextItem.no).catch(() => {})
+      throw err
+    }
+    return { item: nextItem, unitSet: nextSet }
+  })
 }

@@ -535,13 +535,13 @@ export function defaultItemUomState(baseUom: string): ItemUomState {
   }
 }
 
-/** Automatically derive the Master pack as the non-base unit holding the most base units. */
+/** Automatically derive the Master pack as the non-base unit holding the most base units (> 1). */
 export function computeMasterPack(
   state: ItemUomState,
   uoms: readonly UomDefinition[] = SYSTEM_UOMS,
 ): string {
   let bestCode = ''
-  let bestSize = 0
+  let bestSize = 1
   for (const code of state.list) {
     if (code === state.base) continue
     const size = itemUomBaseSize(state, code, uoms)
