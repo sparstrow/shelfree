@@ -47,7 +47,7 @@ the new app yet" inside the frame, with a link to a ported section.
 | Workspace | `/settings/terminology` Terminology | list | not moved yet |
 | Workspace | `/settings/cfg-nav` Navigation | custom | not moved yet |
 | Workspace | `/settings/cfg-favorites` Favorites & views (workspace part) | custom | not moved yet |
-| Workspace | `/settings/cfg-states` States & territories | list | not moved yet |
+| Workspace | `/settings/cfg-states` States & territories | list | yes (read-only reference list + Check a GSTIN) |
 | Purchasing | `/purchasing/settings/carrier-types` Carrier types | list | yes |
 | Purchasing | `/purchasing/settings/sequences` Number sequences (slice) | list, shared | yes |
 | Purchasing | `/purchasing/settings/statuses` Statuses & stages (slice) | list, shared | yes |
@@ -61,13 +61,13 @@ the new app yet" inside the frame, with a link to a ported section.
 | Warehouse | `/warehouse/settings/sequences`, `fields` (slices) | list, shared | yes |
 | Production | `/production/settings/assembly` Assembly & production | form | not moved yet |
 | Production | `/production/settings/sequences`, `statuses` (slices) | list, shared | yes (both) |
-| Finance | `/finance/settings/cfg-taxset` Tax settings | form | not moved yet |
-| Finance | `/finance/settings/tax-codes` Tax codes (slice) | list, shared | not moved yet |
+| Finance | `/finance/settings/cfg-taxset` Tax settings | form | yes |
+| Finance | `/finance/settings/tax-codes` Tax codes (slice) | list, shared | yes (no `module`: the slice and the shared list are the same rows) |
 | Finance | `/finance/settings/sequences` Number sequences (slice) | list, shared | yes, but no document type belongs to Finance yet, so it shows an empty read-only list |
 | People | `/people/settings/fields`, `sequences` (slices) | list, shared | yes (both) |
 | Shared lists | `/settings/shared/sequences` Number sequences | list | yes |
 | Shared lists | `/settings/shared/statuses`, `fields`, `terms` | list | yes
-| Shared lists | `/settings/shared/tax-codes` | list | not moved yet |
+| Shared lists | `/settings/shared/tax-codes` | list | yes |
 | Personal | `/settings/me-profile`, `me-appearance`, `me-notifications`, `me-language`, `me-defaults`, `me-security` | form | not moved yet |
 | Personal | `/settings/me-favorites` Favorites & views | custom | not moved yet |
 | Personal | `/settings/shortcuts` Keyboard shortcuts | custom | yes |
@@ -336,6 +336,8 @@ Tax-relevant identity fields (GSTIN, PAN, legal name) keep their change history.
     statuses and custom fields carry a single `module` derived from their document type / flow / entity (each
     belongs to exactly one module); payment terms carry `modules: string[]` (a term serves Purchasing and Sales)
     and a module slice filters by inclusion.
+    Tax codes (run 2.3) carry **no** module: a code is a national rate used in every module, so the Finance slice
+    and `/settings/shared/tax-codes` are the same rows.
   - Spec: Find a setting highlights the row. Code: only form sections mark rows; list sections only open.
   - Spec: Team & roles lists the Manage settings column. The column ships on People ▸ Users; Team & roles is
     not moved yet.

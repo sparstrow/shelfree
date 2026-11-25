@@ -5,6 +5,13 @@
  */
 import { z } from 'zod'
 import { taxCalcSchema } from '@/data/schemas'
+import {
+  BRANCH_VALUE_VALUES,
+  COMP_INTER_STATE_VALUES,
+  ITC_BOOKING_VALUES,
+  PAPER_TRANSFER_VALUES,
+  TAX_SETTINGS_DEFAULTS,
+} from '@/domain/tax-settings'
 
 export const settingsSchema = z.object({
   purchasing: z.object({
@@ -19,14 +26,28 @@ export const settingsSchema = z.object({
     /** Round the document total to the rupee. */
     roundTotal: z.boolean(),
     /** A composition vendor supplying from another state: warn, or block issuing. */
-    compInterState: z.enum(['warn', 'block']),
+    compInterState: z.enum(COMP_INTER_STATE_VALUES),
+    /** Chart-of-accounts number the rounding difference posts to (Settings ▸ Tax settings). */
+    roundOffAcct: z.string(),
+    /** People with the override permission may change the tax on one line. */
+    lineOverride: z.boolean(),
+    /** Flag a party whose GSTIN state differs from its address state. */
+    mismatchWarn: z.boolean(),
+    /** Bill-to and ship-to in different states: warn, or block the purchase order. */
+    paperTransfer: z.enum(PAPER_TRANSFER_VALUES),
+    /** When input tax credit is booked. */
+    itcBooking: z.enum(ITC_BOOKING_VALUES),
+    /** The value put on a branch invoice. */
+    branchValue: z.enum(BRANCH_VALUE_VALUES),
+    /** Share of selling price (1–100) when branchValue is pctSell. */
+    branchPct: z.number().min(1).max(100),
   }),
 })
 export type Settings = z.infer<typeof settingsSchema>
 
 export const DEFAULT_SETTINGS: Settings = {
   purchasing: { lockCostToPriceList: true, blockBelowMinQty: true },
-  tax: { taxCalc: 'line', roundTotal: true, compInterState: 'warn' },
+  tax: { ...TAX_SETTINGS_DEFAULTS },
 }
 
 const KEY = 'shelfree.v2.settings'

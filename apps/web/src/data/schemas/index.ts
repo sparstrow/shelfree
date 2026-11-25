@@ -797,3 +797,46 @@ export const itemCategorySchema = z.object({
   active: z.boolean(),
 })
 export type ItemCategory = z.infer<typeof itemCategorySchema>
+
+// ── Settings ▸ Tax codes (Phase 2 run 2.3) ───────────────────────────────────
+export const TAX_CODE_APPLIES = ['Goods', 'Services', 'Both'] as const
+/** One dated rate: the rate in force from `from` until the next row. */
+export const taxRateRowSchema = z.object({
+  /** Percent, 0–100, up to two decimals. */
+  rate: z.number().min(0).max(100),
+  from: isoDate,
+})
+export type TaxRateRow = z.infer<typeof taxRateRowSchema>
+/**
+ * A national GST rate code. `kind: 'goods'` (GOODS only) has no rates — the line takes the rate
+ * of the goods on the same document. Rates are the same in every state; the document engine
+ * decides CGST + SGST vs IGST.
+ */
+export const taxCodeSchema = z.object({
+  /** 2–12 characters, A–Z 0–9 `-`. Fixed once created. */
+  code: z.string(),
+  name: z.string(),
+  kind: z.enum(['rate', 'goods']),
+  appliesTo: z.enum(TAX_CODE_APPLIES),
+  /** Dated rates, any order; `taxRateOn` sorts them. */
+  rates: z.array(taxRateRowSchema),
+  desc: z.string(),
+  active: z.boolean(),
+  /** Built-in: the code and kind are fixed and it can't be deleted. */
+  system: z.boolean(),
+  createdAt: isoDateTime,
+  updatedAt: isoDateTime,
+})
+export type TaxCode = z.infer<typeof taxCodeSchema>
+
+// ── Settings ▸ States & territories (Phase 2 run 2.3) ────────────────────────
+/** Reference data: the official GST state codes. Read-only in the app; changes only by migration. */
+export const gstStateSchema = z.object({
+  code: z.string(),
+  name: z.string(),
+  abbr: z.string(),
+  type: z.enum(['state', 'ut-leg', 'ut', 'other', 'foreign']),
+  ut: z.boolean(),
+  legacy: z.boolean(),
+  note: z.string(),
+})

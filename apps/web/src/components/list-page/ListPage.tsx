@@ -141,7 +141,13 @@ export interface ListEditor<T> {
   /** Optional view-mode content rendered below fields and facts in the drawer. */
   extra?: (record: T) => ReactNode
   /** Optional edit/new-mode content rendered below fields and facts in the drawer. */
-  extraEdit?: (draft: T, mode: 'edit' | 'new', onChange: (key: keyof T & string, value: unknown) => void) => ReactNode
+  extraEdit?: (
+    draft: T,
+    mode: 'edit' | 'new',
+    onChange: (key: keyof T & string, value: unknown) => void,
+    /** Validation errors by key; a nested value's rows use `<key>.<index>.<field>` (cleared when `<key>` changes). */
+    errors: Record<string, string>,
+  ) => ReactNode
 }
 
 interface Editing<T> {
@@ -452,7 +458,7 @@ export function ListPage<T>({
       if (!cur || !editor || readOnly) return cur
       let draft = { ...cur.draft, [key]: value } as T
       if (editor.onChange) draft = editor.onChange(draft, key, cur.mode)
-      const { [key]: _cleared, ...errors } = cur.errors
+      const errors = Object.fromEntries(Object.entries(cur.errors).filter(([k]) => k !== key && !k.startsWith(`${key}.`)))
       return { ...cur, draft, errors, formError: '' }
     })
   const saveEdit = async () => {
@@ -654,7 +660,7 @@ export function ListPage<T>({
           setEditing(null)
           setActiveId(null)
         }}
-        editChildren={activeEditing ? editor.extraEdit?.(activeEditing.draft, activeEditing.mode, changeField) : undefined}
+        editChildren={activeEditing ? editor.extraEdit?.(activeEditing.draft, activeEditing.mode, changeField, activeEditing.errors) : undefined}
         footer={
           activeEditing ? (
             <>

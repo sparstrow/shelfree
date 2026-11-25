@@ -19,6 +19,7 @@ import {
   customFieldSchema,
   employeeSchema,
   favoriteSchema,
+  gstStateSchema,
   itemCategorySchema,
   itemSchema,
   itemUnitSetSchema,
@@ -32,6 +33,7 @@ import {
   salesOrderSchema,
   savedViewSchema,
   statusDefSchema,
+  taxCodeSchema,
   uomSchema,
   userSchema,
   vendorSchema,
@@ -43,6 +45,7 @@ import {
   seedPaymentTerms,
   seedStatuses,
 } from '@/data/seed/settings-purchasing'
+import { seedGstStates, seedTaxCodes } from '@/data/seed/settings-finance'
 import { seedItemUnits } from '@/data/seed/item-units'
 import { seedNumberSequences } from '@/data/seed/number-sequences'
 import { seedPurchasePrices } from '@/data/seed/purchase-prices'
@@ -232,6 +235,20 @@ export const api = {
     schema: itemCategorySchema,
     seed: seed.seedItemCategories,
     idOf: (r) => r.id,
+  }),
+  /** Settings ▸ Finance: GST tax codes with dated rates (`shelfree.v2.taxCodes`). */
+  taxCodes: createCollection({
+    key: 'taxCodes',
+    schema: taxCodeSchema,
+    seed: seedTaxCodes,
+    idOf: (r) => r.code,
+  }),
+  /** Settings ▸ Workspace: the official GST state codes — reference data, never edited in the app. */
+  gstStates: createCollection({
+    key: 'gstStates',
+    schema: gstStateSchema,
+    seed: seedGstStates,
+    idOf: (r) => r.code,
   }),
 } as const
 

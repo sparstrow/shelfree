@@ -15,13 +15,13 @@ test.describe('Settings ▸ frame and navigation', () => {
     await expect(page).toHaveURL(/\/warehouse\/settings\/uom$/)
     await expect(page.getByRole('heading', { name: 'Units of measure', level: 1 })).toBeVisible()
 
-    // Return to central Settings and open a section still in the prototype.
+    // Return to central Settings and open a Finance section (Tax settings, ported in run 2.3).
     await nav.getByRole('link', { name: 'All settings', exact: true }).click()
     await expect(page).toHaveURL(/\/settings\/ws-profile$/)
     await nav.getByRole('button', { name: 'Finance', exact: true }).click()
     await nav.getByRole('link', { name: 'Tax settings', exact: true }).click()
     await expect(page).toHaveURL(/\/finance\/settings\/cfg-taxset$/)
-    await expect(page.getByText('has not been moved to the new app yet')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Tax settings', level: 1 })).toBeVisible()
     await expect(nav.getByRole('link', { name: 'Tax settings', exact: true })).toHaveAttribute('aria-current', 'page')
 
     // Personal sections live in central Settings too.

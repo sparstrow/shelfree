@@ -17,6 +17,12 @@ import { LOCATIONS_HELP } from './locations/help'
 import { NumberSequencesSection } from './number-sequences/NumberSequencesSection'
 import { NUMBER_SEQUENCES_HELP } from './number-sequences/help'
 import { ShortcutsSection } from './shortcuts/ShortcutsSection'
+import { StatesSection } from './states/StatesSection'
+import { STATES_HELP } from './states/help'
+import { TaxCodesSection } from './tax-codes/TaxCodesSection'
+import { TAX_CODES_HELP } from './tax-codes/help'
+import { TaxSettingsSection } from './tax-settings/TaxSettingsSection'
+import { TAX_SETTINGS_HELP } from './tax-settings/help'
 import { UnitsOfMeasureSection } from './units-of-measure/UnitsOfMeasureSection'
 import { UOM_HELP } from './units-of-measure/help'
 
@@ -36,6 +42,9 @@ export const SETTINGS_SECTIONS: Readonly<Record<string, SettingsSectionComponent
   terms: PaymentTermsSection,
   categories: ItemCategoriesSection,
   locations: LocationsSection,
+  'cfg-taxset': TaxSettingsSection,
+  'tax-codes': TaxCodesSection,
+  'cfg-states': StatesSection,
 }
 
 /** Quiet-help maps keyed by section id, used by central Settings "Find a setting". */
@@ -49,4 +58,7 @@ export const SETTINGS_HELP_MAPS: Readonly<Record<string, HelpMap>> = {
   terms: PAYMENT_TERMS_HELP,
   categories: ITEM_CATEGORIES_HELP,
   locations: LOCATIONS_HELP,
+  'cfg-taxset': TAX_SETTINGS_HELP,
+  'tax-codes': TAX_CODES_HELP,
+  'cfg-states': STATES_HELP,
 }
