@@ -642,10 +642,16 @@ export function seedEmployees() {
 // role ∈ Admin | Manager | Warehouse | Sales | Purchasing | Finance | Viewer
 // status ∈ Active | Pending | Suspended ; twoFA boolean
 // perms: per-module access ∈ none | read | write, keyed by module id.
+// settings: per-module "Manage settings" right (boolean); Admin/Owner all true, Manager write-modules true, others false.
 export function seedUsers() {
+  const MODS = ['home', 'finance', 'notes', 'sales', 'purchasing', 'warehouse', 'production', 'people'];
   const P = (home, finance, sales, purchasing, warehouse, people) => ({ home, finance, sales, purchasing, warehouse, people, production: warehouse });
+  const settingsFor = (role, perms) =>
+    Object.fromEntries(
+      MODS.map((m) => [m, role === 'Owner' || role === 'Admin' ? true : role === 'Manager' ? perms[m] === 'write' : false]),
+    );
   const U = (id, empId, name, email, role, status, twoFA, lastActive, perms) => ({
-    id, empId, name, email, role, status, twoFA, lastActive, perms,
+    id, empId, name, email, role, status, twoFA, lastActive, perms, settings: settingsFor(role, perms),
   });
   return [
     U('USR00001', 'EMP00001', 'Karthik Subramaniam', 'karthik.subramaniam@kanalora.example', 'Admin', 'Active', true, '2026-08-01T08:42:00', P('write', 'write', 'write', 'write', 'write', 'write')),

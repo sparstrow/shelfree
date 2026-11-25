@@ -20,6 +20,7 @@ import {
   itemSchema,
   itemUnitSetSchema,
   noteSchema,
+  numberSequenceSchema,
   purchaseOrderSchema,
   purchasePriceSchema,
   purchaseReceiptSchema,
@@ -32,6 +33,7 @@ import {
   warehouseSchema,
 } from '@/data/schemas'
 import { seedItemUnits } from '@/data/seed/item-units'
+import { seedNumberSequences } from '@/data/seed/number-sequences'
 import { seedPurchasePrices } from '@/data/seed/purchase-prices'
 import { seedUnitsOfMeasure } from '@/data/seed/units-of-measure'
 import * as seed from '@/data/seed/seed-data.js'
@@ -177,6 +179,13 @@ export const api = {
     schema: itemUnitSetSchema,
     seed: seedItemUnits,
     idOf: (r) => r.itemNo,
+  }),
+  /** Shared list across modules (`shelfree.v2.numberSequences`). */
+  numberSequences: createCollection({
+    key: 'numberSequences',
+    schema: numberSequenceSchema,
+    seed: seedNumberSequences,
+    idOf: (r) => r.id,
   }),
 } as const
 
