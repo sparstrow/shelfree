@@ -1,7 +1,7 @@
 # Spec — Settings redesign: workspace, module and personal settings
 
 **Date:** 2026-11-24
-**Status:** Draft — waiting for approval
+**Status:** Approved (2026-11-24) — plan: `docs/superpowers/plans/2026-11-24-settings-redesign.md`
 **Supersedes:** `2026-07-24-settings-architecture.md` (its "Configuration" group and the
 gear-only entry). Terminology, the access model for workspace settings and quiet help carry over.
 **Related:** `docs/settings/README.md`, `components/settings/` (today's template),
