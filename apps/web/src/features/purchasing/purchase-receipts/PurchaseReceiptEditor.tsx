@@ -9,11 +9,19 @@ import { Field, Notice, fieldClass, numberInputClass, primaryButton, secondaryBu
 import { NotesBlock } from '@/components/notes/NotesBlock'
 import { CommandError } from '@/data/api/commands'
 import type { Employee, PurchaseOrder, PurchaseReceipt, PurchaseReceiptLine, Vendor, Warehouse } from '@/data/schemas'
-import { useList, usePostPurchaseReceipt, useUpsert } from '@/data/queries'
+import {
+  useCreatePurchaseReceipt,
+  useList,
+  useNumberSequences,
+  usePostPurchaseReceipt,
+  useUpsert,
+} from '@/data/queries'
+import { defaultSeriesFor, previewNext } from '@/domain/number-sequences'
 import {
   lineOverReceives,
   outstandingByItem,
   postReceiptError,
+  prNextNo,
   prQtyReceived,
   prQtyRejected,
   prValue,
@@ -42,6 +50,7 @@ export function PurchaseReceiptEditor({ routeNo, orderNo }: { routeNo: string; o
   const vendors = useList('vendors')
   const employees = useList('employees')
   const warehouses = useList('warehouses')
+  const numberSequences = useNumberSequences()
   const queries = [receipts, orders, vendors, employees, warehouses]
 
   const isNew = routeNo === 'new'
@@ -71,31 +80,48 @@ export function PurchaseReceiptEditor({ routeNo, orderNo }: { routeNo: string; o
     employees: employees.data ?? [],
     warehouses: warehouses.data ?? [],
   }
-  const initial = saved ? structuredClone(saved) : receiptDraftFromOrder(order as PurchaseOrder, data.receipts, todayLocal())
+  const defaultSeries = numberSequences.data ? defaultSeriesFor(numberSequences.data, 'purchase-receipt') : null
+  const previewNo = defaultSeries ? previewNext(defaultSeries) : prNextNo(data.receipts)
+  const initial = saved
+    ? structuredClone(saved)
+    : { ...receiptDraftFromOrder(order as PurchaseOrder, data.receipts, todayLocal()), no: previewNo }
   // Keyed on status too, so the document reloads as read-only right after posting.
-  return <Editor key={routeNo + ':' + (saved?.status ?? 'new')} isNew={isNew} initial={initial} order={order} data={data} />
+  return (
+    <Editor
+      key={routeNo + ':' + (saved?.status ?? 'new')}
+      isNew={isNew}
+      previewNo={previewNo}
+      initial={initial}
+      order={order}
+      data={data}
+    />
+  )
 }
 
 function Editor({
   isNew,
+  previewNo,
   initial,
   order,
   data,
 }: {
   isNew: boolean
+  previewNo: string
   initial: PurchaseReceipt
   order: PurchaseOrder | undefined
   data: Loaded
 }) {
   const navigate = useNavigate()
   const save = useUpsert('purchaseReceipts')
+  const create = useCreatePurchaseReceipt()
   const post = usePostPurchaseReceipt()
   const [draft, setDraft] = useState(initial)
   const [error, setError] = useState('')
+  const displayNo = isNew ? previewNo : draft.no
 
   const posted = draft.status === 'Posted'
   const editable = draft.status === 'Draft'
-  const busy = save.isPending || post.isPending
+  const busy = save.isPending || create.isPending || post.isPending
   const vendorName = data.vendors.find((v) => v.no === draft.vendor)?.name ?? (draft.vendor || EM_DASH)
   const progress = outstandingByItem(draft, order, data.receipts)
   const rejected = prQtyRejected(draft)
@@ -125,13 +151,16 @@ function Editor({
 
   const saveDraft = async () => {
     if (!draft.po) return setError('A receipt has to be against a purchase order.')
+    let saved: PurchaseReceipt
     try {
-      await save.mutateAsync(draft)
-    } catch {
-      return setError('Could not save the receipt. Check your connection and try again.')
+      saved = isNew ? await create.mutateAsync(draft) : await save.mutateAsync(draft)
+    } catch (e) {
+      return setError(
+        e instanceof CommandError ? e.message : 'Could not save the receipt. Check your connection and try again.',
+      )
     }
-    toast('Receipt saved', { description: `${draft.no} · ${vendorName}` })
-    void navigate({ to: BACK_TO, search: { sel: draft.no } })
+    toast('Receipt saved', { description: `${saved.no} · ${vendorName}` })
+    void navigate({ to: BACK_TO, search: { sel: saved.no } })
   }
 
   const postReceipt = async () => {
@@ -304,7 +333,7 @@ function Editor({
       backTo={BACK_TO}
       header={{
         title: posted ? 'Purchase receipt' : isNew ? 'New purchase receipt' : 'Edit purchase receipt',
-        no: draft.no,
+        no: displayNo,
         status: draft.status,
         subtitle: posted
           ? 'Posted — stock has moved. Corrections go through a vendor return, never an edit.'
@@ -431,7 +460,7 @@ function Editor({
 
       <div className="grid flex-shrink-0 grid-cols-1 items-start gap-[18px] lg:grid-cols-[1fr_300px]">
         <DocumentCard className="px-4 py-[14px]">
-          <NotesBlock entityType="purchaseReceipt" entityNo={draft.no} placeholder="Condition on arrival, who signed the challan, anything worth remembering…" />
+          <NotesBlock entityType="purchaseReceipt" entityNo={displayNo} placeholder="Condition on arrival, who signed the challan, anything worth remembering…" />
         </DocumentCard>
         <TotalsCard
           rows={[

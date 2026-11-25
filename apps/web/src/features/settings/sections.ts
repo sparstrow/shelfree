@@ -2,6 +2,8 @@ import type { HelpMap } from '@/components/help/types'
 import type { SettingsSectionComponent } from '@/components/settings/SettingsFrame'
 import { BusinessProfileSection } from './business-profile/BusinessProfileSection'
 import { BUSINESS_PROFILE_HELP } from './business-profile/help'
+import { NumberSequencesSection } from './number-sequences/NumberSequencesSection'
+import { NUMBER_SEQUENCES_HELP } from './number-sequences/help'
 import { ShortcutsSection } from './shortcuts/ShortcutsSection'
 import { UnitsOfMeasureSection } from './units-of-measure/UnitsOfMeasureSection'
 import { UOM_HELP } from './units-of-measure/help'
@@ -13,6 +15,7 @@ import { UOM_HELP } from './units-of-measure/help'
  */
 export const SETTINGS_SECTIONS: Readonly<Record<string, SettingsSectionComponent>> = {
   'ws-profile': BusinessProfileSection,
+  sequences: NumberSequencesSection,
   shortcuts: ShortcutsSection,
   uom: UnitsOfMeasureSection,
 }
@@ -20,5 +23,6 @@ export const SETTINGS_SECTIONS: Readonly<Record<string, SettingsSectionComponent
 /** Quiet-help maps keyed by section id, used by central Settings "Find a setting". */
 export const SETTINGS_HELP_MAPS: Readonly<Record<string, HelpMap>> = {
   'ws-profile': BUSINESS_PROFILE_HELP,
+  sequences: NUMBER_SEQUENCES_HELP,
   uom: UOM_HELP,
 }

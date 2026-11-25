@@ -12,7 +12,7 @@
  */
 import { useRouter } from '@tanstack/react-router'
 import { Copy, CopyPlus, ExternalLink, Eye, type LucideIcon, Pencil, Trash2 } from 'lucide-react'
-import { type ReactNode, useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { TopBar } from '@/app/shell/TopBar'
 import { useUi } from '@/app/stores/ui'
@@ -132,7 +132,10 @@ export interface ListEditor<T> {
   normalize?: (draft: T) => T
   /** Field errors by key; empty when valid. `others` excludes the record being edited. */
   validate: (draft: T, others: readonly T[]) => Record<string, string>
-  save: (record: T, mode: 'edit' | 'new') => Promise<unknown>
+  /** Persist the record. `origId` is the previous record id when editing (null for new). */
+  save: (record: T, mode: 'edit' | 'new', origId?: string | null) => Promise<unknown>
+  /** Why this row can't be edited, or null when it can (e.g. locked default units). */
+  editBlockedReason?: (row: T) => string | null
   /** `CODE · Name`, for toasts and the edit sub-heading. */
   label: (record: T) => string
   /** Optional view-mode content rendered below fields and facts in the drawer. */
@@ -202,6 +205,37 @@ export interface ListPageProps<T> {
   showTotals?: boolean
   /** Remount the grid when this changes (fresh filters for a new deep link). */
   gridKey?: string
+  /**
+   * Render inside a host pane (e.g. a Settings section): omits `TopBar`, puts
+   * the New button in the grid toolbar, fits its container height, and scopes
+   * page shortcuts to the list container.
+   */
+  embedded?: boolean
+  /**
+   * View-only mode: hides New / Edit / Duplicate / Delete / bulk actions /
+   * in-grid editing, opens the drawer view-only, and makes N / E / Delete /
+   * Ctrl+S inert.
+   */
+  readOnly?: boolean
+}
+
+const OPEN_LAYER = '[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [data-slot="popover-content"]'
+
+function inEmbeddedScope(target: EventTarget | null, host: HTMLElement | null): boolean {
+  if (!host) return false
+  const active = document.activeElement
+  if (active && active !== document.body && active !== document.documentElement) {
+    return host.contains(active)
+  }
+  if (
+    target instanceof Node &&
+    target !== document &&
+    target !== document.body &&
+    target !== document.documentElement
+  ) {
+    return host.contains(target)
+  }
+  return true
 }
 
 export function ListPage<T>({
@@ -234,9 +268,12 @@ export function ListPage<T>({
   emptyText,
   showTotals,
   gridKey,
+  embedded = false,
+  readOnly = false,
 }: ListPageProps<T>) {
   const router = useRouter()
   const openTab = useUi((s) => s.openTab)
+  const hostRef = useRef<HTMLElement | null>(null)
   const [activeId, setActiveId] = useState<string | null>(initialActiveId)
   const [deleting, setDeleting] = useState<T | null>(null)
   const [bulkDeleting, setBulkDeleting] = useState<{
@@ -246,8 +283,21 @@ export function ListPage<T>({
     clearSelection: () => void
   } | null>(null)
   const [editing, setEditing] = useState<Editing<T> | null>(() =>
-    editor && initialDraft ? { mode: 'new', draft: initialDraft, orig: null, errors: {}, formError: '' } : null,
+    !readOnly && editor && initialDraft ? { mode: 'new', draft: initialDraft, orig: null, errors: {}, formError: '' } : null,
   )
+
+  const activeEditing = readOnly ? null : editing
+  const effectiveCreate = readOnly ? undefined : create
+  const effectiveRemove = readOnly ? undefined : remove
+  const effectiveActions = readOnly ? [] : actions
+  const effectiveBulkActions = readOnly ? [] : bulkActions
+  const effectiveBulkEdit = readOnly ? undefined : bulkEdit
+  const effectiveDuplicate = readOnly ? undefined : duplicate
+  const effectiveStatusOps = readOnly ? undefined : statusOps
+  const effectiveLockOps = readOnly ? undefined : lockOps
+  const effectiveCanDelete = readOnly ? undefined : canDelete
+  const effectiveBulkDelete = readOnly ? false : bulkDelete
+  const effectiveShortcuts = readOnly ? [] : shortcuts
 
   const active = activeId ? (rows ?? []).find((r) => dataset.idOf(r) === activeId) : undefined
   const noun = dataset.noun
@@ -274,30 +324,30 @@ export function ListPage<T>({
 
   const confirmDelete = async () => {
     const row = deleting
-    if (!row || !remove) return
+    if (!row || !effectiveRemove) return
     setDeleting(null)
     if (activeId === dataset.idOf(row)) setActiveId(null)
     try {
-      await remove.run(row)
+      await effectiveRemove.run(row)
     } catch {
       toast(`Could not delete the ${noun}`, { description: 'Check your connection and try again.' })
       return
     }
     toast(`${capNoun} deleted`, {
-      description: remove.describe(row),
-      action: { label: 'Undo', onClick: () => remove.undo(row) },
+      description: effectiveRemove.describe(row),
+      action: { label: 'Undo', onClick: () => effectiveRemove.undo(row) },
     })
   }
 
   // ── bulk delete & open in browser tabs (opt-in per page) ───────────────────
   const hasBulkDelete =
-    ((bulkDelete !== undefined && bulkDelete !== false) || !!canDelete) &&
-    (typeof bulkDelete === 'object' || !!remove)
+    ((effectiveBulkDelete !== undefined && effectiveBulkDelete !== false) || !!effectiveCanDelete) &&
+    (typeof effectiveBulkDelete === 'object' || !!effectiveRemove)
 
-  const effectiveCanDelete: ((row: T) => true | string) | undefined = canDelete
-    ? canDelete
-    : remove?.blockedReason
-      ? (row) => remove.blockedReason?.(row) ?? true
+  const resolvedCanDelete: ((row: T) => true | string) | undefined = effectiveCanDelete
+    ? effectiveCanDelete
+    : effectiveRemove?.blockedReason
+      ? (row) => effectiveRemove.blockedReason?.(row) ?? true
       : undefined
 
   const startBulkDelete = (
@@ -306,8 +356,8 @@ export function ListPage<T>({
     { clearSelection }: { clearSelection: () => void },
   ) => {
     if (allSelected.length === 0) return
-    const blockedReason = effectiveCanDelete
-      ? (allSelected.map(effectiveCanDelete).find((v): v is string => typeof v === 'string') ?? '')
+    const blockedReason = resolvedCanDelete
+      ? (allSelected.map(resolvedCanDelete).find((v): v is string => typeof v === 'string') ?? '')
       : ''
     if (eligible.length === 0) {
       toast('Can’t delete', {
@@ -326,16 +376,16 @@ export function ListPage<T>({
   const confirmBulkDelete = async () => {
     const pending = bulkDeleting
     if (!pending) return
-    const batch = typeof bulkDelete === 'object' ? bulkDelete : null
-    if (!batch && !remove) return
+    const batch = typeof effectiveBulkDelete === 'object' ? effectiveBulkDelete : null
+    if (!batch && !effectiveRemove) return
     setBulkDeleting(null)
     const ids = new Set(pending.eligible.map(dataset.idOf))
     if (activeId && ids.has(activeId)) setActiveId(null)
     try {
       if (batch) {
         await batch.run(pending.eligible)
-      } else if (remove) {
-        for (const row of pending.eligible) await remove.run(row)
+      } else if (effectiveRemove) {
+        for (const row of pending.eligible) await effectiveRemove.run(row)
       }
     } catch {
       toast(`Could not delete the selected ${dataset.nounPlural}`, {
@@ -353,7 +403,7 @@ export function ListPage<T>({
         label: 'Undo',
         onClick: () => {
           if (batch) void batch.undo(pending.eligible)
-          else if (remove) pending.eligible.forEach((row) => remove.undo(row))
+          else if (effectiveRemove) pending.eligible.forEach((row) => effectiveRemove.undo(row))
         },
       },
     })
@@ -375,56 +425,64 @@ export function ListPage<T>({
 
   // ── editor (reference lists) ────────────────────────────────────────────────
   const startNew = (draft?: T) => {
-    if (!editor) return
+    if (readOnly || !editor) return
     setActiveId(null)
     setEditing({ mode: 'new', draft: draft ?? editor.blank(rows ?? []), orig: null, errors: {}, formError: '' })
   }
   const startEdit = (row: T) => {
-    if (!editor) return
+    if (readOnly || !editor) return
+    const blocked = editor.editBlockedReason?.(row)
+    if (blocked) {
+      setEditing(null)
+      setActiveId(dataset.idOf(row))
+      toast(`${dataset.idOf(row)} can’t be edited`, { description: blocked })
+      return
+    }
     setActiveId(dataset.idOf(row))
     setEditing({ mode: 'edit', draft: structuredClone(row), orig: dataset.idOf(row), errors: {}, formError: '' })
   }
   const startDuplicate = (row: T) => {
-    if (!editor?.duplicate) return
+    if (readOnly || !editor?.duplicate) return
     setActiveId(null)
     setEditing({ mode: 'new', draft: editor.duplicate(row, rows ?? []), orig: null, errors: {}, formError: '' })
   }
   const cancelEdit = () => setEditing(null)
   const changeField = (key: string, value: unknown) =>
     setEditing((cur) => {
-      if (!cur || !editor) return cur
+      if (!cur || !editor || readOnly) return cur
       let draft = { ...cur.draft, [key]: value } as T
       if (editor.onChange) draft = editor.onChange(draft, key, cur.mode)
       const { [key]: _cleared, ...errors } = cur.errors
       return { ...cur, draft, errors, formError: '' }
     })
   const saveEdit = async () => {
-    if (!editing || !editor) return
-    const draft = editor.normalize ? editor.normalize(editing.draft) : editing.draft
-    const others = (rows ?? []).filter((r) => dataset.idOf(r) !== editing.orig)
+    if (readOnly || !activeEditing || !editor) return
+    const draft = editor.normalize ? editor.normalize(activeEditing.draft) : activeEditing.draft
+    const others = (rows ?? []).filter((r) => dataset.idOf(r) !== activeEditing.orig)
     const errors = editor.validate(draft, others)
     const count = Object.keys(errors).length
     if (count) {
-      setEditing({ ...editing, draft, errors, formError: `Fix the highlighted ${count === 1 ? 'field' : 'fields'} to save.` })
+      setEditing({ ...activeEditing, draft, errors, formError: `Fix the highlighted ${count === 1 ? 'field' : 'fields'} to save.` })
       return
     }
     try {
-      await editor.save(draft, editing.mode)
-    } catch {
-      setEditing({ ...editing, formError: `Could not save the ${noun}. Check your connection and try again.` })
+      await editor.save(draft, activeEditing.mode, activeEditing.orig)
+    } catch (e) {
+      const msg = e instanceof Error && e.message ? e.message : `Could not save the ${noun}. Check your connection and try again.`
+      setEditing({ ...activeEditing, formError: msg })
       return
     }
-    toast(`${capNoun} ${editing.mode === 'new' ? 'created' : 'saved'}`, { description: editor.label(draft) })
+    toast(`${capNoun} ${activeEditing.mode === 'new' ? 'created' : 'saved'}`, { description: editor.label(draft) })
     setEditing(null)
     setActiveId(dataset.idOf(draft))
   }
 
-  // Editor keys: N new, E edit the active row, Ctrl/Cmd+S or +Enter save, Esc cancel.
+  // Editor keys: N new, E edit the active row, Delete active row, Ctrl/Cmd+S or +Enter save, Esc cancel.
   // Capture phase, so Esc cancels the edit before the grid closes the drawer.
   useEffect(() => {
-    if (!editor) return
+    if (readOnly || (!editor && !effectiveRemove)) return
     const onKey = (e: KeyboardEvent) => {
-      if (editing) {
+      if (activeEditing) {
         if ((e.metaKey || e.ctrlKey) && (e.key === 'Enter' || e.key.toLowerCase() === 's')) {
           e.preventDefault()
           void saveEdit()
@@ -435,14 +493,23 @@ export function ListPage<T>({
         }
         return
       }
-      if (isTypingTarget(e.target) || e.metaKey || e.ctrlKey || e.altKey) return
+      if (isTypingTarget(e.target) || e.metaKey || e.ctrlKey || e.altKey || document.querySelector(OPEN_LAYER)) return
+      if (embedded && !inEmbeddedScope(e.target, hostRef.current)) return
       const key = e.key.toLowerCase()
-      if (key === 'n') {
+      if (editor && key === 'n') {
         e.preventDefault()
         startNew()
-      } else if (key === 'e' && active) {
+      } else if (editor && key === 'e' && active) {
         e.preventDefault()
         startEdit(active)
+      } else if (effectiveRemove && e.key === 'Delete' && active) {
+        e.preventDefault()
+        const reason = effectiveRemove.blockedReason?.(active)
+        if (reason) {
+          toast.error(`${dataset.idOf(active)} can’t be deleted`, { description: reason })
+        } else {
+          setDeleting(active)
+        }
       }
     }
     window.addEventListener('keydown', onKey, true)
@@ -453,10 +520,11 @@ export function ListPage<T>({
 
   // Page shortcuts act on the active row.
   useEffect(() => {
-    if (!shortcuts.length) return
+    if (readOnly || !effectiveShortcuts.length) return
     const onKey = (e: KeyboardEvent) => {
-      if (isTypingTarget(e.target) || e.metaKey || e.ctrlKey || e.altKey || !active) return
-      const hit = shortcuts.find(
+      if (isTypingTarget(e.target) || e.metaKey || e.ctrlKey || e.altKey || !active || document.querySelector(OPEN_LAYER)) return
+      if (embedded && !inEmbeddedScope(e.target, hostRef.current)) return
+      const hit = effectiveShortcuts.find(
         (s) => s.key === e.key.toLowerCase() && (s.shift === undefined || s.shift === e.shiftKey) && (!s.when || s.when(active)),
       )
       if (hit) {
@@ -473,45 +541,100 @@ export function ListPage<T>({
   if (preview) gridActions.push({ label: 'View', icon: Eye, onSelect: (row) => setActiveId(dataset.idOf(row)) })
   if (editor) {
     gridActions.push({ label: 'View', icon: Eye, onSelect: (row) => { setEditing(null); setActiveId(dataset.idOf(row)) } })
-    gridActions.push({ label: 'Edit', icon: Pencil, onSelect: startEdit })
-    if (editor.duplicate) gridActions.push({ label: 'Duplicate', icon: CopyPlus, onSelect: startDuplicate })
+    if (!readOnly) {
+      gridActions.push({
+        label: 'Edit',
+        icon: Pencil,
+        disabled: editor.editBlockedReason ? (row) => !!editor.editBlockedReason?.(row) : undefined,
+        onSelect: startEdit,
+      })
+      if (editor.duplicate) gridActions.push({ label: 'Duplicate', icon: CopyPlus, onSelect: startDuplicate })
+    }
   }
   if (open) gridActions.push({ label: openLabel ?? `Open ${noun}`, icon: ExternalLink, onSelect: open })
   if (openInNewTab) gridActions.push({ label: 'Open in new tab', icon: ExternalLink, onSelect: openInNewTab })
-  if (duplicate && !editor) {
+  if (effectiveDuplicate && !editor) {
     gridActions.push({
       label: 'Duplicate',
       icon: CopyPlus,
       onSelect: (row) => {
-        void duplicate([row]).then((made) => {
+        void effectiveDuplicate([row]).then((made) => {
           if (made.length === 1) setActiveId(made[0])
         })
       },
     })
   }
-  for (const a of actions) {
+  for (const a of effectiveActions) {
     gridActions.push({ label: a.label, icon: a.icon, disabled: a.when ? (row) => !a.when?.(row) : undefined, onSelect: (row) => a.run(row, listContext) })
   }
   gridActions.push({ label: 'Copy number', icon: Copy, onSelect: copyNo })
-  if (remove) {
+  if (effectiveRemove) {
     gridActions.push({
       label: 'Delete',
       icon: Trash2,
       danger: true,
-      disabled: remove.blockedReason ? (row) => !!remove.blockedReason?.(row) : undefined,
+      disabled: effectiveRemove.blockedReason ? (row) => !!effectiveRemove.blockedReason?.(row) : undefined,
       onSelect: setDeleting,
     })
   }
 
   let drawer: ReactNode = null
-  const editRecord = editing ? editing.draft : active
+  const editRecord = activeEditing ? activeEditing.draft : active
   if (editor && editRecord) {
     const v = editor.view(editRecord)
-    const blocked = !editing && active ? (remove?.blockedReason?.(active) ?? null) : null
+    const blocked = !activeEditing && active ? (effectiveRemove?.blockedReason?.(active) ?? null) : null
+    const editBlocked = !activeEditing && active ? (editor.editBlockedReason?.(active) ?? null) : null
+    const viewFooter =
+      !readOnly && active ? (
+        <>
+          <button
+            type="button"
+            onClick={() => startEdit(active)}
+            disabled={!!editBlocked}
+            title={editBlocked ?? 'Edit (E)'}
+            className={`${drawerPrimaryButton} disabled:pointer-events-none disabled:opacity-45`}
+          >
+            <Pencil className="size-[13px]" strokeWidth={2} />
+            Edit
+          </button>
+          {editor.duplicate && (
+            <button type="button" onClick={() => startDuplicate(active)} className={drawerSecondaryButton}>
+              <CopyPlus className="size-[13px]" strokeWidth={2} />
+              Duplicate
+            </button>
+          )}
+          {effectiveActions
+            .filter((a) => a.inDrawer && (!a.when || a.when(active)))
+            .map((a) => (
+              <button
+                key={a.label}
+                type="button"
+                onClick={() => a.run(active, listContext)}
+                title={a.title}
+                className={drawerSecondaryButton}
+              >
+                {a.icon && <a.icon className="size-[13px]" strokeWidth={2} />}
+                {a.label}
+              </button>
+            ))}
+          {effectiveRemove && (
+            <button
+              type="button"
+              onClick={() => setDeleting(active)}
+              disabled={!!blocked}
+              title={blocked ?? `Delete ${noun}`}
+              aria-label={`Delete ${noun}`}
+              className={drawerDangerIconButton}
+            >
+              <Trash2 className="size-[14px]" strokeWidth={2} />
+            </button>
+          )}
+        </>
+      ) : null
     drawer = (
       <EditableDrawer
-        ariaLabel={editing ? `${editing.mode === 'new' ? 'New' : 'Edit'} ${noun}` : `${capNoun} ${v.no}`}
-        mode={editing ? editing.mode : 'view'}
+        ariaLabel={activeEditing ? `${activeEditing.mode === 'new' ? 'New' : 'Edit'} ${noun}` : `${capNoun} ${v.no}`}
+        mode={activeEditing ? activeEditing.mode : 'view'}
         record={editRecord}
         no={v.no}
         status={v.status}
@@ -520,126 +643,95 @@ export function ListPage<T>({
         subtitle={v.subtitle}
         stats={v.stats}
         notice={v.notice}
-        editHeading={editing?.mode === 'new' ? `New ${noun}` : `Edit ${noun}`}
-        editSubheading={editing?.mode === 'edit' ? editor.label(editRecord) : undefined}
-        fields={editor.fields(editRecord, editing?.mode ?? 'edit')}
-        facts={editing?.mode === 'new' ? undefined : v.facts}
-        errors={editing?.errors ?? {}}
-        formError={editing?.formError}
+        editHeading={activeEditing?.mode === 'new' ? `New ${noun}` : `Edit ${noun}`}
+        editSubheading={activeEditing?.mode === 'edit' ? editor.label(editRecord) : undefined}
+        fields={editor.fields(editRecord, activeEditing?.mode ?? 'edit')}
+        facts={activeEditing?.mode === 'new' ? undefined : v.facts}
+        errors={activeEditing?.errors ?? {}}
+        formError={activeEditing?.formError}
         onChange={changeField}
         onClose={() => {
           setEditing(null)
           setActiveId(null)
         }}
-        editChildren={editing ? editor.extraEdit?.(editing.draft, editing.mode, changeField) : undefined}
+        editChildren={activeEditing ? editor.extraEdit?.(activeEditing.draft, activeEditing.mode, changeField) : undefined}
         footer={
-          editing ? (
+          activeEditing ? (
             <>
               <button type="button" onClick={cancelEdit} className={drawerSecondaryButton} title="Cancel (Esc)">
                 Cancel
               </button>
               <button type="button" onClick={() => void saveEdit()} className={drawerPrimaryButton} title="Save (Ctrl/Cmd + S)">
-                {editing.mode === 'new' ? `Create ${noun}` : 'Save changes'}
+                {activeEditing.mode === 'new' ? `Create ${noun}` : 'Save changes'}
               </button>
             </>
           ) : (
-            active && (
-              <>
-                <button type="button" onClick={() => startEdit(active)} className={drawerPrimaryButton} title="Edit (E)">
-                  <Pencil className="size-[13px]" strokeWidth={2} />
-                  Edit
-                </button>
-                {editor.duplicate && (
-                  <button type="button" onClick={() => startDuplicate(active)} className={drawerSecondaryButton}>
-                    <CopyPlus className="size-[13px]" strokeWidth={2} />
-                    Duplicate
-                  </button>
-                )}
-                {actions
-                  .filter((a) => a.inDrawer && (!a.when || a.when(active)))
-                  .map((a) => (
-                    <button
-                      key={a.label}
-                      type="button"
-                      onClick={() => a.run(active, listContext)}
-                      title={a.title}
-                      className={drawerSecondaryButton}
-                    >
-                      {a.icon && <a.icon className="size-[13px]" strokeWidth={2} />}
-                      {a.label}
-                    </button>
-                  ))}
-                {remove && (
-                  <button
-                    type="button"
-                    onClick={() => setDeleting(active)}
-                    disabled={!!blocked}
-                    title={blocked ?? `Delete ${noun}`}
-                    aria-label={`Delete ${noun}`}
-                    className={drawerDangerIconButton}
-                  >
-                    <Trash2 className="size-[14px]" strokeWidth={2} />
-                  </button>
-                )}
-              </>
-            )
+            viewFooter
           )
         }
       >
-        {!editing && active ? editor.extra?.(active) : null}
+        {!activeEditing && active ? editor.extra?.(active) : null}
       </EditableDrawer>
     )
   } else if (preview && active) {
-    const blocked = remove?.blockedReason?.(active) ?? null
+    const blocked = effectiveRemove?.blockedReason?.(active) ?? null
+    const drawerActions = effectiveActions.filter((a) => a.inDrawer && (!a.when || a.when(active)))
+    const hasFooter = Boolean(open || drawerActions.length > 0 || effectiveRemove)
     drawer = (
       <RecordDrawer
         {...preview(active)}
         onClose={() => setActiveId(null)}
         footer={
-          <>
-            {open && (
-              <button type="button" onClick={() => open(active)} className={drawerPrimaryButton}>
-                <ExternalLink className="size-[13px]" strokeWidth={2} />
-                {openLabel ?? `Open ${noun}`}
-              </button>
-            )}
-            {actions
-              .filter((a) => a.inDrawer && (!a.when || a.when(active)))
-              .map((a) => (
+          hasFooter ? (
+            <>
+              {open && (
+                <button type="button" onClick={() => open(active)} className={drawerPrimaryButton}>
+                  <ExternalLink className="size-[13px]" strokeWidth={2} />
+                  {openLabel ?? `Open ${noun}`}
+                </button>
+              )}
+              {drawerActions.map((a) => (
                 <button key={a.label} type="button" onClick={() => a.run(active, listContext)} title={a.title} className={drawerSecondaryButton}>
                   {a.icon && <a.icon className="size-[13px]" strokeWidth={2} />}
                   {a.label}
                 </button>
               ))}
-            {remove && (
-              <button
-                type="button"
-                onClick={() => setDeleting(active)}
-                disabled={!!blocked}
-                title={blocked ?? `Delete ${noun}`}
-                aria-label={`Delete ${noun}`}
-                className={drawerDangerIconButton}
-              >
-                <Trash2 className="size-[14px]" strokeWidth={2} />
-              </button>
-            )}
-          </>
+              {effectiveRemove && (
+                <button
+                  type="button"
+                  onClick={() => setDeleting(active)}
+                  disabled={!!blocked}
+                  title={blocked ?? `Delete ${noun}`}
+                  aria-label={`Delete ${noun}`}
+                  className={drawerDangerIconButton}
+                >
+                  <Trash2 className="size-[14px]" strokeWidth={2} />
+                </button>
+              )}
+            </>
+          ) : undefined
         }
       />
     )
   }
 
+  const newAction = readOnly
+    ? undefined
+    : effectiveCreate ?? (editor ? { label: `New ${noun}`, run: () => startNew() } : undefined)
+
   return (
     <>
-      <TopBar
-        pageLabel={pageLabel}
-        count={rows?.length}
-        countTitle={rows ? `${rows.length} ${rows.length === 1 ? noun : dataset.nounPlural}` : undefined}
-        newLabel={create?.label ?? (editor ? `New ${noun}` : undefined)}
-        onNew={create?.run ?? (editor ? () => startNew() : undefined)}
-      >
-        {topBarExtra}
-      </TopBar>
+      {!embedded && (
+        <TopBar
+          pageLabel={pageLabel}
+          count={rows?.length}
+          countTitle={rows ? `${rows.length} ${rows.length === 1 ? noun : dataset.nounPlural}` : undefined}
+          newLabel={newAction?.label}
+          onNew={newAction?.run}
+        >
+          {topBarExtra}
+        </TopBar>
+      )}
       <DataGrid
         key={gridKey}
         dataset={dataset}
@@ -653,29 +745,38 @@ export function ListPage<T>({
           setEditing(null)
           setActiveId(id)
         }}
-        onOpen={open ?? (editor ? startEdit : (row) => setActiveId(dataset.idOf(row)))}
+        onOpen={
+          open ??
+          (!readOnly && editor
+            ? (row) => (editor.editBlockedReason?.(row) ? setActiveId(dataset.idOf(row)) : startEdit(row))
+            : (row) => setActiveId(dataset.idOf(row)))
+        }
         actions={gridActions}
-        bulkActions={bulkActions}
-        bulkEdit={bulkEdit}
-        onDuplicate={duplicate}
-        statusOps={statusOps}
-        lockOps={lockOps}
+        bulkActions={effectiveBulkActions}
+        bulkEdit={effectiveBulkEdit}
+        onDuplicate={effectiveDuplicate}
+        statusOps={effectiveStatusOps}
+        lockOps={effectiveLockOps}
         onOpenInTabs={openSelectedInTabs}
         onBulkDelete={hasBulkDelete ? startBulkDelete : undefined}
-        canDelete={hasBulkDelete ? effectiveCanDelete : undefined}
+        canDelete={hasBulkDelete ? resolvedCanDelete : undefined}
         drawer={drawer}
         emptyText={emptyText}
         showTotals={showTotals}
         initialFilters={initialFilters}
+        embedded={embedded}
+        readOnly={readOnly}
+        toolbarCreate={embedded ? newAction : undefined}
+        containerRef={hostRef}
       />
-      {remove && (
+      {effectiveRemove && (
         <ConfirmDialog
           open={!!deleting}
           danger
           title={`Delete this ${noun}?`}
           description={
             <>
-              {deleting ? remove.describe(deleting) : ''} will be removed.{remove.note ? ` ${remove.note}` : ''} You can undo
+              {deleting ? effectiveRemove.describe(deleting) : ''} will be removed.{effectiveRemove.note ? ` ${effectiveRemove.note}` : ''} You can undo
               this right after deleting.
             </>
           }
@@ -697,8 +798,8 @@ export function ListPage<T>({
                   ? ` (${int(bulkDeleting.skipped)} skipped${bulkDeleting.reason ? ` — ${bulkDeleting.reason}` : ''})`
                   : ''}
                 .
-                {(typeof bulkDelete === 'object' ? bulkDelete.note : remove?.note)
-                  ? ` ${typeof bulkDelete === 'object' ? bulkDelete.note : remove?.note}`
+                {(typeof effectiveBulkDelete === 'object' ? effectiveBulkDelete.note : effectiveRemove?.note)
+                  ? ` ${typeof effectiveBulkDelete === 'object' ? effectiveBulkDelete.note : effectiveRemove?.note}`
                   : ''}{' '}
                 You can undo this right after deleting.
               </>

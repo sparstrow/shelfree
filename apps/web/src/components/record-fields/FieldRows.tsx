@@ -244,7 +244,14 @@ export function FieldRows<T>({
                       )}
                     />
                   </button>
-                  <span className="text-[13px] font-medium">{value ? (field.onText ?? 'On') : (field.offText ?? 'Off')}</span>
+                  {/* The state text toggles too (a bigger target); the switch itself carries the state for screen readers. */}
+                  <span
+                    aria-hidden
+                    onClick={() => onChange(field.key, !value)}
+                    className="cursor-pointer text-[13px] font-medium select-none"
+                  >
+                    {value ? (field.onText ?? 'On') : (field.offText ?? 'Off')}
+                  </span>
                 </div>
               ) : (
                 <input

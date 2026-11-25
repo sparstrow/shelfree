@@ -22,6 +22,8 @@ export interface SettingsSectionProps<V extends Json> {
   groups: readonly SettingsGroup<V>[]
   /** Cross-field validation, run before the per-row validators' result is returned. */
   validate?: (values: V) => Record<string, string>
+  /** View-only mode: values render as text in the same row box, no Save bar, Ctrl+S inert. */
+  readOnly?: boolean
 }
 
 /**
@@ -39,6 +41,7 @@ export function SettingsSection<V extends Json>({
   onSave,
   groups,
   validate,
+  readOnly = false,
 }: SettingsSectionProps<V>) {
   const form = useSettingsForm<V>({
     saved,
@@ -56,8 +59,16 @@ export function SettingsSection<V extends Json>({
     },
   })
   return (
-    <SettingsPage title={title} help={help.page} isLoading={isLoading} error={error} onRetry={onRetry} form={form}>
-      <SettingsRows idPrefix={id} groups={groups} help={help} form={form} />
+    <SettingsPage
+      title={title}
+      help={help.page}
+      isLoading={isLoading}
+      error={error}
+      onRetry={onRetry}
+      form={readOnly ? undefined : form}
+      readOnly={readOnly}
+    >
+      <SettingsRows idPrefix={id} groups={groups} help={help} form={form} readOnly={readOnly} />
     </SettingsPage>
   )
 }

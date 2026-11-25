@@ -16,6 +16,8 @@ export interface SettingsRowsProps<V extends Json> {
   groups: readonly SettingsGroup<V>[]
   help: HelpMap
   form: SettingsForm<V>
+  /** View-only mode: every row renders its view text in the same 32 px box so nothing moves. */
+  readOnly?: boolean
 }
 
 const inputClass = (error: boolean) =>
@@ -32,7 +34,7 @@ function optionLabel(c: RowControl, value: unknown): string {
 }
 
 /** The label | control grid for a section described by `groups`. */
-export function SettingsRows<V extends Json>({ idPrefix, groups, help, form }: SettingsRowsProps<V>) {
+export function SettingsRows<V extends Json>({ idPrefix, groups, help, form, readOnly = false }: SettingsRowsProps<V>) {
   const values = form.values
   if (!values) return null
 
@@ -40,12 +42,22 @@ export function SettingsRows<V extends Json>({ idPrefix, groups, help, form }: S
     const value = values[row.key]
     const error = form.errors[row.key]
     const c = row.control
-    const locked = row.locked?.(values)
-    if (locked || c.type === 'readonly') {
+    const rowLocked = !!row.locked?.(values)
+    if (readOnly || rowLocked || c.type === 'readonly') {
       const text = c.type === 'readonly' && c.format ? c.format(value) : optionLabel(row.control, value)
+      const isMono = (c.type === 'readonly' || c.type === 'text') && !!c.mono
       return (
-        <div className={cn(fieldBoxClass, 'gap-2 border-transparent font-medium', c.type === 'readonly' && c.mono && 'font-mono text-xs', locked && 'text-muted-foreground')}>
-          <span className="min-w-0 truncate" id={id}>
+        <div
+          className={cn(
+            fieldBoxClass,
+            'gap-2 border-transparent font-medium',
+            c.type === 'area' && 'items-start py-[7px] whitespace-pre-wrap',
+            isMono && 'font-mono text-xs',
+            c.type === 'number' && 'tnum',
+            rowLocked && 'text-muted-foreground',
+          )}
+        >
+          <span className={cn('min-w-0', c.type !== 'area' && 'truncate')} id={id}>
             {text}
           </span>
           {c.type === 'readonly' && c.link && (
@@ -81,7 +93,14 @@ export function SettingsRows<V extends Json>({ idPrefix, groups, help, form }: S
         return (
           <div className={cn(fieldBoxClass, 'gap-2.5 border-transparent px-0')}>
             <Switch id={id} checked={!!value} onCheckedChange={(next) => form.set(row.key, next as V[keyof V & string])} />
-            <span className="text-[13px] font-medium">{value ? (c.onText ?? 'On') : (c.offText ?? 'Off')}</span>
+            {/* The state text toggles too (a bigger target); the switch itself carries the state for screen readers. */}
+            <span
+              aria-hidden
+              onClick={() => form.set(row.key, !value as V[keyof V & string])}
+              className="cursor-pointer text-[13px] font-medium select-none"
+            >
+              {value ? (c.onText ?? 'On') : (c.offText ?? 'Off')}
+            </span>
           </div>
         )
       case 'area':
@@ -153,8 +172,9 @@ export function SettingsRows<V extends Json>({ idPrefix, groups, help, form }: S
               const value = values[row.key]
               const error = form.errors[row.key]
               const warning = !error ? row.warn?.(value, values) : null
-              const changed = form.dirtyKeys.includes(row.key)
+              const changed = !readOnly && form.dirtyKeys.includes(row.key)
               const hasDefault = row.default !== undefined
+              const interactive = !readOnly && !row.locked?.(values) && row.control.type !== 'readonly'
               return (
                 <div
                   key={row.key}
@@ -170,12 +190,12 @@ export function SettingsRows<V extends Json>({ idPrefix, groups, help, form }: S
                         current={String(value)}
                         defaultValue={hasDefault ? String(row.default) : undefined}
                         defaultText={hasDefault ? (row.defaultText ?? optionLabel(row.control, row.default)) : undefined}
-                        onReset={hasDefault ? () => form.set(row.key, row.default as V[keyof V & string]) : undefined}
+                        onReset={hasDefault && interactive ? () => form.set(row.key, row.default as V[keyof V & string]) : undefined}
                       >
-                        <label htmlFor={id}>{row.label}</label>
+                        <label htmlFor={interactive ? id : undefined}>{row.label}</label>
                       </HelpTarget>
                     ) : (
-                      <label htmlFor={id}>{row.label}</label>
+                      <label htmlFor={interactive ? id : undefined}>{row.label}</label>
                     )}
                     {changed && (
                       <span title="Unsaved change" className="size-1.5 flex-none rounded-full bg-primary">

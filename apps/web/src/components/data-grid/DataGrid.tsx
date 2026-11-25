@@ -20,6 +20,7 @@ import {
   Pencil,
   type LucideIcon,
   Pin,
+  Plus,
   RefreshCw,
   RotateCcw,
   Rows3,
@@ -39,6 +40,7 @@ import {
   type MouseEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
+  type RefObject,
   useCallback,
   useEffect,
   useMemo,
@@ -211,6 +213,31 @@ export interface DataGridProps<T> {
   initialFilters?: Omit<GridFilter, 'id'>[]
   /** Show the Filters side panel from the toolbar (default true). Pass false for the compact popover picker. */
   filterPanel?: boolean
+  /** Host-pane mode (e.g. inside Settings): scopes grid shortcuts to this container and keeps `?group=` out of the host URL. */
+  embedded?: boolean
+  /** View-only mode: disables in-grid editing, row checkboxes, the bulk bar, and Ctrl+S view saving. */
+  readOnly?: boolean
+  /** Primary New button rendered in the toolbar (used by `ListPage embedded`). */
+  toolbarCreate?: { label: string; run: () => void }
+  /** Ref attached to the grid's outer `<section>` so a host (`ListPage embedded`) can scope shortcuts. */
+  containerRef?: RefObject<HTMLElement | null>
+}
+
+function inEmbeddedScope(target: EventTarget | null, host: HTMLElement | null): boolean {
+  if (!host) return false
+  const active = document.activeElement
+  if (active && active !== document.body && active !== document.documentElement) {
+    return host.contains(active)
+  }
+  if (
+    target instanceof Node &&
+    target !== document &&
+    target !== document.body &&
+    target !== document.documentElement
+  ) {
+    return host.contains(target)
+  }
+  return true
 }
 
 const DOT_CLASS: Record<BulkOpDotToken, string> = {
@@ -287,7 +314,19 @@ export function DataGrid<T>({
   showTotals = false,
   initialFilters,
   filterPanel,
+  embedded = false,
+  readOnly = false,
+  toolbarCreate,
+  containerRef,
 }: DataGridProps<T>) {
+  const innerSectionRef = useRef<HTMLElement | null>(null)
+  const setSectionRef = useCallback(
+    (el: HTMLElement | null) => {
+      innerSectionRef.current = el
+      if (containerRef) containerRef.current = el
+    },
+    [containerRef],
+  )
   const filterPanelEnabled = (filterPanel ?? dataset.filterPanel) !== false
   const [viewId, setViewId] = useState(dataset.views[0]?.id ?? 'all')
   const [filters, setFilters] = useState<GridFilter[]>(() =>
@@ -320,12 +359,17 @@ export function DataGrid<T>({
     () => new Set(dataset.columns.filter((c) => c.groupable !== false).map((c) => c.key)),
     [dataset.columns],
   )
+  const defaultGroup = useMemo(
+    () => (dataset.defaultGroupBy && groupableKeys.has(dataset.defaultGroupBy) ? dataset.defaultGroupBy : null),
+    [dataset.defaultGroupBy, groupableKeys],
+  )
   // A link that names a grouping opens the grid grouped (kept over a default saved view's).
   const [urlGroup, setUrlGroup] = useState<string | null>(() => {
+    if (embedded) return null
     const key = new URLSearchParams(window.location.search).get(GROUP_PARAM)
     return key && groupableKeys.has(key) ? key : null
   })
-  const [groupBy, setGroupBy] = useState<string | null>(urlGroup)
+  const [groupBy, setGroupBy] = useState<string | null>(() => urlGroup ?? defaultGroup)
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set())
   const [aggs, setAggs] = useState<Record<string, string>>(() => prefs.aggregates[dataset.id] ?? {})
   const [totalsOn, setTotalsOn] = useState(() => prefs.totals[dataset.id] ?? showTotals)
@@ -572,12 +616,14 @@ export function DataGrid<T>({
 
   // Group-by lives in the URL (`?group=`) so a link opens the grid grouped. Other params are kept.
   useEffect(() => {
+    if (embedded) return
     const url = new URL(window.location.href)
-    if (url.searchParams.get(GROUP_PARAM) === groupBy) return
-    if (groupBy) url.searchParams.set(GROUP_PARAM, groupBy)
+    const desired = groupBy === defaultGroup ? null : groupBy
+    if (url.searchParams.get(GROUP_PARAM) === desired) return
+    if (desired) url.searchParams.set(GROUP_PARAM, desired)
     else url.searchParams.delete(GROUP_PARAM)
     router.history.replace(url.pathname + url.search + url.hash)
-  }, [groupBy, router])
+  }, [embedded, groupBy, defaultGroup, router])
 
   // A view favourite was opened (its grid applies the view), else the page's default view opens on arrival.
   useEffect(() => {
@@ -630,6 +676,8 @@ export function DataGrid<T>({
     if (e.defaultPrevented || e.altKey || !(e.metaKey || e.ctrlKey)) return
     const key = e.key.toLowerCase()
     if (key !== 's' && key !== 'd') return
+    if (readOnly && key === 's') return
+    if (embedded && !inEmbeddedScope(e.target, innerSectionRef.current)) return
     if (isTypingTarget(e.target) || document.querySelector('[role="alertdialog"]')) return
     e.preventDefault()
     if (key === 's') {
@@ -654,7 +702,7 @@ export function DataGrid<T>({
 
   // ── in-place cell editing (columns with `edit`) ────────────────────────────
   const cellRefs = useRef(new Map<string, HTMLDivElement>())
-  const editableColumns = columns.filter((c) => c.edit)
+  const editableColumns = readOnly ? [] : columns.filter((c) => c.edit)
   const cellText = (row: T, c: GridColumn): string => {
     const custom = (c.edit?.value as ((r: T) => string) | undefined)?.(row)
     if (custom !== undefined) return custom
@@ -788,6 +836,10 @@ export function DataGrid<T>({
     })
 
   const onRowClick = (e: MouseEvent, id: string) => {
+    if (readOnly) {
+      onActiveChange(activeId === id ? null : id)
+      return
+    }
     if (e.shiftKey) return selectRange(id, e.metaKey || e.ctrlKey)
     anchorRef.current = id
     if (e.metaKey || e.ctrlKey) {
@@ -818,7 +870,7 @@ export function DataGrid<T>({
     if (isTypingTarget(e.target)) return
     if ((e.metaKey || e.ctrlKey) && !e.altKey) {
       const lower = e.key.toLowerCase()
-      if (lower === 'a') {
+      if (!readOnly && lower === 'a') {
         e.preventDefault()
         setSelected(new Set(shown.map(dataset.idOf)))
         return
@@ -831,16 +883,16 @@ export function DataGrid<T>({
     }
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
-      if (e.shiftKey && !anchorRef.current && activeId) anchorRef.current = activeId
+      if (!readOnly && e.shiftKey && !anchorRef.current && activeId) anchorRef.current = activeId
       const next = moveActive(e.key === 'ArrowDown' ? 1 : -1)
-      if (next) {
+      if (next && !readOnly) {
         if (e.shiftKey) selectRange(next, true)
         else anchorRef.current = next
       }
     } else if (e.key === 'Enter' && activeRow) {
       e.preventDefault()
       onOpen(activeRow)
-    } else if (e.key === ' ' && activeId) {
+    } else if (!readOnly && e.key === ' ' && activeId) {
       e.preventDefault()
       anchorRef.current = activeId
       toggleRow(activeId)
@@ -895,6 +947,7 @@ export function DataGrid<T>({
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== 'f') return
+      if (embedded && !inEmbeddedScope(e.target, innerSectionRef.current)) return
       if (isTypingTarget(e.target) && e.target !== findRef.current) return
       if (document.querySelector('[role="alertdialog"]')) return
       e.preventDefault()
@@ -903,13 +956,22 @@ export function DataGrid<T>({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [findOpen])
+  }, [embedded, findOpen])
 
   // Page-level shortcuts: "/" focuses the quick search, Alt+←/→ pages.
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if (isTypingTarget(e.target) || e.metaKey || e.ctrlKey) return
+      if (e.defaultPrevented || isTypingTarget(e.target) || e.metaKey || e.ctrlKey) return
+      if (embedded && !inEmbeddedScope(e.target, innerSectionRef.current)) return
       if (e.key === '/' && !e.altKey) {
+        // When embedded inside central Settings, yield `/` to the frame's Find input unless focus is inside this list.
+        if (
+          embedded &&
+          document.querySelector('[aria-label="Find a setting"]') &&
+          !(document.activeElement && innerSectionRef.current?.contains(document.activeElement))
+        ) {
+          return
+        }
         e.preventDefault()
         searchRef.current?.focus()
       } else if (e.altKey && e.key === 'ArrowRight') {
@@ -922,12 +984,13 @@ export function DataGrid<T>({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [slice.pageCount])
+  }, [embedded, slice.pageCount])
 
   // ── layout helpers ─────────────────────────────────────────────────────────
+  const selectWidth = readOnly ? 0 : SELECT_WIDTH
   const leftOffsets = useMemo(() => {
     const map = new Map<string, number>()
-    let left = SELECT_WIDTH
+    let left = selectWidth
     for (const c of columns) {
       if (c.frozen === 'left') {
         map.set(c.key, left)
@@ -935,7 +998,7 @@ export function DataGrid<T>({
       }
     }
     return map
-  }, [columns])
+  }, [columns, selectWidth])
   const rightOffsets = useMemo(() => {
     const map = new Map<string, number>()
     let right = 0
@@ -1122,56 +1185,59 @@ export function DataGrid<T>({
               : 'bg-card hover:bg-row-hover',
         )}
       >
-        <div
-          className={cn(
-            'sticky left-0 z-[3] flex flex-none items-center justify-center self-stretch bg-inherit',
-            !hasFrozen && 'border-r border-border',
-          )}
-          style={{ width: SELECT_WIDTH }}
-        >
-          <button
-            type="button"
-            role="checkbox"
-            aria-checked={checked}
-            aria-label={`Select ${id}`}
-            onClick={(e) => {
-              e.stopPropagation()
-              if (e.shiftKey) return selectRange(id, true)
-              anchorRef.current = id
-              toggleRow(id)
-            }}
-            onDoubleClick={(e) => e.stopPropagation()}
-            className="border-0 bg-transparent p-0"
+        {!readOnly && (
+          <div
+            className={cn(
+              'sticky left-0 z-[3] flex flex-none items-center justify-center self-stretch bg-inherit',
+              !hasFrozen && 'border-r border-border',
+            )}
+            style={{ width: SELECT_WIDTH }}
           >
-            <CheckBox state={checked ? 'on' : 'off'} />
-          </button>
-        </div>
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={checked}
+              aria-label={`Select ${id}`}
+              onClick={(e) => {
+                e.stopPropagation()
+                if (e.shiftKey) return selectRange(id, true)
+                anchorRef.current = id
+                toggleRow(id)
+              }}
+              onDoubleClick={(e) => e.stopPropagation()}
+              className="border-0 bg-transparent p-0"
+            >
+              <CheckBox state={checked ? 'on' : 'off'} />
+            </button>
+          </div>
+        )}
         {columns.map((c, colIndex) => {
           const text = dataset.text(row, c.key)
           const negative = c.type === 'num' && Number(dataset.raw(row, c.key)) < 0
           const flag = colIndex === 0 ? (dataset.rowFlag?.(row) ?? null) : null
-          const editing = !!c.edit && cell?.id === id && cell.key === c.key
+          const canEditCell = !readOnly && !!c.edit
+          const editing = canEditCell && cell?.id === id && cell.key === c.key
           const hit = !!findQ && textMatches(text, findQ)
           return (
             <div
               key={c.key}
               role="gridcell"
               data-col-key={c.key}
-              data-editable={c.edit ? '' : undefined}
+              data-editable={canEditCell ? '' : undefined}
               ref={
-                c.edit
+                canEditCell
                   ? (el) => {
                       if (el) cellRefs.current.set(`${id}|${c.key}`, el)
                       else cellRefs.current.delete(`${id}|${c.key}`)
                     }
                   : undefined
               }
-              tabIndex={c.edit && !editing ? 0 : undefined}
-              title={c.edit && !editing ? 'Click or press Enter to edit' : undefined}
+              tabIndex={canEditCell && !editing ? 0 : undefined}
+              title={canEditCell && !editing ? 'Click or press Enter to edit' : undefined}
               // A plain click edits the cell and leaves the row selection alone (the layout must not
               // jump under the pointer); Shift / Ctrl / Cmd-click still select as usual.
               onClick={
-                c.edit
+                canEditCell
                   ? (e) => {
                       if (e.shiftKey || e.ctrlKey || e.metaKey) return
                       e.stopPropagation()
@@ -1179,9 +1245,9 @@ export function DataGrid<T>({
                     }
                   : undefined
               }
-              onDoubleClick={c.edit ? (e) => e.stopPropagation() : undefined}
+              onDoubleClick={canEditCell ? (e) => e.stopPropagation() : undefined}
               onKeyDown={
-                c.edit && !editing
+                canEditCell && !editing
                   ? (e) => {
                       if (e.key === 'Enter' || e.key === 'F2') {
                         e.preventDefault()
@@ -1199,7 +1265,7 @@ export function DataGrid<T>({
                 c.frozen ? 'z-[2] bg-inherit' : 'z-[1]',
                 negative && 'bg-bad-bg',
                 hit && FIND_CELL,
-                c.edit && 'cursor-text outline-none hover:bg-[color-mix(in_oklab,var(--foreground)_8%,transparent)] focus-visible:shadow-[inset_0_0_0_1.5px_var(--ring)]',
+                canEditCell && 'cursor-text outline-none hover:bg-[color-mix(in_oklab,var(--foreground)_8%,transparent)] focus-visible:shadow-[inset_0_0_0_1.5px_var(--ring)]',
                 frozenClass(c, ''),
               )}
             >
@@ -1229,7 +1295,7 @@ export function DataGrid<T>({
                   {text}
                 </span>
               )}
-              {c.edit && !editing && (
+              {canEditCell && !editing && (
                 <Pencil
                   aria-hidden
                   className="size-[10px] flex-none text-muted-foreground opacity-0 transition-opacity duration-[140ms] group-hover/cell:opacity-70 group-focus-visible/cell:opacity-70"
@@ -1241,7 +1307,7 @@ export function DataGrid<T>({
         })}
       </div>
     )
-    const isMulti = selectedRows.length >= 2 && checked
+    const isMulti = !readOnly && selectedRows.length >= 2 && checked
     if (menu.length === 0 && !isMulti) return <div key={id}>{rowEl}</div>
     return (
       <ContextMenu
@@ -1391,6 +1457,7 @@ export function DataGrid<T>({
 
   return (
     <section
+      ref={setSectionRef}
       data-screen-label={dataset.nounPlural}
       className="flex min-h-0 min-w-0 flex-1 animate-sf-fade flex-col"
     >
@@ -1613,13 +1680,15 @@ export function DataGrid<T>({
                     {action.label}
                   </DropdownMenuItem>
                 ))}
-              <DropdownMenuItem
-                className="gap-[9px] text-[12.5px]"
-                onSelect={() => setSelected(new Set(filtered.map(dataset.idOf)))}
-              >
-                <SquareCheckBig className="size-[14px]" strokeWidth={2} />
-                Select all rows
-              </DropdownMenuItem>
+              {!readOnly && (
+                <DropdownMenuItem
+                  className="gap-[9px] text-[12.5px]"
+                  onSelect={() => setSelected(new Set(filtered.map(dataset.idOf)))}
+                >
+                  <SquareCheckBig className="size-[14px]" strokeWidth={2} />
+                  Select all rows
+                </DropdownMenuItem>
+              )}
               {actions.some((a) => a.danger) && <DropdownMenuSeparator />}
               {actions
                 .filter((a) => a.danger)
@@ -1661,6 +1730,18 @@ export function DataGrid<T>({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {toolbarCreate && !readOnly && (
+            <button
+              type="button"
+              onClick={toolbarCreate.run}
+              title={toolbarCreate.label}
+              className="hover-lift inline-flex h-8 flex-none items-center gap-1.5 rounded-lg border-0 bg-primary px-3 text-[13px] font-semibold whitespace-nowrap text-new-btn-fg shadow-base hover:bg-primary-hover"
+            >
+              <Plus className="size-[14px]" strokeWidth={2.4} />
+              {toolbarCreate.label}
+            </button>
+          )}
         </div>
 
         <FilterChips filters={filters} columns={dataset.filterColumns} onChange={changeFilters} />
@@ -1700,7 +1781,7 @@ export function DataGrid<T>({
           />
         )}
 
-        {selectedRows.length > 0 && (
+        {!readOnly && selectedRows.length > 0 && (
           <div
             role="region"
             aria-label="Bulk actions"
@@ -1814,25 +1895,27 @@ export function DataGrid<T>({
         >
           {/* header */}
           <div role="row" className="sticky top-0 z-[6] flex h-[34px] w-max min-w-full items-stretch border-b border-border bg-panel">
-            <div
-              className={cn(
-                'sticky left-0 z-[7] flex flex-none items-center justify-center bg-panel',
-                !hasFrozen && 'border-r border-border',
-              )}
-              style={{ width: SELECT_WIDTH }}
-            >
-              <button
-                type="button"
-                onClick={toggleAll}
-                title="Select all"
-                role="checkbox"
-                aria-checked={allChecked ? true : someChecked ? 'mixed' : false}
-                aria-label="Select all rows on this page"
-                className="border-0 bg-transparent p-0"
+            {!readOnly && (
+              <div
+                className={cn(
+                  'sticky left-0 z-[7] flex flex-none items-center justify-center bg-panel',
+                  !hasFrozen && 'border-r border-border',
+                )}
+                style={{ width: SELECT_WIDTH }}
               >
-                <CheckBox state={allChecked ? 'on' : someChecked ? 'some' : 'off'} />
-              </button>
-            </div>
+                <button
+                  type="button"
+                  onClick={toggleAll}
+                  title="Select all"
+                  role="checkbox"
+                  aria-checked={allChecked ? true : someChecked ? 'mixed' : false}
+                  aria-label="Select all rows on this page"
+                  className="border-0 bg-transparent p-0"
+                >
+                  <CheckBox state={allChecked ? 'on' : someChecked ? 'some' : 'off'} />
+                </button>
+              </div>
+            )}
             {columns.map((c, colIndex) => {
               const sortIndex = sorts.findIndex((x) => x.key === c.key)
               const base = defaultColumn.get(c.key)
@@ -2035,16 +2118,18 @@ export function DataGrid<T>({
           {/* totals — click a footer cell to pick that column's aggregate */}
           {totalsOn && !isLoading && !error && filtered.length > 0 && (
             <div className="sticky bottom-0 z-[5] flex w-max min-w-full items-stretch border-t border-border bg-panel">
-              <div
-                className={cn(
-                  'sticky left-0 z-[6] flex flex-none items-center justify-center bg-panel text-[11px] font-bold text-muted-foreground',
-                  !hasFrozen && 'border-r border-border',
-                )}
-                style={{ width: SELECT_WIDTH }}
-                title="Totals for every row in the current view"
-              >
-                Σ
-              </div>
+              {!readOnly && (
+                <div
+                  className={cn(
+                    'sticky left-0 z-[6] flex flex-none items-center justify-center bg-panel text-[11px] font-bold text-muted-foreground',
+                    !hasFrozen && 'border-r border-border',
+                  )}
+                  style={{ width: SELECT_WIDTH }}
+                  title="Totals for every row in the current view"
+                >
+                  Σ
+                </div>
+              )}
               {columns.map((c) => {
                 const kind = effectiveAgg(c)
                 return (

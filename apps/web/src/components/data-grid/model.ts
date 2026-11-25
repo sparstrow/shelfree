@@ -123,6 +123,8 @@ export interface Dataset<T> {
   /** Show the Filter side panel from the toolbar (default true). Set false for the compact popover picker. */
   filterPanel?: boolean
   defaultSort?: SortSpec
+  /** Default column key to group rows by on open (e.g. `docType`). */
+  defaultGroupBy?: string
   /** Optional row warning flag shown as a dot before the first column's text (the string as `title`). */
   rowFlag?: (row: T) => string | null
 }

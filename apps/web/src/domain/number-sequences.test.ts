@@ -2,17 +2,29 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { api } from '@/data/api'
 import {
   CommandError,
+  createPurchaseOrder,
+  createPurchaseReceipt,
   deleteNumberSequence,
+  duplicatePurchaseOrders,
+  issueNumber,
+  postPurchaseReceipt,
   saveNumberSequence,
   setDefaultNumberSequence,
 } from '@/data/api/commands'
 import type { NumberSequence } from '@/data/schemas'
+import { newPurchaseOrder } from './purchase-order-editing'
+import { receiptDraftFromOrder } from './purchase-receipt'
 import {
   canDeleteSeries,
+  defaultSeriesFor,
+  docTypesForModule,
   formatNumber,
+  formatSeriesPattern,
   moduleOfDocType,
+  nextFree,
   nextSequenceId,
   previewNext,
+  seriesStatus,
   setDefault,
   takeNext,
   validateSeries,
@@ -166,7 +178,8 @@ describe('number sequences domain rules', () => {
       issued: 0,
       isDefault: true,
     })
-    expect(validateSeries(secondDefault, [base]).isDefault).toBeDefined()
+    // A second default takes the default over on save (setDefault demotes the old one).
+    expect(validateSeries(secondDefault, [base]).isDefault).toBeUndefined()
 
     const clearOnlyDefault = makeSeries({ isDefault: false })
     expect(validateSeries(clearOnlyDefault, [base]).isDefault).toBeDefined()
@@ -212,11 +225,54 @@ describe('number sequences domain rules', () => {
     expect(nextSequenceId([])).toBe('SEQ00001')
     expect(nextSequenceId([{ id: 'SEQ00001' }, { id: 'SEQ00008' }])).toBe('SEQ00009')
   })
+
+  it('skips past existing document numbers when stored next is stale and ignores other prefixes', () => {
+    const stale = makeSeries({ prefix: 'PO', digits: 5, next: 5, issued: 4 })
+    const res = nextFree(stale, ['PO00001', 'PO00005', 'PO00010'])
+    expect(res.number).toBe('PO00011')
+    expect(res.series.next).toBe(12)
+    expect(res.series.issued).toBe(5)
+
+    // Ahead of existing numbers: respects the bumped next value.
+    const bumped = makeSeries({ prefix: 'PO', digits: 5, next: 50, issued: 10 })
+    const resBumped = nextFree(bumped, ['PO00001', 'PO00010'])
+    expect(resBumped.number).toBe('PO00050')
+    expect(resBumped.series.next).toBe(51)
+    expect(resBumped.series.issued).toBe(11)
+
+    // Distinct prefix or suffix ignores unrelated document numbers and handles regex chars safely.
+    const branch = makeSeries({ prefix: 'KPO.', digits: 4, suffix: '/26-27', next: 1, issued: 0 })
+    const resBranch = nextFree(branch, ['PO00010', 'KPO.0003/26-27'])
+    expect(resBranch.number).toBe('KPO.0004/26-27')
+    expect(resBranch.series.next).toBe(5)
+    expect(resBranch.series.issued).toBe(1)
+
+    expect(() => nextFree({ ...stale, active: false }, [])).toThrow(/inactive/i)
+  })
+
+  it('provides module doc types, default lookup, format pattern, and status labels', () => {
+    expect(docTypesForModule('purchasing')).toEqual(['purchase-order', 'purchase-receipt'])
+    expect(docTypesForModule('finance')).toEqual([])
+    expect(formatSeriesPattern(makeSeries({ prefix: 'INV/', digits: 4, suffix: '/26-27' }))).toBe('INV/####/26-27')
+    expect(seriesStatus({ active: true, isDefault: true })).toBe('Default')
+    expect(seriesStatus({ active: true, isDefault: false })).toBe('Active')
+    expect(seriesStatus({ active: false, isDefault: false })).toBe('Inactive')
+
+    const active = makeSeries({ id: 'SEQ00001', active: true, isDefault: true })
+    const inactive = makeSeries({ id: 'SEQ00002', active: false, isDefault: true })
+    expect(defaultSeriesFor([inactive, active], 'purchase-order')?.id).toBe('SEQ00001')
+    expect(defaultSeriesFor([inactive], 'purchase-order')).toBeNull()
+  })
 })
 
 describe('number sequences commands', () => {
   afterEach(async () => {
-    await api.numberSequences.reset()
+    await Promise.all([
+      api.numberSequences.reset(),
+      api.purchaseOrders.reset(),
+      api.purchaseReceipts.reset(),
+      api.items.reset(),
+    ])
   })
 
   it('saves valid series, switches default, and refuses deleting issued series', async () => {
@@ -278,5 +334,62 @@ describe('number sequences commands', () => {
     // Unused series can be deleted cleanly
     await deleteNumberSequence(inactive.id)
     expect(await api.numberSequences.get(inactive.id)).toBeNull()
+  })
+
+  it('issues numbers from the default active series for purchase orders, duplicates, and receipts', async () => {
+    // Issue directly from default PO series
+    const firstNo = await issueNumber('purchase-order')
+    expect(firstNo).toBe('PO00011')
+    const afterFirst = await api.numberSequences.get('SEQ00001')
+    expect(afterFirst?.next).toBe(12)
+    expect(afterFirst?.issued).toBe(11)
+
+    // Add a second PO series, set it default, and create + duplicate POs
+    const kpo = await saveNumberSequence({
+      id: 'SEQ00009',
+      docType: 'purchase-order',
+      module: 'purchasing',
+      name: 'Kanalora PO',
+      prefix: 'KPO',
+      digits: 5,
+      next: 1,
+      resets: 'never',
+      isDefault: false,
+      active: true,
+      issued: 0,
+    })
+    await setDefaultNumberSequence(kpo.id)
+
+    const createdPo = await createPurchaseOrder({
+      ...newPurchaseOrder('PREVIEW', '2026-11-25'),
+      vendor: 'V00001',
+    })
+    expect(createdPo.no).toBe('KPO00001')
+    expect((await api.purchaseOrders.get('KPO00001'))?.vendor).toBe('V00001')
+
+    const duplicated = await duplicatePurchaseOrders(['PO00001'], '2026-11-25')
+    expect(duplicated.created.map((p) => p.no)).toEqual(['KPO00002'])
+    expect((await api.numberSequences.get(kpo.id))?.issued).toBe(2)
+
+    // Receipts: create draft and post a fresh receipt both issue from the default receipt series
+    const orders = await api.purchaseOrders.list()
+    const receipts = await api.purchaseReceipts.list()
+    const po9 = orders.find((p) => p.no === 'PO00009')!
+    const draftPr = receiptDraftFromOrder(po9, receipts, '2026-11-25')
+    const savedPr = await createPurchaseReceipt(draftPr)
+    expect(savedPr.no).toBe('GRN00006')
+
+    const freshToPost = receiptDraftFromOrder(po9, await api.purchaseReceipts.list(), '2026-11-25')
+    freshToPost.lines = freshToPost.lines.map((l, idx) => ({ ...l, qtyReceived: idx === 0 ? 1 : 0 }))
+    const postedPr = await postPurchaseReceipt(freshToPost)
+    expect(postedPr.no).toBe('GRN00007')
+    expect(postedPr.status).toBe('Posted')
+
+    // Missing active default throws a helpful CommandError
+    await api.numberSequences.remove('SEQ00001')
+    await api.numberSequences.remove(kpo.id)
+    await expect(issueNumber('purchase-order')).rejects.toThrow(
+      'No active number series for Purchase orders. Add one in Settings ▸ Number sequences.',
+    )
   })
 })

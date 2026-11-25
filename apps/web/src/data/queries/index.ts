@@ -18,6 +18,8 @@ import {
   bulkPurchaseOrderStatus,
   bulkRemoveItemUnits,
   bulkUpsertCollection,
+  createPurchaseOrder,
+  createPurchaseReceipt,
   deleteNumberSequence,
   duplicateCustomers,
   duplicateItems,
@@ -81,6 +83,32 @@ export function useRemove<K extends CollectionName>(name: K) {
   })
 }
 
+/** Create a new purchase order, issuing its number from the default active series. */
+export function useCreatePurchaseOrder() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: createPurchaseOrder,
+    onSuccess: () =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: ['purchaseOrders'] }),
+        client.invalidateQueries({ queryKey: ['numberSequences'] }),
+      ]),
+  })
+}
+
+/** Create a new purchase receipt, issuing its number from the default active series. */
+export function useCreatePurchaseReceipt() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: createPurchaseReceipt,
+    onSuccess: () =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: ['purchaseReceipts'] }),
+        client.invalidateQueries({ queryKey: ['numberSequences'] }),
+      ]),
+  })
+}
+
 /** Post a goods-in receipt (moves stock and updates the purchase order). */
 export function usePostPurchaseReceipt() {
   const client = useQueryClient()
@@ -88,7 +116,7 @@ export function usePostPurchaseReceipt() {
     mutationFn: postPurchaseReceipt,
     onSuccess: () =>
       Promise.all(
-        (['purchaseReceipts', 'purchaseOrders', 'items'] as const).map((name) =>
+        (['purchaseReceipts', 'purchaseOrders', 'items', 'numberSequences'] as const).map((name) =>
           client.invalidateQueries({ queryKey: [name] }),
         ),
       ),
@@ -245,7 +273,11 @@ export function useDuplicatePurchaseOrders() {
   return useMutation({
     mutationFn: ({ nos, today }: { nos: readonly string[]; today: string }) =>
       duplicatePurchaseOrders(nos, today),
-    onSuccess: () => client.invalidateQueries({ queryKey: ['purchaseOrders'] }),
+    onSuccess: () =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: ['purchaseOrders'] }),
+        client.invalidateQueries({ queryKey: ['numberSequences'] }),
+      ]),
   })
 }
 

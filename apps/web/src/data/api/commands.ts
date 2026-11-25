@@ -11,6 +11,7 @@ import {
   type Item,
   type ItemUnitSet,
   type NumberSequence,
+  type NumberSequenceDocType,
   type PurchaseOrder,
   type PurchaseReceipt,
   type SavedView,
@@ -22,7 +23,15 @@ import {
 import { DEFAULT_PRODUCTION_SETTINGS, aoFinish } from '@/domain/assembly-order'
 import { nextDupNo } from '@/domain/bulk-actions'
 import { dropFavorite, favoritesOfView, nextFavoriteOrder, renumberFavorites, sortFavorites } from '@/domain/favorites'
-import { canDeleteSeries, moduleOfDocType, setDefault, validateSeries } from '@/domain/number-sequences'
+import {
+  DOC_TYPE_LABELS,
+  canDeleteSeries,
+  defaultSeriesFor,
+  moduleOfDocType,
+  nextFree,
+  setDefault,
+  validateSeries,
+} from '@/domain/number-sequences'
 import {
   duplicatePurchaseOrder,
   poCanCancel,
@@ -30,7 +39,6 @@ import {
   poCanLock,
   poCanReopen,
   poLockState,
-  poNextNo,
   poReceiptProgress,
   poStatusAfterReceipts,
 } from '@/domain/purchase-order'
@@ -76,7 +84,11 @@ export async function postPurchaseReceipt(draft: PurchaseReceipt): Promise<Purch
   const problem = postReceiptError(draft, po, receipts)
   if (problem) throw new CommandError(problem)
 
-  const posted: PurchaseReceipt = { ...draft, status: 'Posted', postedAt: new Date().toISOString() }
+  // Posting a brand-new (unsaved) receipt issues its number from the default active series.
+  const exists = receipts.some((r) => r.no === draft.no)
+  const no = exists ? draft.no : await issueNumber('purchase-receipt')
+
+  const posted: PurchaseReceipt = { ...draft, no, status: 'Posted', postedAt: new Date().toISOString() }
   await api.purchaseReceipts.upsert(posted)
 
   // Stock lands at the receiving site (item.locs is keyed by warehouse id).
@@ -767,25 +779,24 @@ export async function bulkEditPurchaseLines(
   return { updated, previous, edited, reopened, skipped, short }
 }
 
-/** `POST /purchase-orders/duplicate` — clone orders as fresh Drafts with sequential numbers. */
+/** `POST /purchase-orders/duplicate` — clone orders as fresh Drafts with numbers issued from the default PO series. */
 export async function duplicatePurchaseOrders(
   nos: readonly string[],
   today: string,
 ): Promise<{ created: PurchaseOrder[] }> {
   const orders = await api.purchaseOrders.list()
   const byNo = new Map(orders.map((p) => [p.no, p]))
-  const running: Pick<PurchaseOrder, 'no'>[] = orders.map((p) => ({ no: p.no }))
   const created: PurchaseOrder[] = []
 
   for (const no of nos) {
     const src = byNo.get(no)
     if (!src) continue
-    const nextNumber = poNextNo(running)
-    running.push({ no: nextNumber })
-    created.push(duplicatePurchaseOrder(src, nextNumber, today))
+    const nextNumber = await issueNumber('purchase-order')
+    const copy = duplicatePurchaseOrder(src, nextNumber, today)
+    await api.purchaseOrders.upsert(copy)
+    created.push(copy)
   }
 
-  if (created.length > 0) await api.purchaseOrders.upsertMany(created)
   return { created }
 }
 
@@ -897,7 +908,16 @@ export async function saveNumberSequence(input: NumberSequence): Promise<NumberS
   const problem = Object.values(errors)[0]
   if (problem) throw new CommandError(problem)
 
-  return api.numberSequences.upsert(numberSequenceSchema.parse(candidate))
+  const saved = await api.numberSequences.upsert(numberSequenceSchema.parse(candidate))
+  // A series saved as the default takes it over: the type's old default is demoted in the same write.
+  if (saved.isDefault) {
+    const rest = all.filter((s) => s.id !== saved.id)
+    const demoted = setDefault([...rest, saved], saved.id).filter(
+      (s) => s.id !== saved.id && rest.some((o) => o.id === s.id && o.isDefault !== s.isDefault),
+    )
+    if (demoted.length > 0) await api.numberSequences.upsertMany(demoted)
+  }
+  return saved
 }
 
 /** Delete an unused number sequence (`DELETE /number-sequences/{id}`). Refuses when `issued > 0`. */
@@ -923,4 +943,66 @@ export async function setDefaultNumberSequence(id: string): Promise<NumberSequen
   const changed = next.filter((s, index) => s.isDefault !== all[index].isDefault)
   if (changed.length > 0) await api.numberSequences.upsertMany(changed)
   return next
+}
+
+async function existingNumbersForDocType(docType: NumberSequenceDocType): Promise<string[]> {
+  switch (docType) {
+    case 'purchase-order':
+      return (await api.purchaseOrders.list()).map((r) => r.no)
+    case 'purchase-receipt':
+      return (await api.purchaseReceipts.list()).map((r) => r.no)
+    case 'sales-order':
+      return (await api.salesOrders.list()).map((r) => r.no)
+    case 'sales-invoice':
+      return (await api.salesInvoices.list()).map((r) => r.no)
+    case 'item':
+      return (await api.items.list()).map((r) => r.no)
+    case 'bom':
+      return (await api.boms.list()).map((r) => r.no)
+    case 'assembly-order':
+      return (await api.assemblyOrders.list()).map((r) => r.no)
+    case 'employee':
+      return (await api.employees.list()).map((r) => r.id)
+  }
+}
+
+/**
+ * Issue the next unused number from the default active series for `docType`
+ * (`POST /number-sequences/{docType}/issue`). Skips past any existing document
+ * number with the same prefix/suffix, then persists `next + 1` and `issued + 1`.
+ */
+export async function issueNumber(docType: NumberSequenceDocType): Promise<string> {
+  const [sequences, existingNos] = await Promise.all([
+    api.numberSequences.list(),
+    existingNumbersForDocType(docType),
+  ])
+  const series = defaultSeriesFor(sequences, docType)
+  if (!series) {
+    throw new CommandError(
+      `No active number series for ${DOC_TYPE_LABELS[docType]}. Add one in Settings ▸ Number sequences.`,
+    )
+  }
+  const { number, series: updated } = nextFree(series, existingNos)
+  await api.numberSequences.upsert(numberSequenceSchema.parse(updated))
+  return number
+}
+
+/**
+ * Create a new purchase order (`POST /purchase-orders`), issuing its number
+ * from the default active purchase-order series in the same transaction.
+ */
+export async function createPurchaseOrder(draft: PurchaseOrder): Promise<PurchaseOrder> {
+  const no = await issueNumber('purchase-order')
+  const created: PurchaseOrder = { ...draft, no }
+  return api.purchaseOrders.upsert(created)
+}
+
+/**
+ * Create a new purchase receipt (`POST /purchase-receipts`), issuing its number
+ * from the default active goods-receipt series in the same transaction.
+ */
+export async function createPurchaseReceipt(draft: PurchaseReceipt): Promise<PurchaseReceipt> {
+  const no = await issueNumber('purchase-receipt')
+  const created: PurchaseReceipt = { ...draft, no }
+  return api.purchaseReceipts.upsert(created)
 }

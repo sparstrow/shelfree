@@ -3,7 +3,7 @@
  * and module settings slices). No React, DOM, or storage — the backend enforces the
  * exact same invariants and issues numbers atomically inside document transactions.
  */
-import type { NumberSequence, NumberSequenceDocType } from '@/data/schemas'
+import type { NumberSequence, NumberSequenceDocType, NumberSequenceReset } from '@/data/schemas'
 
 export type SequenceModuleId = 'purchasing' | 'sales' | 'warehouse' | 'production' | 'people'
 
@@ -18,9 +18,61 @@ const DOC_TYPE_MODULES: Record<NumberSequenceDocType, SequenceModuleId> = {
   employee: 'people',
 }
 
+export const DOC_TYPE_LABELS: Readonly<Record<NumberSequenceDocType, string>> = {
+  'purchase-order': 'Purchase orders',
+  'purchase-receipt': 'Goods receipts',
+  'sales-order': 'Sales orders',
+  'sales-invoice': 'Sales invoices',
+  item: 'Items',
+  bom: 'Bills of materials',
+  'assembly-order': 'Assembly orders',
+  employee: 'Employees',
+}
+
+export const RESET_LABELS: Readonly<Record<NumberSequenceReset, string>> = {
+  never: 'Never',
+  'yearly-apr': 'Yearly (April)',
+  'yearly-jan': 'Yearly (January)',
+}
+
+export const SEQUENCE_MODULE_LABELS: Readonly<Record<SequenceModuleId, string>> = {
+  purchasing: 'Purchasing',
+  sales: 'Sales',
+  warehouse: 'Warehouse',
+  production: 'Production',
+  people: 'People',
+}
+
 /** Map a document type to its owning module id. */
 export function moduleOfDocType(docType: NumberSequenceDocType): SequenceModuleId {
   return DOC_TYPE_MODULES[docType]
+}
+
+/** Document types owned by a settings module id (empty when the module has none yet). */
+export function docTypesForModule(moduleId: string): NumberSequenceDocType[] {
+  return (Object.keys(DOC_TYPE_MODULES) as NumberSequenceDocType[]).filter(
+    (dt) => DOC_TYPE_MODULES[dt] === moduleId,
+  )
+}
+
+/** Display status pill for a series (`Default`, `Active`, or `Inactive`). */
+export function seriesStatus(series: Pick<NumberSequence, 'active' | 'isDefault'>): 'Default' | 'Active' | 'Inactive' {
+  if (!series.active) return 'Inactive'
+  return series.isDefault ? 'Default' : 'Active'
+}
+
+/** Pattern string for the Format column (`PO#####`, `INV/####/26-27`). */
+export function formatSeriesPattern(series: Pick<NumberSequence, 'prefix' | 'digits' | 'suffix'>): string {
+  const width = Math.max(1, Math.min(10, Math.floor(Number(series.digits) || 1)))
+  return `${series.prefix ?? ''}${'#'.repeat(width)}${series.suffix ?? ''}`
+}
+
+/** Find the default active series for a document type, or `null` when none exists. */
+export function defaultSeriesFor(
+  all: readonly NumberSequence[],
+  docType: NumberSequenceDocType,
+): NumberSequence | null {
+  return all.find((s) => s.docType === docType && s.isDefault && s.active) ?? null
 }
 
 /** Format a running number `n` with the series' prefix, zero-padded digits, and optional suffix. */
@@ -102,10 +154,10 @@ export function validateSeries(
     errors.active = 'The default series must be active.'
   }
 
+  // Saving a series as the default takes the default over (the save demotes the old one, see
+  // `setDefault`); clearing it is refused while no other series of the type is the default.
   const otherDefault = othersSameType.find((s) => s.isDefault)
-  if (series.isDefault && otherDefault) {
-    errors.isDefault = `${otherDefault.name} is already the default for this document type.`
-  } else if (!series.isDefault && !otherDefault) {
+  if (!series.isDefault && !otherDefault) {
     errors.isDefault = 'One series for each document type must be the default.'
   }
 
@@ -159,6 +211,38 @@ export function takeNext(series: NumberSequence): { number: string; series: Numb
       issued: series.issued + 1,
     },
   }
+}
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * Issue the next unused number from `series` without colliding with `existingNos`.
+ * If `series.next` is stale (behind an existing number with the same prefix and suffix),
+ * skips forward to one past the highest existing number, then advances `next` and `issued`.
+ */
+export function nextFree(
+  series: NumberSequence,
+  existingNos: readonly string[],
+): { number: string; series: NumberSequence } {
+  if (!series.active) throw new Error('Cannot issue a number from an inactive series.')
+  const prefix = series.prefix ?? ''
+  const suffix = series.suffix ?? ''
+  const re = new RegExp(`^${escapeRegExp(prefix)}(\\d+)${escapeRegExp(suffix)}$`)
+  const existingSet = new Set(existingNos)
+  let maxExisting = 0
+  for (const raw of existingNos) {
+    const m = re.exec(raw)
+    if (!m) continue
+    const parsed = Number.parseInt(m[1], 10)
+    if (Number.isFinite(parsed) && parsed > maxExisting) maxExisting = parsed
+  }
+  let n = Math.max(series.next, maxExisting + 1)
+  while (existingSet.has(formatNumber(series, n))) {
+    n += 1
+  }
+  return takeNext({ ...series, next: n })
 }
 
 /** Next sequential series ID (`SEQ00001`, `SEQ00002`…). */
