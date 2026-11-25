@@ -38,16 +38,16 @@ behavior, data-model, or screen change (see root `CLAUDE.md`).
 - [`units-of-measure/`](units-of-measure/README.md) — **Units of measure** (also
   part of `Shelfree App.dc.html`): the item profile's Units of measure tab plus
   the Warehouse ▸ Units of Measure register (one row per item × unit) on the
-  generic data grid. Ungated Starter base.
-- [`settings/`](settings/README.md) — the settings architecture (also part of
-  `Shelfree App.dc.html`): four setting types across two entry points — admin
-  **Settings** (Workspace / Configuration / Terminology) and **My settings**
-  (avatar menu). Plan-tier gating, locked/upgrade states, and the live
-  terminology (rename-labels) layer.
-- [`number-sequences/`](number-sequences/README.md) — **Number sequences**, shared
-  per-document-type numbering series (`PO`, `GRN`, `SO`, `INV`, `ITM`, `BOM`,
-  `AO`, `EMP`) with GST-audit uniqueness/monotonicity rules and atomic
-  server-side issuance.
+  generic data grid; the unit definitions live at Warehouse ▸ Settings ▸ Units of
+  measure (`/warehouse/settings/uom`). Ungated Starter base.
+- [`settings/`](settings/README.md) — **Settings**, redesigned 2026-11-25: four areas (Workspace, one per
+  module, Shared lists, Personal), one URL per section (`/settings/<id>`, `/<module>/settings/<id>`,
+  `/settings/shared/<list>`), Find a setting, per-module Manage settings right and read-only mode, legacy
+  redirects, quiet help. Also keeps the prototype reference for sections not moved yet.
+- [`number-sequences/`](number-sequences/README.md) — **Number sequences** (Settings, module slice and shared
+  list): per-document-type numbering series (`PO`, `GRN`, `SO`, `INV`, `ITM`, `BOM`, `AO`, `EMP`), default
+  series, never-reuse issuing for purchase orders and receipts, GST-audit uniqueness / gapless rules and
+  atomic server-side issuance.
 - [`item-page/`](item-page/README.md) — the full-page **Item detail** screen
   (also part of `Shelfree App.dc.html`): opens in its own workspace tab from the
   Items grid; Overview / Stock & locations / Purchasing sub-tabs, with

@@ -167,7 +167,7 @@ function Editor({
     const problem = postReceiptError(draft, order, data.receipts)
     if (problem) return setError(problem)
     try {
-      const done = await post.mutateAsync(draft)
+      const done = await post.mutateAsync({ draft, isNew })
       const site = data.warehouses.find((w) => w.code === done.location)
       const rej = prQtyRejected(done)
       toast('Receipt posted', {

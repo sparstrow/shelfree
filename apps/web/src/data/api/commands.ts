@@ -70,7 +70,13 @@ export class CommandError extends Error {}
  * 2. accepted units are added to stock at the receiving location,
  * 3. the purchase order's status follows what has now arrived.
  */
-export async function postPurchaseReceipt(draft: PurchaseReceipt): Promise<PurchaseReceipt> {
+export async function postPurchaseReceipt(
+  input: PurchaseReceipt,
+  { isNew = false }: { isNew?: boolean } = {},
+): Promise<PurchaseReceipt> {
+  // A new receipt only carries a preview number, which may match a stored receipt when the series'
+  // `next` is stale — so it is checked without one and gets its real number when it posts.
+  const draft: PurchaseReceipt = isNew ? { ...input, no: '' } : input
   const [orders, receipts, items, warehouses] = await Promise.all([
     api.purchaseOrders.list(),
     api.purchaseReceipts.list(),
@@ -85,8 +91,7 @@ export async function postPurchaseReceipt(draft: PurchaseReceipt): Promise<Purch
   if (problem) throw new CommandError(problem)
 
   // Posting a brand-new (unsaved) receipt issues its number from the default active series.
-  const exists = receipts.some((r) => r.no === draft.no)
-  const no = exists ? draft.no : await issueNumber('purchase-receipt')
+  const no = isNew ? await issueNumber('purchase-receipt') : draft.no
 
   const posted: PurchaseReceipt = { ...draft, no, status: 'Posted', postedAt: new Date().toISOString() }
   await api.purchaseReceipts.upsert(posted)

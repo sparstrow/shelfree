@@ -1,94 +1,366 @@
-# Settings — `prototype/designs/erp/Shelfree App.dc.html`
+# Settings
+
+Code: `apps/web/src/components/settings/` (frame, templates, registry), `components/help/` (quiet help),
+`features/settings/` (the sections), `routes/settings/`, `routes/$module/settings/`,
+`domain/settings-permissions.ts`. Spec: `docs/superpowers/specs/2026-11-24-settings-redesign.md`.
+Plan: `docs/superpowers/plans/2026-11-24-settings-redesign.md`. The original prototype lives in
+`prototype/designs/erp/Shelfree App.dc.html` and is still the reference for sections not moved yet
+(see the last part of this file).
 
 ## Overview
 
-The settings surface is split into **four setting types across two entry points**
-("two doors"), per `docs/superpowers/specs/2026-07-24-settings-architecture.md`:
+Settings has four **areas**, by who a setting is for:
 
-- **Admin Settings** — the sidebar **gear** (owner + admins only). Three groups:
-  - **Workspace** — Business profile · Plan & billing · Modules & capabilities ·
-    Regional & format · Team & roles · Keyboard shortcuts.
-  - **Configuration** — Units of measure · Item categories · Locations &
-    warehouses (Starter base, existing) · **Tax codes** (live since 2026-09-25 —
-    `docs/tax-codes/README.md`) · **Tax settings** (id `cfg-taxset`, live since 2026-09-26 —
-    `docs/tax-settings/README.md`) + Payment terms · Statuses & stages · Number sequences · Custom fields (later tiers).
-  - **Terminology** — Rename labels.
-- **My settings** — the **avatar menu** (every user). Profile · Appearance ·
-  Notifications · Language & region · Personal defaults · Security.
+| Area | Kind | What it holds | Who can edit |
+|---|---|---|---|
+| **Workspace** | `workspace` | Company-wide: business profile, GST registrations, plan, modules, regional format, team & roles, terminology, navigation, states | Owner and admin |
+| **Module** (Purchasing, Sales, Warehouse, Production, Finance, People) | `module` | Everything that configures one module, plus that module's slice of the shared lists | Owner, admin, or a user with the **Manage settings** right for that module |
+| **Shared lists** | `shared` | The whole cross-module lists (number sequences, statuses, custom fields, payment terms, tax codes), all modules in one grid | Owner and admin |
+| **Personal** | `personal` | The signed-in user's own preferences | The user |
 
-State: `settingsOpen` (bool), `settingsScope` (`admin` | `user`), `settingsPage`
-(page id). Nav is data-driven from `settingsGroups(scope)`; the active page's
-group/label drive the breadcrumb (`settingsRootCrumb` / group / page). The
-existing `uom` / `categories` / `locations` / `shortcuts` page ids are unchanged
-— they were re-grouped, not rewritten.
+A module's settings are reachable from two places and are the same page: the **Settings** item at the end
+of the module's sidebar section (`/<module>/settings`), and central **Settings** (the gear), which lists
+every area. Inside a module the left list shows only that module's sections plus an "All settings" link.
+
+Tiers are parked (CLAUDE.md "current working mode"): nothing here is gated by plan. A section whose
+capability is switched off (for example Sales pricing with customer pricing off) stays listed.
+
+Everything is frontend-only today: reads and writes go through `data/api/` to localStorage. The backend
+build follows the notes at the end.
 
 ## Screens & states
 
-- **Business profile** — name, legal name, industry, contact email, address
-  block, GSTIN/PAN. Logo upload is a stub.
-- **Plan & billing** — three plan cards (Starter/Growth/Enterprise); the current
-  plan is highlighted; clicking another calls `setPlan()` (mocked, instant, no
-  billing). A business-size/plan switch is the single lever that drives all
-  gating. Payment method is a stub.
-- **Modules & capabilities** — per-module on/off (Home and Warehouse are
-  non-disable-able); scale-axis capability toggles, each mapped to a minimum
-  tier. Axes above the current plan render **locked** with an Upgrade button
-  that routes to Plan & billing.
-- **Regional & format** — base currency, timezone, date/number format, fiscal
-  start, week start. Multi-currency shown locked (Growth).
-- **Team & roles** — role cards (Owner/Admin/Manager/Member) + a read-only
-  role×module permission matrix (Full/View/None). "New role" shown only at
-  Growth+. Individual user/employee records live in the People module, not here.
-- **Terminology** — searchable list of renameable labels. Each row shows the
-  **Original name (always visible)** and an editable field; Records track
-  **singular + plural**. Per-row Reset appears once changed; global "Reset all"
-  with a confirm dialog. Renames apply **live** across the app (see below).
-- **Configuration (later-tier pages)** — `cfg-*` render a seeded read-only
-  preview table + a note that full editing lands in the backend build; shown
-  locked (upgrade panel) when above the current plan.
-- **My settings** — Profile (name/title/email/phone); Appearance (theme toggle,
-  default grid density; accent/corners/surface remain in the Tweaks panel);
-  Notifications (four toggles + delivery channel); Language & region; Personal
-  defaults (landing page, default location); Security (password stub, 2FA
-  toggle, sessions stub).
-- **Locked / upgrade panel** — shared full-page state shown for any page whose
-  tier exceeds the current plan. "View plans" routes to Plan & billing.
-- **Saved flash** — a transient "Saved" toast on any settings write.
+### URLs and sections
+
+One URL per section. `<module>` is one of `purchasing | sales | warehouse | production | finance | people`.
+"Ported" means the section body exists in the React app; the rest show "This section has not been moved to
+the new app yet" inside the frame, with a link to a ported section.
+
+| Area | URL | Type | Ported |
+|---|---|---|---|
+| Workspace | `/settings/ws-profile` Business profile | form | yes |
+| Workspace | `/settings/ws-gst` GST registrations | list | not moved yet |
+| Workspace | `/settings/ws-plan` Plan & billing | custom | not moved yet |
+| Workspace | `/settings/ws-modules` Modules & capabilities | custom | not moved yet |
+| Workspace | `/settings/ws-regional` Regional & format | form | not moved yet |
+| Workspace | `/settings/ws-team` Team & roles | list | not moved yet |
+| Workspace | `/settings/terminology` Terminology | list | not moved yet |
+| Workspace | `/settings/cfg-nav` Navigation | custom | not moved yet |
+| Workspace | `/settings/cfg-favorites` Favorites & views (workspace part) | custom | not moved yet |
+| Workspace | `/settings/cfg-states` States & territories | list | not moved yet |
+| Purchasing | `/purchasing/settings/carrier-types` Carrier types | list | not moved yet |
+| Purchasing | `/purchasing/settings/sequences` Number sequences (slice) | list, shared | yes |
+| Purchasing | `/purchasing/settings/statuses` Statuses & stages (slice) | list, shared | not moved yet |
+| Purchasing | `/purchasing/settings/fields` Custom fields (slice) | list, shared | not moved yet |
+| Purchasing | `/purchasing/settings/terms` Payment terms (slice) | list, shared | not moved yet |
+| Sales | `/sales/settings/cfg-pricing` Sales pricing | form | not moved yet |
+| Sales | `/sales/settings/sequences`, `statuses`, `fields`, `terms` (slices) | list, shared | sequences only |
+| Warehouse | `/warehouse/settings/uom` Units of measure | list | yes |
+| Warehouse | `/warehouse/settings/categories` Item categories | list | not moved yet |
+| Warehouse | `/warehouse/settings/locations` Locations & warehouses | list | not moved yet |
+| Warehouse | `/warehouse/settings/sequences`, `fields` (slices) | list, shared | sequences only |
+| Production | `/production/settings/assembly` Assembly & production | form | not moved yet |
+| Production | `/production/settings/sequences`, `statuses` (slices) | list, shared | sequences only |
+| Finance | `/finance/settings/cfg-taxset` Tax settings | form | not moved yet |
+| Finance | `/finance/settings/tax-codes` Tax codes (slice) | list, shared | not moved yet |
+| Finance | `/finance/settings/sequences` Number sequences (slice) | list, shared | yes, but no document type belongs to Finance yet, so it shows an empty read-only list |
+| People | `/people/settings/fields`, `sequences` (slices) | list, shared | sequences only |
+| Shared lists | `/settings/shared/sequences` Number sequences | list | yes |
+| Shared lists | `/settings/shared/statuses`, `fields`, `terms`, `tax-codes` | list | not moved yet |
+| Personal | `/settings/me-profile`, `me-appearance`, `me-notifications`, `me-language`, `me-defaults`, `me-security` | form | not moved yet |
+| Personal | `/settings/me-favorites` Favorites & views | custom | not moved yet |
+| Personal | `/settings/shortcuts` Keyboard shortcuts | custom | yes |
+
+Roots: `/<module>/settings` redirects to the module's first section. `/settings` redirects to Business
+profile (owner, admin) or Profile (member). An unknown module, section or list id is "Page not found".
+The registry is `components/settings/registry.ts`; the ported sections are the one-line entries in
+`features/settings/sections.ts`.
+
+### Section types
+
+Every section is built from one of three types, never from scratch:
+
+| Type | Template | Used by |
+|---|---|---|
+| **form** — label \| control rows | `SettingsSection` (groups of rows, dirty tracking, Save bar, leave guard, quiet help) | Business profile |
+| **list** — records you add, edit, delete | `ListPage` with `embedded` inside `SettingsPage flush` (no top bar of its own, New in the grid toolbar), drawer editor (`editor`) | Units of measure, Number sequences |
+| **custom** — own body | `SettingsPage` (title row, quiet help, loading / error) | Keyboard shortcuts |
+
+A **shared list** section is one component with an optional `module` prop. A module area passes its module:
+rows of other modules are hidden and New pre-fills the module's first document type. Central Shared lists
+passes none and shows a Module column.
+
+### Frame (`SettingsFrame`)
+
+- **Central** (`/settings/...`, `/settings/shared/...`): left list grouped Workspace, Modules (one
+  collapsible entry per module, expanding to its sections; links go to the module URLs), Shared lists,
+  Personal. Only areas the user can view are listed: a member sees Personal and the modules their
+  `perms` allow; Workspace and Shared lists are hidden from a member.
+- **Module area** (`/<module>/settings/...`): that module's sections plus "All settings".
+- **Breadcrumb:** `Settings ▸ Workspace ▸ Business profile` or `Purchasing ▸ Settings ▸ Number sequences`.
+  The tab title reads "<Module> settings".
+- **Find a setting** (central only, top of the list): searches section names, row labels and help text
+  across the areas the user can view, ranked label prefix, word prefix, contains, help text. Shows the
+  best 8; one hit per row label. Row labels come from each section's help map (`SETTINGS_HELP_MAPS`).
+  ↑ ↓ move, Enter opens the match, Esc clears. A row hit opens the section with `?find=<rowKey>`; the
+  frame scrolls to the element marked `data-setting-row="<rowKey>"` and highlights it for about 2 s. Form
+  sections mark every row (key) and group (group id). List sections do not mark rows, so a row hit in a list
+  section only opens the section.
+- **Phones:** the left list becomes a grouped select (`optgroup` per area) above the section.
+- **States:** loading skeleton, error with "Try again", "not moved yet", "no access" (see below), not found.
+- **Read-only line:** a quiet "View only — ask an admin to change these settings." under the title.
+
+### Entries elsewhere
+
+- Every module's sidebar section ends with **Settings** (gear). It can be favourited and opened in a new tab.
+- The top-bar gear opens `/settings`; the account menu "My settings" opens `/settings/me-profile`.
+- Departments (`/departments`) lists each module's Settings page.
+- People ▸ Users has a "Manage roles" link to `/settings/ws-team` (Team & roles is Workspace only).
+
+### Legacy ids redirect
+
+Old `/settings/<id>` links, favourites and recents keep working: the route replaces the URL with the new one.
+
+| Old id | New URL |
+|---|---|
+| `uom`, `categories`, `locations` | `/warehouse/settings/<id>` |
+| `carrier-types` | `/purchasing/settings/carrier-types` |
+| `cfg-pricing` | `/sales/settings/cfg-pricing` |
+| `assembly` | `/production/settings/assembly` |
+| `cfg-taxset` | `/finance/settings/cfg-taxset` |
+| `cfg-sequences`, `cfg-statuses`, `cfg-fields`, `cfg-terms`, `cfg-tax` | `/settings/shared/sequences`, `statuses`, `fields`, `terms`, `tax-codes` |
+
+Ids that still live at `/settings/<id>` (all `ws-*`, `me-*`, `terminology`, `cfg-nav`, `cfg-favorites`,
+`cfg-states`, `shortcuts`) never redirect. The table is `legacyIds` plus a module-section fallback in
+`legacyTarget()` in the registry.
+
+### Keys
+
+Data: `components/settings/shortcut-meta.ts` (catalogue: `src/app/shortcuts.ts`, Settings group).
+
+| Key | Action |
+|---|---|
+| `[` / `]` | Previous / next section in the current list (central: across the expanded areas; module: within the module) |
+| `/` | Focus Find a setting (central only) |
+| ↑ ↓ Enter Esc | In Find a setting: move, open, clear |
+| `?` | Show / hide every description inline (per user, `me.showSetHelp`, off by default) |
+| Ctrl/Cmd+S | Save a form section |
+| Esc | Close an open description, or discard unsaved changes |
+
+All are ignored while typing in a field or when a dialog, menu, listbox or popover is open. In read-only
+mode Ctrl+S and Esc-discard do nothing, and the list's N / E / Delete keys are off.
+
+### Read-only mode and who sees what
+
+| Viewer | Workspace | Shared lists (whole) | Module `m` | Personal |
+|---|---|---|---|---|
+| Owner, admin | edit | edit | edit | edit |
+| Member, `perms[m]` is `read` or `write`, `settings[m]` true | no access | no access | edit | edit |
+| Member, `perms[m]` is `read` or `write`, `settings[m]` not true | no access | no access | view only | edit |
+| Member, `perms[m]` is `none` | no access | no access | no access | edit |
+
+- "No access" shows a lock message ("Workspace settings are for owners and admins." or "You don't have
+  access to <Module> settings.") with a link to Personal settings.
+- The role is the demo role (`useUi().demoRole`); a member's user record is found by the signed-in email
+  in the `users` list. The rules are pure functions in `domain/settings-permissions.ts`
+  (`canViewArea`, `canEditArea`) behind the `useSettingsAccess(area)` hook. UX only: the backend enforces.
+- **View only:** a form section shows each value as text in the same row (edit in place, nothing moves),
+  has no Save bar, and Ctrl+S is inert. A list section hides New, Edit, Duplicate, Delete, custom actions
+  and bulk actions, ignores the editing keys, and opens the drawer in view mode. The title row shows the
+  line above. `SettingsPage readOnly` also provides `useSettingsReadOnly()` to a custom body.
+- A module slice with no document types of its own (Finance ▸ Number sequences today) is read-only for
+  everyone and shows "No document types use number sequences in this module yet."
+
+### Templates (API)
+
+- `SettingsFrame` — props `area`, `sectionId`, `sections` (id → component), `helpMaps`, `highlightRow`.
+  A section component receives `{ module?, readOnly? }`.
+- `SettingsPage` — title row (title ⓘ, optional count pill and `actions`), loading skeleton, error + retry,
+  body, and (given `form`) the save bar. `width="wide"` for tables; `flush` fills the pane height without
+  padding for an embedded `ListPage`; `readOnly`.
+- `SettingsSection<V>` — `SettingsPage` + `useSettingsForm` + `SettingsRows`. Props: `id`, `title`, `help`
+  (`HelpMap`: `page`, a key per group id, a key per row), `saved`, `isLoading`, `error`, `onRetry`,
+  `onSave(next)` (the whole document), `groups`, optional cross-field `validate`, `readOnly`.
+- A row: `{ key, label, control, help?, default?, defaultText?, validate?, warn?, hidden?, locked? }`;
+  controls `text | select | switch | number | area | readonly`. `default` enables "Use default" in the popover
+  while the value differs. `validate` blocks Save with an error under the value; `warn` is a non-blocking note.
+- `useSettingsForm` — draft holds only the changed keys over the saved value; dirty = keys that differ;
+  one save at a time; toast `Saved`; **leave guard** (`useBlocker` + `beforeunload`): Keep editing /
+  Discard and leave / Save and leave. The save bar is mode-stable ("No unsaved changes" / "N unsaved changes").
+- `ListPage` gained two opt-in props for settings (other lists unchanged): `embedded` (no top bar and no
+  page-level New; New moves into the grid toolbar; keys are scoped to the pane) and `readOnly`. `DataGrid`
+  got the matching `embedded` / `readOnly` props.
+- Register a ported section with one line in `features/settings/sections.ts` (component) and, for Find a
+  setting, one entry in `SETTINGS_HELP_MAPS`.
+
+### Quiet help (`components/help/`)
+
+Settings pages are quiet: no descriptive text inline. `HelpTarget` wraps a label or title and adds the ⓘ
+button (`aria-label="About …"`, `aria-expanded`). Mouse: hover the label or ⓘ about 400 ms opens the popover,
+click pins, Esc / ✕ / click outside closes; ⓘ fades in on row hover or focus. Keyboard: focusing ⓘ opens it,
+Enter or Space pins. Touch (`(hover:none), (pointer:coarse)`): ⓘ always visible, 44 px, opens a bottom sheet.
+The popover flips to the side with room and caps its height. `?` prints every description inline.
+Content (`HelpContent`): title, body, each option (current marked, default tagged), "Default: …" with
+**Use default**, a compliance note. A page's help is one pure `HelpMap` (`types.ts`).
+
+Help maps that exist: Business profile (`features/settings/business-profile/help.ts`), Number sequences
+(`number-sequences/help.ts`), Units of measure (`units-of-measure/help.ts`). A new section ships its map in
+the same turn; it also feeds Find a setting.
+
+### Ported sections
+
+- **Business profile** (`/settings/ws-profile`, form, workspace, owner / admin). Name, legal name, industry,
+  contact, address, PAN. GSTIN is read-only here (primary registration) and is managed under GST
+  registrations. Validation: name and legal name required; email shape; six-digit PIN; PAN `AAAAA9999A`.
+  State vs GSTIN state code and PAN vs GSTIN are warnings only.
+- **Units of measure** (`/warehouse/settings/uom`, list on `ListPage embedded`) — see
+  `docs/units-of-measure/README.md`.
+- **Number sequences** (`/<module>/settings/sequences`, `/settings/shared/sequences`) — see
+  `docs/number-sequences/README.md`.
+- **Keyboard shortcuts** (`/settings/shortcuts`, custom, personal). Renders `SHORTCUT_GROUPS` from
+  `src/app/shortcuts.ts`: grouped by where the keys apply, searchable, `/` focuses search, Esc clears.
+  Templates expose their keys as data beside their code (`shortcut-meta.ts` in `list-page`, `data-grid`,
+  `record-page`, `document`, `settings`); a page's own keys are a `ShortcutMeta` in its `shortcuts.ts`.
+  A page adds its group to the catalogue in the same turn it adds a key.
 
 ## Data model
 
-All client-side (localStorage), no backend calls:
+Settings has no single settings table. Each area keeps the document it already had.
 
-- **Plan** — `planTier ∈ starter | growth | enterprise` (`tierRank` / `tierAllows`).
-- **Role (demo)** — `userRole ∈ owner | admin | member`; `isAdmin()` = owner|admin.
-- **Terminology** — `terms`: flat map of `key → override string`. Keys:
-  `module.<id>` (6 modules); `object.<item|customer|vendor|po>.<singular|plural>`.
-  `termGet(key, default)` resolves an override or the default. Empty string
-  deletes the override.
-- **Workspace (`ws`)** — profile fields, regional fields, `modules` (id→bool),
-  `axes` (capability→bool). See `wsDefaults()`.
-- **User (`me`)** — profile, notification prefs, language/locale, personal
-  defaults, `twoFA`. See `meDefaults()`.
+- **Workspace identity** — `Workspace` (`data/api/session.ts`): name, legal name, industry, contact,
+  address, PAN, GSTIN (read mirror of the primary registration).
+- **Workspace configuration switches** — one settings document (`data/api/settings.ts`): purchasing / tax
+  switches. Unchanged.
+- **Per-user settings** — `Me` (`showSetHelp` today; more as Personal sections are ported).
+- **User access** — `User.perms: Record<module, 'none' | 'read' | 'write'>` and
+  `User.settings: Record<module, boolean>` (the **Manage settings** right; default `{}`). Presets: owner and
+  admin all true; manager true where `perms[m] === 'write'`; every other role false. The right needs module
+  access (`perms[m] !== 'none'`) and only exists for modules with a settings area: finance, sales,
+  purchasing, warehouse, production, people.
+- **Units of measure** — collection `unitsOfMeasure` (custom units on top of the default list).
+- **Number sequences** — collection `numberSequences`; see its doc.
+- **Registry** (code, not stored): `SettingsArea { id, label, kind, sections }`,
+  `SectionDef { id, label, type, shared?, legacyIds? }`, `SharedListId = sequences | statuses | fields | terms | tax-codes`.
+- Shared lists will carry the owning module on each row (`module` on number sequences today; the spec's
+  `modules: string[]` for lists that serve several modules, such as payment terms, comes with those lists).
 
 ## Interactions & business rules
 
-- **Access:** Workspace/Configuration/Terminology are owner/admin only;
-  `openSettings()` redirects a **member** to `openUserSettings()`. My settings is
-  per-user. Terminology changes apply to **everyone**.
-- **Tier gating:** plan = ceiling. A page/axis whose `tier` exceeds `planTier`
-  is **locked**: nav shows a lock icon; navigating renders the upgrade panel;
-  locked axis toggles route to Plan & billing. Growth-path features are shown
-  locked; the intent for niche features is hidden (not yet exercised here).
-- **Terminology is a display layer:** `modules()` names, table titles
-  (`tableTitle`) and the count noun (`unitNoun`) resolve through `termGet`, so a
-  rename propagates live to the sidebar, breadcrumb, tabs, page search and table
-  headers. **Data keys/ids are never renamed.**
-- **Tier map** (recorded per spec): Starter — business profile, plan switch,
-  single-currency regional, modules on/off, single-owner team, UoM/categories/
-  locations, all My settings. Growth — multi-warehouse/zones, lot/expiry/
-  barcodes, advanced reporting, multi-role, payment terms/tax/statuses,
-  **Terminology**, multi-currency. Enterprise — serial, approvals, integrations,
-  custom fields, number sequences.
+- **Access** — table above. Owner and admin: everything. Workspace and whole shared lists: owner and admin
+  only. Module: view needs module access, edit needs `settings[module]`. Personal: the user.
+- **One save per section.** A form section saves its whole document in one call; list sections save per record.
+  This keeps one audit event per save.
+- **Edit in place.** View and edit show the same rows in the same positions; read-only is the same layout
+  without controls.
+- **Unsaved changes** block navigation (guard) in form sections.
+- **Terminology** (prototype, not moved yet) is a display layer: renames re-label the UI live, data keys and
+  ids are never renamed.
+
+## Persistence
+
+All client-side for now. Screens never touch storage: they use TanStack Query hooks in `data/queries/`, which
+call `data/api/`.
+
+| Data | Storage key | Hook / api |
+|---|---|---|
+| Workspace identity | `shelfree.v2.workspace` | `useWorkspace`, `useUpdateWorkspace` (`sessionApi.updateWorkspace`) |
+| Per-user settings | `shelfree.v2.me` | `useMe`, `useUpdateMe` |
+| Configuration switches | `shelfree.v2.settings` | `data/api/settings.ts` |
+| Users (access, Manage settings) | `shelfree.v2.users` | `useList('users')` |
+| Units of measure | `shelfree.v2.unitsOfMeasure` | `useList('unitsOfMeasure')` |
+| Number sequences | `shelfree.v2.numberSequences` | `useNumberSequences` and friends |
+| Demo role | UI store (`useUi().demoRole`) | demo only |
+
+The prototype's `shelfree.settings.*.v1` keys are not read by the React app.
+
+## Backend-build notes
+
+### Endpoints
+
+One read and one write endpoint per section so an audit event maps to exactly one section:
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /settings/<area>/<section>` | Read a section document. `area` is `workspace`, a module id, or `personal`. |
+| `PUT /settings/<area>/<section>` | Replace a section document. Send `If-Match` (version); `409` on a stale version. |
+| `GET/POST/PUT/DELETE /units-of-measure` | Unit definitions. |
+| `GET/POST/PUT/DELETE /number-sequences`, `POST /number-sequences/{id}/default`, `POST /number-sequences/{docType}/issue` | See `docs/number-sequences/README.md`. |
+| `GET /workspace`, `PATCH /workspace` | Identity (Business profile) while it keeps its own resource. |
+| `GET/PATCH /me/settings` | Personal settings, signed-in user only. |
+
+For `PUT`, accept the full document, validate every row server-side, respond with the stored document.
+The form sends only changed keys internally; the API may also accept `PATCH` with changed keys.
+
+### Permission checks per area
+
+Enforced server-side on every request. The React checks are UX only.
+
+| Area | Read | Write |
+|---|---|---|
+| `workspace`, `shared` (whole lists) | owner, admin | owner, admin |
+| module `m` | owner, admin, or `perms[m]` is read / write | owner, admin, or `perms[m]` is read / write and `settings[m]` is true |
+| `personal` | the user | the user |
+
+A write without the right is `403`. Module slices of shared lists follow their module. Granting or changing
+`settings[m]` is itself admin-only and audited (see `docs/people/README.md`).
+
+### Audit
+
+Every settings save emits an audit event: actor, area, section, time, before and after (changed keys),
+request id. List sections emit one event per create, edit, delete and, for number sequences, set default.
+Tax-relevant identity fields (GSTIN, PAN, legal name) keep their change history.
+
+### Decisions & deferred-to-backend
+
+- **Four areas, one frame.** Spec 2026-11-24. Module settings sit next to the module and in central
+  Settings; shared lists show a module slice in a module and the whole list centrally.
+- **Registry is the source of truth** for areas, sections, URLs and redirects. The redirect table is
+  client-side; the backend serves no navigation.
+- **Own nav inside the page.** The React frame keeps the app sidebar and puts section navigation inside the
+  page (the prototype swaps the sidebar).
+- **Save model.** Form rows are always editable and held until Save, with an unsaved count and a leave guard.
+- **Backend rules to enforce:** the permission table above; business profile validation (name and legal name
+  required, email, six-digit PIN, PAN shape; GSTIN not edited here); `If-Match` versions; no secrets or
+  sensitive data client-side (`showSetHelp` is a harmless preference).
+- **Differences from the spec (code wins):**
+  - Spec: a module area appears only when the module is on. Code: all six module areas are listed for anyone
+    allowed to view them; there is no module on/off check yet (`areasForModules` exists but is not used by
+    the frame or routes). Deferred until Modules & capabilities is ported.
+  - Spec: module off redirects to `/settings`. Not implemented, same reason.
+  - Spec: shared records carry `modules: string[]`. Code: number sequences carry a single `module`
+    derived from their document type. Revisit with payment terms and statuses.
+  - Spec: Find a setting highlights the row. Code: only form sections mark rows; list sections only open.
+  - Spec: Team & roles lists the Manage settings column. The column ships on People ▸ Users; Team & roles is
+    not moved yet.
+- **Deferred:** the 20+ sections marked "not moved yet" (Phase 2 of the plan); module on/off checks; review
+  before save for Tax settings; terminology overrides; plan and billing (no billing is built); logo upload,
+  password change and session revocation (stubs).
+
+## Prototype reference — sections not moved yet
+
+Everything below describes the prototype's behaviour and its old ids and keys. Where a section has been
+ported, the part above wins. Use it as the reference when porting; new URLs are in the table above.
+Prototype persistence used `shelfree.settings.*.v1` localStorage keys.
+
+### Prototype behaviour that still applies
+
+- **Plan & billing** — three plan cards (Starter / Growth / Enterprise); clicking one calls `setPlan()`
+  (mocked, no billing). Payment method is a stub.
+- **Modules & capabilities** — per-module on/off (Home and Warehouse cannot be switched off); scale-axis
+  capability toggles, each with a minimum tier.
+- **Regional & format** — base currency, timezone, date and number format, fiscal start, week start.
+- **Team & roles** — role cards (Owner / Admin / Manager / Member) and a role × module permission matrix.
+  Individual users live in People ▸ Users.
+- **Terminology** — searchable list of renameable labels. Each row shows the original name (always visible)
+  and an editable field; records track singular and plural; per-row Reset and a global "Reset all" with a
+  confirm. Renames apply live (sidebar, breadcrumb, tabs, page search, table headers). Data keys and ids are
+  never renamed. Overrides are workspace-scoped and read by everyone. Keys: `module.<id>`,
+  `object.<item|customer|vendor|po>.<singular|plural>`.
+- **My settings** — Profile; Appearance (theme, default grid density); Notifications (four toggles and a
+  channel); Language & region; Personal defaults (landing page, default location, assembly defaults, tax
+  split); Security (password stub, 2FA toggle, sessions stub).
+- **Saved flash** — a transient "Saved" toast on any settings write (the React frame shows the `Saved` toast).
+
 
 ### Terminology keys (2026-08-01)
 
@@ -109,47 +381,6 @@ Renaming a term re-labels live via `syncAxisCols()`; underlying field names
 It now pre-scopes the Items grid to that site when `multiWarehouse` is on (see
 `docs/erp-app/README.md` → Location scope chip). Its options come from
 `siteDefs()` rather than the previous hardcoded (and drifted) list.
-
-## Persistence
-
-localStorage, versioned keys (all written this feature):
-
-- `shelfree.settings.plan.v1` — plan tier.
-- `shelfree.settings.role.v1` — demo role.
-- `shelfree.settings.terms.v1` — terminology override map (JSON).
-- `shelfree.settings.workspace.v1` — workspace profile/regional/modules/axes (JSON).
-- `shelfree.settings.user.v1` — per-user settings (JSON).
-
-## Backend-build notes
-
-### Decisions & deferred-to-backend
-
-- **Real RBAC.** The `userRole` switch is a demo affordance; production needs a
-  real identity/role model and **server-side enforcement** of the access table
-  (owner/admin-only Workspace/Configuration/Terminology; per-user My settings).
-  The client redirect for members is UX only.
-- **Plan entitlement.** `planTier` + `tierAllows` mirror an authoritative
-  server-side tier→capability matrix; the backend must enforce that a
-  capability's data is only writable when its tier + toggle are active
-  (inherits the scale-adaptive spec). No real billing is implemented.
-- **Settings scope.** Workspace settings are workspace-scoped; user settings are
-  user-scoped; terminology overrides are workspace-scoped but read by all users.
-  Endpoints: `GET/PATCH /workspace/settings`, `GET/PATCH /me/settings`,
-  `GET/PUT /workspace/terminology` (map of key→{singular,plural}); plan via
-  `GET /workspace/plan` + a billing provider.
-- **Terminology contract.** Overrides are a label/i18n layer keyed by stable
-  string keys (`module.*`, `object.*.singular|plural`) with room for locale
-  variants later. Reports, exports and the API must keep the original keys —
-  never rename underlying fields. Validate against collisions (two labels
-  resolving to the same string) as a soft warning.
-- **Configuration master data.** Payment terms, tax codes, statuses, number
-  sequences and custom fields need real CRUD endpoints + referential integrity
-  (can't delete a value still referenced) when promoted out of preview.
-- **Logo/photo upload, password change, session revocation** are stubs — wire to
-  file storage / auth service.
-- **Audit:** changing plan, roles, terminology, and workspace profile are
-  audit-relevant (see `docs/security/README.md`) and must emit audit events.
-
 
 ## Tax codes (added 2026-09-25)
 
@@ -345,136 +576,3 @@ Not covered: **Locations & warehouses** is its own component (`SFLocationsWareho
 current copy until it's converted separately.
 
 Backend: none — static UI copy. No new data, PII or audit surface.
-
-## React app (2026-11-17)
-
-Code: `apps/web/src/components/settings/` (template), `components/help/` (quiet help),
-`src/app/shortcuts.ts` (shortcut catalogue), `features/settings/` (the sections).
-Tiers are parked (CLAUDE.md "current working mode"): nothing is gated.
-
-### URLs and navigation
-
-- `/settings` redirects to `/settings/ws-profile` (a member role: `/settings/me-profile`).
-- One URL per section: `/settings/<id>` with the prototype's ids — `ws-profile`, `ws-gst`, `ws-plan`,
-  `ws-modules`, `ws-regional`, `ws-team`, `shortcuts`, `uom`, `categories`, `locations`, `assembly`,
-  `carrier-types`, `cfg-*`, `terminology`, `me-*`. The list, scopes and groups are `components/settings/nav.ts`.
-  An unknown id is "Page not found".
-- Scopes: **Workspace** (groups Workspace, Configuration, Terminology) and **My settings**. The frame shows
-  a scope switch plus the groups of the active scope; on phones the nav is a select above the section.
-  Breadcrumb: Settings ▸ group ▸ section. Sidebar "Settings" → `/settings`; account menu "My settings" →
-  `/settings/me-profile`.
-- Ported so far: Business profile (`ws-profile`), Units of measure (`uom`), Keyboard shortcuts
-  (`shortcuts`). Every other id shows "has not been moved to the new app yet" inside the frame.
-- A member (demo role) sees My settings only; workspace ids show "Workspace settings are for owners and
-  admins". UX only — the backend enforces it.
-
-### Settings template API
-
-- `SettingsFrame` (route component) — nav + breadcrumb + body; receives the registry
-  `features/settings/sections.ts` (`id → component`). **Port a section:** build it, add one line there.
-- `SettingsPage` — title row (title ⓘ, optional count pill and `actions`), loading skeleton, error + retry,
-  body, and — when given a `form` — the save bar. Owns keys: **Ctrl/Cmd+S** save, **Esc** discard (an open
-  layer closes first), **`?`** toggle inline descriptions (per-user `me.showSetHelp`, off by default; ignored
-  while typing). `width="wide"` for tables.
-- `SettingsSection<V>` — `SettingsPage` + `useSettingsForm` + `SettingsRows` for pages of label | control
-  rows. Props: `id` (input-id prefix), `title`, `help` (`HelpMap`: `page`, a key per group id, a key per
-  row), `saved` / `isLoading` / `error` / `onRetry`, `onSave(next)` (the whole document), `groups`,
-  optional cross-field `validate`.
-- A row: `{ key, label, control, help?, default?, defaultText?, validate?, warn?, hidden?, locked? }`;
-  controls `text | select | switch | number | area | readonly` (`components/settings/rows.ts`). `default`
-  enables "Use default" in the popover while the value differs. `validate` blocks Save with an error under
-  the value; `warn` is a non-blocking state note.
-- `useSettingsForm` — draft = only the changed keys over the saved value; dirty = keys that differ (editing
-  back to the saved value is not a change); one save at a time; success toast `Saved`; the **leave guard**
-  (TanStack `useBlocker` + `beforeunload`) offers Keep editing / Discard and leave / Save and leave.
-- Save bar is mode-stable (always rendered, buttons just enable): "No unsaved changes" / "N unsaved changes".
-- Section settings that fit none of the rows (tables, catalogues) pass `children` to `SettingsPage`.
-
-### Quiet help (`components/help/`)
-
-- `HelpTarget` wraps a label or title and adds the ⓘ button (`aria-label="About …"`, `aria-expanded`).
-  Mouse: hover the label or ⓘ ~400 ms opens the popover, leaving closes it (140 ms grace), click pins; Esc,
-  ✕ or a click outside closes. ⓘ fades in on row hover/focus (`reveal="always"` keeps a faint one). Keyboard:
-  focusing ⓘ opens, Enter/Space pins. Touch (`(hover:none), (pointer:coarse)`): ⓘ always visible, 44 px, opens a
-  bottom sheet. The popover flips to the side with room and caps its height to the space available.
-- Content (`HelpContent`): title, description, each option (current marked, default tagged), "Default: …"
-  with **Use default** when the value differs, and a compliance note. Data type `HelpEntry` / `HelpMap`
-  (`types.ts`) — a page's help is one pure map.
-- `?` inline mode: `HelpInlineContext` (provided by `SettingsPage`) makes every target print its description
-  under the label.
-- `FieldRows` (drawer and record cards) now renders its field `hint` through `HelpTarget` — pages still
-  pass `hint` as before (hover/pin popover instead of a tooltip; the old `hintSide` prop is ignored).
-
-### Keyboard shortcut catalogue
-
-- One data module, `src/app/shortcuts.ts` (`SHORTCUT_GROUPS`, `filterShortcuts`), renders
-  `/settings/shortcuts` (grouped by where the keys apply, searchable by every word across group, key and
-  text; `/` focuses the search, Esc clears it).
-- Templates expose their keys as data beside the code that handles them: `components/list-page/shortcut-meta.ts`,
-  `components/data-grid/shortcut-meta.ts`, `components/record-page/shortcut-meta.ts`,
-  `components/document/shortcut-meta.ts`. A page's own keys are a `ShortcutMeta` (`lib/shortcuts.ts`) in its
-  `shortcuts.ts`, spread into `ListPage`'s `shortcuts` prop (`ListShortcut extends ShortcutMeta`) and imported
-  by the catalogue — see `features/purchasing/purchase-orders/shortcuts.ts`, `purchase-prices/shortcuts.ts`.
-- **A page registers shortcuts** by adding its group to `SHORTCUT_GROUPS` in the same turn it adds the key.
-  Groups ported from the prototype: only for pages that exist in React; the rest follow their pages.
-
-### Persistence
-
-- Workspace identity (Business profile): `localStorage` `shelfree.v2.workspace` via `sessionApi.updateWorkspace`
-  (`data/api/session.ts`); `useWorkspace` feeds the sidebar, so a save shows there at once.
-- Per-user settings: `shelfree.v2.me` via `sessionApi.updateMe` (`showSetHelp` today; the rest of
-  `meDefaults()` joins as My settings sections are ported).
-- Workspace configuration switches (purchasing/tax): `shelfree.v2.settings` (`data/api/settings.ts`, unchanged).
-- Units of measure: collection `unitsOfMeasure` → `shelfree.v2.unitsOfMeasure` (see `docs/units-of-measure`).
-- Screens never touch storage; they use `useWorkspace / useUpdateWorkspace / useMe / useUpdateMe / useList`.
-
-### Backend-build notes
-
-- Endpoints: `GET/PATCH /workspace` (identity), `GET/PATCH /me/settings`, `GET/PATCH /workspace/settings`
-  (configuration switches), `GET/POST/PATCH/DELETE /units-of-measure`.
-- **Who may change workspace settings:** owner and admin only, enforced server-side per endpoint;
-  `PATCH /me/settings` only for the signed-in user. The frame's role check is UX.
-- Business profile validation the backend repeats: name and legal name required; email shape; six-digit PIN;
-  PAN `AAAAA9999A`; GSTIN is **not** edited here (managed under GST registrations). State vs GSTIN state code
-  and PAN vs GSTIN are warnings in the UI — the backend may log them but must not reject.
-- **Audit:** every workspace-setting change is an audit event (actor, setting, old → new, time). Identity
-  fields (GSTIN, PAN, legal name) are tax-relevant: keep the change history. `PATCH` should accept only the
-  changed keys and respond with the full document; use an `If-Match` / version header so two admins saving
-  at once do not overwrite each other (the form holds only changed keys, so a merge is possible).
-- No secrets and no PII beyond the business's own contact details are stored client-side; `showSetHelp` is a
-  harmless preference.
-
-### Decisions & deferred-to-backend
-
-- **Template over copies:** sections describe rows; layout, dirty tracking, leave guard and save live in the
-  template. Exceptions are options on the template.
-- **Own nav, not the app sidebar:** the prototype swaps the app sidebar for a settings sidebar; the React
-  frame keeps the app sidebar and puts the section navigation inside the page (the app shell stays stable
-  and tabs/breadcrumb keep working).
-- **Save model:** rows are always editable and held until Save (like Tax settings in the prototype), with a
-  count of unsaved changes and a leave guard. The prototype's per-row instant save on Business profile is
-  replaced by this.
-- **GSTIN is read-only on Business profile** with a link to GST registrations (same as the prototype's
-  "manage" button); logo upload is still a stub and is not shown.
-- Deferred: the other ~22 sections; the review-before-save dialog of Tax settings (a section can add its own);
-  terminology overrides; role-based hiding beyond the demo `member` role.
-
-## Settings redesign — frame and navigation (2026-11-25, Phase 1 run 1a)
-
-Spec `docs/superpowers/specs/2026-11-24-settings-redesign.md`. Full rewrite of this doc follows when
-Phase 1 is complete; until then this section records what shipped.
-
-- **Registry** `apps/web/src/components/settings/registry.ts`: areas `workspace`, one per module
-  (`purchasing`, `sales`, `warehouse`, `production`, `finance`, `people`), `shared`, `personal`; each section
-  has `id`, `label`, `type` (`form | list | custom`), optional `shared` list id and `legacyIds`.
-- **URLs:** module sections `/<module>/settings/<section>` (root opens the first section); workspace and
-  personal `/settings/<section>`; whole shared lists `/settings/shared/<list>`. Old ids redirect with
-  `replace` (`/settings/uom` → `/warehouse/settings/uom`, `/settings/cfg-sequences` → `/settings/shared/sequences`).
-  `?find=<rowKey>` scrolls to and highlights a row (`data-setting-row`).
-- **Frame:** central list grouped Workspace · Modules (collapsible) · Shared lists · Personal (a member sees
-  Personal only); a module area lists only its sections plus "All settings". **Find a setting** searches
-  section names, row labels and help text (best 8, one hit per row label). Keys `/`, ↑ ↓ Enter, Esc, `[` `]`
-  (data in `components/settings/shortcut-meta.ts`).
-- **Entries:** each module's sidebar section ends with **Settings** (favourite-able, open in new tab);
-  Departments lists them; tabs read "<Module> settings".
-- **Backend:** no change — navigation only. The redirect table (legacy id → new path) is client-side.

@@ -97,6 +97,19 @@ store secrets in localStorage).
       (old → new); documents snapshot the rounding / ITC / branch-value mode they posted with
       (`docs/tax-settings/README.md`).
 
+- [ ] **Settings write permission (2026-11-25, Settings redesign):** enforced server-side per area on
+      every settings write, never trusting the UI. `workspace` and whole shared lists: owner / admin only.
+      Module `m`: owner / admin, or `perms[m]` of read / write **and** `settings[m] === true`. Personal: the
+      user, own record only. `403` otherwise. Granting `settings[m]` is admin-only. The read-only mode in
+      the frontend (no Save, no New / Edit / Delete) is UX only (`docs/settings/README.md`).
+- [ ] **Audit event per settings save and per number-series change:** one event for every
+      `PUT /settings/<area>/<section>` (actor, area, section, before / after). Number series: create, edit,
+      set default, deactivate, delete each emit an event with the before / after diff
+      (`docs/number-sequences/README.md`).
+- [ ] **Number issuing is atomic and server-side:** the document number is taken from the series (row lock)
+      in the same transaction as the document insert; client preview numbers are never trusted; issued
+      numbers are never reused and, for tax invoices and credit notes, never skipped on rollback.
+
 ### Privacy & regulatory
 - [ ] GDPR — data export and right-to-delete for any EU data subject (applies to
       Employee/Customer/Vendor PII: name, email, phone, address).
@@ -147,6 +160,10 @@ features do:
    rejected on write, not merely hidden in the UI (first case: the Item tracking
    flags `tracksLot` / `tracksExpiry` / `tracksSerial` / `barcode`, 2026-08-01).
    Disabling an axis must never delete stored values (soft-hide only).
+
+8. Is this a settings page or a document number? Settings writes need the per-area permission check and an
+   audit event per save (above); numbers must be issued in the document's transaction. A read-only UI is
+   never the control.
 
 ## Backend-build notes
 None of the checklist above is implemented server-side today — there is no

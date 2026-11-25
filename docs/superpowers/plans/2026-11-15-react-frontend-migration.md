@@ -91,8 +91,10 @@ same turn a page is ported.**
 | Purchasing ▸ Vendor Purchase Items | ported (`/purchasing/vendors/$no/items`, linked from Vendor profile ▸ Items supplied) |
 | Notes ▸ Notes | ported (`/notes` and `/notes/notes` on the List template) |
 | Departments | ported (`/departments`, directory from `app/nav.ts` with keyboard navigation and recents) |
-| Settings ▸ frame, quiet help, Keyboard shortcuts | ported — Settings template (`components/settings/`), shared help (`components/help/`), catalogue `src/app/shortcuts.ts` |
-| Settings ▸ Business profile | ported (first user of `SettingsSection`) |
-| Settings ▸ Units of measure | ported (custom units collection, rules in `domain/units-of-measure.ts`) |
-| Settings ▸ every other section | frame + navigation live; body shows "not moved yet" until ported (add one line to `features/settings/sections.ts`) |
+| Settings ▸ frame, Find a setting, quiet help | ported — redesigned frame (`components/settings/`: areas Workspace · per module · Shared lists · Personal, `/settings/<id>`, `/<module>/settings/<id>`, `/settings/shared/<list>`, read-only mode, legacy redirects), shared help (`components/help/`). Doc: `docs/settings/README.md` |
+| Settings ▸ Business profile | ported (`/settings/ws-profile`, first user of `SettingsSection`) |
+| Settings ▸ Units of measure | ported (`/warehouse/settings/uom` on `ListPage embedded`, old `/settings/uom` redirects; custom units collection, rules in `domain/units-of-measure.ts`) |
+| Settings ▸ Keyboard shortcuts | ported (`/settings/shortcuts`, Personal area; catalogue `src/app/shortcuts.ts`) |
+| Settings ▸ Number sequences | ported (`/<module>/settings/sequences` slices + `/settings/shared/sequences`; PO and receipt numbers issued from the default series; `docs/number-sequences/README.md`) |
+| Settings ▸ every other section | frame + navigation live at the new URLs; body shows "not moved yet" until ported in Phase 2 (add one line to `features/settings/sections.ts`) |
 | Every other prototype page | pending |

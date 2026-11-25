@@ -24,6 +24,9 @@ headcount at Kanalora:
   `Linked employee`) + read-only facts (`Department`, `Last active`, `Module access`); interactive
   `MODULE PERMISSIONS` 8-row matrix with `None / Read / Write` access radios and a **Manage settings**
   column (`Yes` / `—` text in view mode, in-place switch in edit mode, plus `"Apply <role> defaults"`).
+  The right exists only for modules that have a settings area (Finance, Sales, Purchasing, Warehouse,
+  Production, People); Home and Notes always show `—`. The switch is disabled while the module is `None`,
+  and setting a module to `None` clears its right.
   View footer includes `Edit`, contextual `Suspend user` / `Reactivate` / `Resend invite`, and `Delete`.
   Top bar includes a quiet `"Manage roles"` link to `/settings/ws-team`.
 - **Employees grid:** Emp ID (frozen, mono) · Name · Title · Department · Manager · Type pill ·
@@ -52,6 +55,10 @@ headcount at Kanalora:
     - `workspace` / `shared`: `owner` or `admin` only.
     - `module`: `owner` / `admin`, or (`user.perms[moduleId]` is `'read'` / `'write'` to view, plus `user.settings[moduleId] === true` to edit).
     - `personal`: always allowed.
+  - A member's module settings are **view only** without the right: forms show text, lists hide New / Edit /
+    Delete. `workspace` and whole shared lists are hidden from members. See `docs/settings/README.md`.
+  - The Users top bar `"Manage roles"` link opens `/settings/ws-team`; Team & roles has not been moved to
+    the React app yet, so the link lands on the frame's "not moved yet" state until it is.
 - **Validation:**
   - Users: `Full name` required; valid email required and unique (case-insensitive); valid role and
     status. Demoting or suspending the last active `Admin`, or suspending your own signed-in user
