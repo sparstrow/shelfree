@@ -34,6 +34,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useList } from '@/data/queries'
+import { useLocationTerm } from '@/data/queries/regional-terminology'
+import { pageDisplayLabel } from '@/domain/terminology'
 import type { Favorite } from '@/data/schemas'
 import { DEFAULT_FAVORITES_CAP, capFavorites, overflowLabel } from '@/domain/favorites'
 import { useMe, useWorkspace } from '@/data/queries/session'
@@ -181,6 +183,8 @@ function PageLink({
   onToggleFav: () => void
   onOpenInTab: () => void
 }) {
+  // The workspace's own word for a location (Settings ▸ Terminology) in the one page that names it.
+  const label = pageDisplayLabel(page.label, useLocationTerm().singular)
   const onStar = (e: MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -199,7 +203,7 @@ function PageLink({
             <span className="flex size-[15px] flex-none items-center justify-center opacity-80">
               <PathIcon d={page.icon} />
             </span>
-            <span className="min-w-0 flex-1 truncate text-left">{page.label}</span>
+            <span className="min-w-0 flex-1 truncate text-left">{label}</span>
             {badge && <Badge>{badge}</Badge>}
             {/* room for the star, which sits beside the link (not inside it) */}
             <span className="w-[15px] flex-none" />
@@ -208,7 +212,7 @@ function PageLink({
             type="button"
             onClick={onStar}
             title={fav ? 'Remove from favorites' : 'Add to favorites'}
-            aria-label={fav ? `Remove ${page.label} from favorites` : `Add ${page.label} to favorites`}
+            aria-label={fav ? `Remove ${label} from favorites` : `Add ${label} to favorites`}
             aria-pressed={fav}
             className={cn(
               'absolute top-1/2 right-[10px] flex size-[15px] -translate-y-1/2 items-center justify-center border-0 bg-transparent p-0 transition-[opacity,scale] duration-[140ms] hover:scale-[1.18] hover:opacity-100 focus-visible:opacity-100',
@@ -222,7 +226,7 @@ function PageLink({
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent className="min-w-[196px]">
-        <ContextMenuLabel className="truncate text-[11px] font-semibold text-muted-foreground">{page.label}</ContextMenuLabel>
+        <ContextMenuLabel className="truncate text-[11px] font-semibold text-muted-foreground">{label}</ContextMenuLabel>
         <ContextMenuItem className={ctxItem} onSelect={onToggleFav}>
           {fav ? 'Remove from favorites' : 'Add to favorites'}
         </ContextMenuItem>

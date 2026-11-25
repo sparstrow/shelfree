@@ -20,6 +20,7 @@ import { LIST_EDITOR_SHORTCUTS, LIST_PAGE_SHORTCUTS } from '@/components/list-pa
 import { RECORD_PAGE_SHORTCUTS } from '@/components/record-page/shortcut-meta'
 import { FAVORITES_VIEWS_SHORTCUTS } from '@/components/saved-views/shortcut-meta'
 import { SETTINGS_FRAME_SHORTCUTS } from '@/components/settings/shortcut-meta'
+import { REGISTRATION_CANCEL_SHORTCUT, REGISTRATION_PRIMARY_SHORTCUT } from '@/features/settings/gst-registrations/shortcuts'
 import { PO_RECEIVE_SHORTCUT } from '@/features/purchasing/purchase-orders/shortcuts'
 import { PRICE_CHANGE_SHORTCUT, PRICE_TIER_SHORTCUT } from '@/features/purchasing/purchase-prices/shortcuts'
 import { type ShortcutEntry, shortcutEntry } from '@/lib/shortcuts'
@@ -177,6 +178,22 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
   group('settings-assembly-production', 'Settings › Assembly & production', [
     { combo: 'Ctrl/Cmd + S', desc: 'Save the defaults and behaviour options.' },
     { combo: 'Esc', desc: 'Discard unsaved changes.' },
+  ]),
+  // Run 2.5a — Workspace (part A)
+  group('settings-gst-registrations', 'Settings › GST registrations', [
+    ...LIST_EDITOR_SHORTCUTS.map((s) => (s.combo === 'N' ? { ...s, desc: 'New registration — you are primary only if there is none yet; the invoice prefix follows the GSTIN’s state.' } : s)),
+    shortcutEntry(REGISTRATION_PRIMARY_SHORTCUT),
+    shortcutEntry(REGISTRATION_CANCEL_SHORTCUT),
+    { combo: 'Delete', desc: 'Delete the active registration — blocked for the primary and when a location would be left uncovered.' },
+    ...LIST_PAGE_SHORTCUTS,
+  ]),
+  group('settings-regional', 'Settings › Regional & format', [
+    { combo: 'Ctrl/Cmd + S', desc: 'Save the changed regional settings. A change shows a dot beside its label until saved.' },
+    { combo: 'Esc', desc: 'Discard the unsaved changes (when no description is open).' },
+  ]),
+  group('settings-terminology', 'Settings › Terminology', [
+    ...LIST_EDITOR_SHORTCUTS.filter((s) => s.combo !== 'N'),
+    ...LIST_PAGE_SHORTCUTS,
   ]),
   group('settings-shortcuts', 'Settings › Keyboard shortcuts', [
     { combo: '/', desc: 'Focus the search box.' },

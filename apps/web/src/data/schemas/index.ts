@@ -840,3 +840,36 @@ export const gstStateSchema = z.object({
   legacy: z.boolean(),
   note: z.string(),
 })
+
+// ── Settings ▸ Workspace ▸ GST registrations (Phase 2 run 2.5a) ──────────────
+export const GST_SCHEMES = ['Regular', 'Composition'] as const
+export const GST_REG_TYPES = ['Normal', 'Casual'] as const
+export const GST_FILINGS = ['Monthly', 'Quarterly'] as const
+/** One of the business's own GSTINs. The state is the first two digits of the GSTIN (never stored separately). */
+export const gstRegistrationSchema = z.object({
+  id: z.string(),
+  gstin: z.string(),
+  legal: z.string(),
+  trade: z.string(),
+  scheme: z.enum(GST_SCHEMES),
+  regType: z.enum(GST_REG_TYPES),
+  /** Casual registrations only: the fixed period (ISO dates), '' otherwise. */
+  validFrom: z.string(),
+  validTo: z.string(),
+  registeredOn: z.string(),
+  filing: z.enum(GST_FILINGS),
+  eInvoice: z.boolean(),
+  /** E-way bill threshold in whole rupees. */
+  ewayMin: z.number(),
+  /** Invoice number prefix; may hold `{FY}`. */
+  series: z.string(),
+  addr1: z.string(),
+  city: z.string(),
+  postal: z.string(),
+  primary: z.boolean(),
+  status: z.enum(['Active', 'Cancelled']),
+  cancelledOn: z.string(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+})
+export type GstRegistration = z.infer<typeof gstRegistrationSchema>

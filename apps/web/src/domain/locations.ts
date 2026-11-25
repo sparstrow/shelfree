@@ -6,8 +6,9 @@
  * Stock (`item.locs`) and assembly orders refer to a site by `id`; purchase orders,
  * receipts and sales orders refer to it by `code`.
  */
-import type { AssemblyOrder, Item, PurchaseOrder, PurchaseReceipt, SalesOrder, Warehouse } from '@/data/schemas'
+import type { AssemblyOrder, GstRegistration, Item, PurchaseOrder, PurchaseReceipt, SalesOrder, Warehouse } from '@/data/schemas'
 import { gstStateByCode } from './gst'
+import { locationRegistrationError } from './gst-registrations'
 
 export const LOCATION_TYPES = [
   { value: 'mixed', label: 'Manufacturing + DC' },
@@ -136,6 +137,8 @@ export function validateLocation(
   original: Warehouse | null,
   usage: LocationUsage | undefined,
   vendorNos: ReadonlySet<string>,
+  /** The business's GST registrations. When given, an Active site must be in a state one of them covers (G-017). */
+  registrations?: readonly GstRegistration[],
 ): Record<string, string> {
   const errors: Record<string, string> = {}
   const code = normalizeLocationCode(draft.code)
@@ -157,6 +160,13 @@ export function validateLocation(
   }
   if (draft.type === '3pl' && draft.operatorVendorId && !vendorNos.has(draft.operatorVendorId)) {
     errors.operatorVendorId = 'The 3PL vendor on this site no longer exists — pick another.'
+  }
+  // An active site files under the registration of its state, so one has to exist (checked when the site becomes
+  // active or moves state — an already-active site isn't blocked from unrelated edits).
+  if (registrations && !errors.status && !errors.state) {
+    const becomesActive = !original || original.status !== 'active' || original.state !== draft.state || (original.country || 'IN') !== (draft.country || 'IN')
+    const missing = becomesActive ? locationRegistrationError(draft, registrations) : null
+    if (missing) errors.status = missing
   }
   // There is always at least one active location.
   const wasActive = original?.status === 'active'

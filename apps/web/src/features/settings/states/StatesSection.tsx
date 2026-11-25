@@ -6,8 +6,10 @@ import { type ListAction, type ListPreview, ListPage } from '@/components/list-p
 import { SettingsPage } from '@/components/settings/SettingsPage'
 import { useList } from '@/data/queries'
 import { useWorkspace } from '@/data/queries/session'
+import type { GstRegistration } from '@/data/schemas'
 import { gstStateByName } from '@/domain/gst'
-import { checkGstin, gstinSplit, partiesText, partyCounts, sortStates, stateSplitText, stateTypeLabel } from '@/domain/gst-states'
+import { registrationSplit, siteCountsByState, stateRegistrationBadge } from '@/domain/gst-registrations'
+import { checkGstin, partiesText, partyCounts, sortStates, stateSplitText, stateTypeLabel } from '@/domain/gst-states'
 import { cn } from '@/lib/utils'
 import { type GstStateRow, gstStatesDataset } from './dataset'
 import { STATES_HELP as HELP } from './help'
@@ -15,11 +17,18 @@ import { STATES_HELP as HELP } from './help'
 const NO_PARTIES = { vendors: 0, customers: 0 }
 
 /** The "Check a GSTIN" card above the list: state, PAN and tax split for what was typed. Nothing is stored. */
-function GstinCheckCard({ ourState }: { ourState: ReturnType<typeof gstStateByName> }) {
+function GstinCheckCard({
+  registrations,
+  fallbackState,
+}: {
+  registrations: readonly GstRegistration[]
+  /** The Business profile state, used only while there is no registration at all. */
+  fallbackState: ReturnType<typeof gstStateByName>
+}) {
   const [value, setValue] = useState('')
   const result = checkGstin(value)
   const heading = <h2 className="m-0 text-[13px] font-bold">Check a GSTIN</h2>
-  const split = result.status === 'valid' ? gstinSplit(ourState, result.state) : null
+  const split = result.status === 'valid' ? registrationSplit(registrations, result.state, fallbackState, stateSplitText) : null
 
   return (
     <section aria-label="Check a GSTIN" className="m-[14px] mb-3 flex-none rounded-xl border border-border bg-card px-4 py-3">
@@ -94,15 +103,26 @@ export function StatesSection({ readOnly: _readOnly = false }: { readOnly?: bool
   const states = useList('gstStates')
   const vendors = useList('vendors')
   const customers = useList('customers')
+  const registrations = useList('gstRegistrations')
+  const warehouses = useList('warehouses')
   const workspace = useWorkspace()
 
   const counts = useMemo(() => partyCounts(vendors.data ?? [], customers.data ?? []), [vendors.data, customers.data])
+  const siteCounts = useMemo(() => siteCountsByState(warehouses.data ?? []), [warehouses.data])
   const rows = useMemo<GstStateRow[] | undefined>(
-    () => (states.data ? sortStates(states.data).map((s) => ({ ...s, parties: counts.get(s.code) ?? NO_PARTIES })) : undefined),
-    [states.data, counts],
+    () =>
+      states.data && registrations.data
+        ? sortStates(states.data).map((s) => ({
+            ...s,
+            parties: counts.get(s.code) ?? NO_PARTIES,
+            registered: stateRegistrationBadge(registrations.data, s.code),
+            sites: siteCounts.get(s.code) ?? 0,
+          }))
+        : undefined,
+    [states.data, registrations.data, counts, siteCounts],
   )
   const dataset = useMemo(() => gstStatesDataset(), [])
-  const ourState = gstStateByName(workspace.data?.region)
+  const fallbackState = gstStateByName(workspace.data?.region)
 
   const copyName: ListAction<GstStateRow> = {
     label: 'Copy name',
@@ -123,6 +143,8 @@ export function StatesSection({ readOnly: _readOnly = false }: { readOnly?: bool
     subtitle: `${stateTypeLabel(row)} · ${row.abbr}`,
     notice: row.legacy ? row.note : undefined,
     facts: [
+      { k: 'Our registration', v: row.registered || 'None' },
+      { k: 'Our locations', v: String(row.sites) },
       { k: 'Same-state tax', v: stateSplitText(row) },
       { k: 'Parties here', v: partiesText(row.parties) || 'None yet' },
     ],
@@ -130,16 +152,16 @@ export function StatesSection({ readOnly: _readOnly = false }: { readOnly?: bool
 
   return (
     <SettingsPage title="States & territories" help={HELP.page} count={rows?.length} flush>
-      <GstinCheckCard ourState={ourState} />
+      <GstinCheckCard registrations={registrations.data ?? []} fallbackState={fallbackState} />
       <ListPage<GstStateRow>
         embedded
         // The list is set by GSTN: no create, edit or delete for anyone.
         readOnly
         dataset={dataset}
         rows={rows}
-        isLoading={states.isLoading || vendors.isLoading || customers.isLoading}
-        error={states.error ?? vendors.error ?? customers.error}
-        onRefresh={() => Promise.all([states.refetch(), vendors.refetch(), customers.refetch()])}
+        isLoading={states.isLoading || vendors.isLoading || customers.isLoading || registrations.isLoading || warehouses.isLoading}
+        error={states.error ?? vendors.error ?? customers.error ?? registrations.error ?? warehouses.error}
+        onRefresh={() => Promise.all([states.refetch(), vendors.refetch(), customers.refetch(), registrations.refetch(), warehouses.refetch()])}
         preview={preview}
         actions={[copyName]}
         emptyText="No state matches."

@@ -97,6 +97,9 @@ function writeStored(key: string, value: unknown): void {
   }
 }
 
+/** The workspace identity as stored right now, read synchronously (seed data for collections that start from it). */
+export const workspaceSnapshot = (): Workspace => readStored(WORKSPACE_KEY, workspaceSchema, WORKSPACE)
+
 export const sessionApi = {
   workspace: (): Promise<Workspace> => Promise.resolve(readStored(WORKSPACE_KEY, workspaceSchema, WORKSPACE)),
   /** Settings ▸ Business profile. Backend: `PATCH /workspace`, owner / admin only. */

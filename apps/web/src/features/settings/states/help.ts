@@ -12,7 +12,7 @@ export const STATES_HELP: HelpMap = {
   },
   check: {
     title: 'Check a GSTIN',
-    body: 'Type or paste a GSTIN to see its state, PAN and how tax would split against your state. Nothing you type is saved.',
+    body: 'Type or paste a GSTIN to see its state, PAN and how tax would split against your GST registrations (same state as one of them is CGST + SGST, otherwise IGST against your primary). Nothing you type is saved.',
     note: 'A wrong last character is a warning, not an error — vendor paperwork has typos.',
   },
 }

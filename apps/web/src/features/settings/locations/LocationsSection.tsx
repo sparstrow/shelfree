@@ -3,9 +3,11 @@ import { toast } from 'sonner'
 import { type ListDelete, type ListEditor, ListPage } from '@/components/list-page/ListPage'
 import { SettingsPage } from '@/components/settings/SettingsPage'
 import { useList } from '@/data/queries'
+import { useLocationTerm } from '@/data/queries/regional-terminology'
 import { useDeleteWarehouse, useLocationUsage, useSaveWarehouse } from '@/data/queries/warehouse-settings'
 import type { Warehouse } from '@/data/schemas'
 import { GST_STATES } from '@/domain/gst'
+import { locationRegistrationError, registrationForSite } from '@/domain/gst-registrations'
 import {
   LOCATION_COUNTRIES,
   LOCATION_POB,
@@ -59,6 +61,8 @@ export function LocationsSection({ readOnly = false }: { readOnly?: boolean } = 
   const warehouses = useList('warehouses')
   const employees = useList('employees')
   const vendors = useList('vendors')
+  const registrations = useList('gstRegistrations')
+  const term = useLocationTerm()
   const usageQuery = useLocationUsage()
   const save = useSaveWarehouse()
   const remove = useDeleteWarehouse()
@@ -67,7 +71,7 @@ export function LocationsSection({ readOnly = false }: { readOnly?: boolean } = 
   const usage = usageQuery.data
 
   const rows = useMemo<LocationRow[] | undefined>(() => {
-    if (warehouses.data === undefined || usage === undefined) return undefined
+    if (warehouses.data === undefined || usage === undefined || registrations.data === undefined) return undefined
     const empName = new Map((employees.data ?? []).map((e) => [e.id, e.name]))
     const vendorName = new Map((vendors.data ?? []).map((v) => [v.no, v.name]))
     return sites.map((w) => ({
@@ -76,10 +80,11 @@ export function LocationsSection({ readOnly = false }: { readOnly?: boolean } = 
       openDocs: usage.get(w.id)?.openDocs ?? 0,
       managerName: empName.get(w.managerEmpId) ?? '',
       operatorName: vendorName.get(w.operatorVendorId) ?? '',
+      registration: registrationForSite(registrations.data ?? [], w)?.gstin ?? '',
     }))
-  }, [warehouses.data, usage, sites, employees.data, vendors.data])
+  }, [warehouses.data, usage, sites, employees.data, vendors.data, registrations.data])
 
-  const dataset = useMemo(() => locationsDataset(), [])
+  const dataset = useMemo(() => locationsDataset(term), [term])
 
   const managerOptions = useMemo(
     () => [
@@ -189,14 +194,16 @@ export function LocationsSection({ readOnly = false }: { readOnly?: boolean } = 
     },
     view: (w) => {
       const blocked = locationDeleteBlockReason(w, sites, usage?.get(w.id))
+      const uncovered = locationRegistrationError(w, registrations.data ?? [])
       return {
         no: w.code || EM_DASH,
         status: locationStatusLabel(w.status),
         tags: [locationTypeLabel(w.type), ...(isIndianSite(w) ? [locationPobLabel(w.pobStatus)] : [])],
         title: w.name || 'Untitled location',
         subtitle: locationAddress(w) || undefined,
-        notice: blocked ?? undefined,
+        notice: blocked ?? uncovered ?? undefined,
         facts: [
+          ...(isIndianSite(w) ? [{ k: 'GST registration', v: w.registration || 'None for this state' }] : []),
           { k: 'Units in stock', v: int(w.stock) },
           { k: 'Open documents', v: int(w.openDocs) },
         ],
@@ -221,6 +228,7 @@ export function LocationsSection({ readOnly = false }: { readOnly?: boolean } = 
       openDocs: 0,
       managerName: '',
       operatorName: '',
+      registration: '',
     }),
     onChange: (draft, key) => {
       if (key === 'code') return { ...draft, code: draft.code.toUpperCase().replace(/[^A-Z0-9-]/g, '') }
@@ -240,6 +248,7 @@ export function LocationsSection({ readOnly = false }: { readOnly?: boolean } = 
         original,
         usage?.get(draft.id),
         new Set((vendors.data ?? []).map((v) => v.no)),
+        registrations.data ?? [],
       )
     },
     save: async (record) => {
@@ -262,7 +271,7 @@ export function LocationsSection({ readOnly = false }: { readOnly?: boolean } = 
 
   return (
     <SettingsPage
-      title="Locations & warehouses"
+      title={`${term.plural} & warehouses`}
       help={LOCATIONS_HELP.page}
       count={rows?.length}
       flush
@@ -273,12 +282,12 @@ export function LocationsSection({ readOnly = false }: { readOnly?: boolean } = 
         readOnly={readOnly}
         dataset={dataset}
         rows={rows}
-        isLoading={warehouses.isLoading || usageQuery.isLoading}
-        error={warehouses.error ?? usageQuery.error}
-        onRefresh={() => Promise.all([warehouses.refetch(), usageQuery.refetch()])}
+        isLoading={warehouses.isLoading || usageQuery.isLoading || registrations.isLoading}
+        error={warehouses.error ?? usageQuery.error ?? registrations.error}
+        onRefresh={() => Promise.all([warehouses.refetch(), usageQuery.refetch(), registrations.refetch()])}
         remove={del}
         editor={editor}
-        emptyText="No locations match."
+        emptyText={`No ${term.plural.toLowerCase()} match.`}
       />
     </SettingsPage>
   )

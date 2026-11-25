@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { api } from '@/data/api'
 import { CommandError } from '@/data/api/commands'
 import { deleteWarehouse, loadLocationUsage, saveWarehouse } from '@/data/api/warehouse-settings'
-import type { Warehouse } from '@/data/schemas'
+import type { GstRegistration, Warehouse } from '@/data/schemas'
 import {
   applyPrincipal,
   locationAddress,
@@ -207,5 +207,55 @@ describe('location commands', () => {
     for (const w of all.filter((x) => x.id !== 'WH-TVM')) await api.warehouses.upsert({ ...w, status: 'setup' })
     const main = (await api.warehouses.get('WH-TVM')) as Warehouse
     await expect(saveWarehouse({ ...main, status: 'inactive' })).rejects.toThrow(/one active location/)
+  })
+})
+
+describe('validateLocation — GST registrations (G-017)', () => {
+  const reg = (gstin: string, over: Partial<GstRegistration> = {}): GstRegistration => ({
+    id: `REG-${gstin.slice(0, 2)}`,
+    gstin,
+    legal: 'Kanalora Crafts Pvt. Ltd.',
+    trade: 'Kanalora',
+    scheme: 'Regular',
+    regType: 'Normal',
+    validFrom: '',
+    validTo: '',
+    registeredOn: '',
+    filing: 'Quarterly',
+    eInvoice: false,
+    ewayMin: 50000,
+    series: 'TN/{FY}/',
+    addr1: '',
+    city: '',
+    postal: '',
+    primary: true,
+    status: 'Active',
+    cancelledOn: '',
+    ...over,
+  })
+  const tn = reg('33ABCDE1234F1Z7')
+  const blr = W({ id: 'WH-BLR', code: 'BLR', name: 'Bengaluru DC', state: '29', status: 'active' })
+  const vendors = new Set<string>()
+
+  it('refuses Active in a state with no active registration', () => {
+    const errors = validateLocation(blr, [main], null, undefined, vendors, [tn])
+    expect(errors.status).toMatch(/Karnataka has no active GST registration/)
+  })
+  it('allows Setting up, an inactive site, a covered state and a non-Indian site', () => {
+    expect(validateLocation({ ...blr, status: 'setup' }, [main], null, undefined, vendors, [tn])).toEqual({})
+    expect(validateLocation({ ...blr, status: 'inactive' }, [main], null, undefined, vendors, [tn])).toEqual({})
+    expect(validateLocation(blr, [main], null, undefined, vendors, [tn, reg('29ABCDE1234F1ZW', { primary: false })])).toEqual({})
+    expect(validateLocation({ ...blr, country: 'AE', state: 'Dubai' }, [main], null, undefined, vendors, [tn])).toEqual({})
+  })
+  it('a cancelled registration does not cover its state', () => {
+    const errors = validateLocation(blr, [main], null, undefined, vendors, [tn, reg('29ABCDE1234F1ZW', { primary: false, status: 'Cancelled' })])
+    expect(errors.status).toMatch(/no active GST registration/)
+  })
+  it('does not block unrelated edits of a site that is already active in an uncovered state', () => {
+    expect(validateLocation({ ...blr, name: 'Renamed' }, [main], blr, undefined, vendors, [tn])).toEqual({})
+    expect(validateLocation({ ...blr, state: '27' }, [main], blr, undefined, vendors, [tn]).status).toMatch(/Maharashtra has no active/)
+  })
+  it('skips the rule when registrations are not supplied', () => {
+    expect(validateLocation(blr, [main], null, undefined, vendors)).toEqual({})
   })
 })

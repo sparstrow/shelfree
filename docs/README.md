@@ -108,6 +108,10 @@ behavior, data-model, or screen change (see root `CLAUDE.md`).
   state codes (UTGST flag, retired codes), GSTIN check, address State dropdowns. Plan task 2.
 - [`gst-registrations/`](gst-registrations/README.md) — Settings ▸ Workspace ▸ **GST registrations**:
   one GSTIN per state, primary, scheme/filing/e-invoice/series, cancel & reactivate. Plan task 3.
+- [`regional/`](regional/README.md) — Settings ▸ Workspace ▸ **Regional & format**: base currency, number / date
+  format, time zone, financial-year start, week start (React run 2.5a).
+- [`terminology/`](terminology/README.md) — Settings ▸ Workspace ▸ **Terminology**: renamable labels (a Location can
+  be a Store); `termGet` / `useTerm` (React run 2.5a).
 - [`carrier-types/`](carrier-types/README.md) — Settings ▸ Configuration ▸ **Carrier types**:
   user-maintained Type list for carriers; each type has a fixed behaviour (courier / GTA / own)
   that drives GST treatment and tracking fields.

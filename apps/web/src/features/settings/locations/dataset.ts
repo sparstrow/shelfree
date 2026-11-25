@@ -17,6 +17,8 @@ export interface LocationRow extends Warehouse {
   openDocs: number
   managerName: string
   operatorName: string
+  /** GSTIN of the registration the site files under (its state's active Normal registration); '' when none. */
+  registration: string
 }
 
 const col = (key: string, label: string, width: number, extra: Partial<GridColumn> = {}): GridColumn => ({
@@ -31,7 +33,8 @@ const col = (key: string, label: string, width: number, extra: Partial<GridColum
   ...extra,
 })
 
-export function locationsDataset(): Dataset<LocationRow> {
+/** `term` is the workspace's name for a location (Settings ▸ Terminology), e.g. `{ singular: 'Store', plural: 'Stores' }`. */
+export function locationsDataset(term: { singular: string; plural: string } = { singular: 'Location', plural: 'Locations' }): Dataset<LocationRow> {
   const raw = (w: LocationRow, key: string): string | number => {
     switch (key) {
       case 'code':
@@ -50,6 +53,8 @@ export function locationsDataset(): Dataset<LocationRow> {
         return w.managerName
       case 'pob':
         return locationPobLabel(w.pobStatus)
+      case 'registration':
+        return w.registration
       case 'area':
         return w.area
       case 'stock':
@@ -64,8 +69,8 @@ export function locationsDataset(): Dataset<LocationRow> {
   const types = LOCATION_TYPES.map((t) => t.label)
   return {
     id: 'settings-locations',
-    noun: 'location',
-    nounPlural: 'locations',
+    noun: term.singular.toLowerCase(),
+    nounPlural: term.plural.toLowerCase(),
     idOf: (w) => w.id,
     labelOf: (w) => w.code,
     columns: [
@@ -76,6 +81,7 @@ export function locationsDataset(): Dataset<LocationRow> {
       col('city', 'City', 140),
       col('state', 'State', 130),
       col('manager', 'Manager', 160),
+      col('registration', 'GST registration', 160, { type: 'mono', visible: false }),
       col('pob', 'GST certificate', 150, { visible: false }),
       col('area', 'Area (sq ft)', 112, { type: 'num', align: 'right', visible: false }),
       col('stock', 'Units in stock', 120, { type: 'num', align: 'right', agg: 'sum', aggFmt: 'int' }),
@@ -88,7 +94,7 @@ export function locationsDataset(): Dataset<LocationRow> {
         .join(' \u0001 ')
         .toLowerCase(),
     views: [
-      { id: 'all', name: 'All locations', system: true, filters: [] },
+      { id: 'all', name: `All ${term.plural.toLowerCase()}`, system: true, filters: [] },
       { id: 'active', name: 'Active', filters: [{ key: 'status', op: 'isAny', value: ['Active'] }] },
       ...LOCATION_TYPES.map((t) => ({
         id: `type:${t.value}`,
