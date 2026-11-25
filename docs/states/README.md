@@ -119,3 +119,13 @@ can open Settings ▸ Workspace; nobody writes (migration only). **Audit:** none
 ### Tests
 Vitest `domain/gst-states.test.ts` (table and lookups unchanged, split by type, sort, party counts, GSTIN check and split).
 Playwright `e2e/settings-finance.spec.ts` (list and view, read-only, GSTIN check, help).
+
+### Update 2026-11-25 (run 2.5a) — reads GST registrations (closes G-025)
+- The **Check a GSTIN** split now reads the registrations: a party in a state where we hold an active Normal registration is
+  "Same state as your registration → CGST + SGST" (UTGST for a UT); anywhere else it is `<primary abbr> → <their abbr> · IGST`
+  against the **primary** registration. The Business profile address state is used only while there are no registrations
+  (`registrationSplit` in `domain/gst-registrations.ts`).
+- New columns: **Registered** (`Primary` / `Registered`, blank otherwise) and **Locations** (non-inactive Indian sites in the
+  state); new view **Registered**; drawer facts *Our registration* and *Our locations*. Both are derived, never stored.
+- Backend: `GET /reference/gst-states` stays global; the Registered / Locations figures are computed per workspace from
+  `gst_registrations` and `locations` (or returned as a `?include=workspace` projection).

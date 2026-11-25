@@ -288,9 +288,9 @@ test.describe('Settings ▸ Workspace ▸ States & territories', () => {
     await box.fill('99AABCS1001K1Z5')
     await expect(page.getByText('“99” isn’t a GST state code')).toBeVisible()
 
-    // The seed workspace is in Tamil Nadu: 33… is the same state, 29… is IGST.
+    // The seed registration is in Tamil Nadu: 33… is a state we are registered in, 29… is IGST against the primary (G-025).
     await box.fill('33ABCDE1234F1Z7')
-    await expect(page.getByText('Same state as you → CGST + SGST')).toBeVisible()
+    await expect(page.getByText('Same state as your registration → CGST + SGST')).toBeVisible()
     await expect(page.getByText('ABCDE1234F')).toBeVisible()
     await box.fill('29ABCDE1234F1Z0')
     await expect(page.getByText('TN → KA · IGST')).toBeVisible()

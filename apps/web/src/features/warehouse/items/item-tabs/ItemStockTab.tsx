@@ -3,6 +3,7 @@ import { Notice } from '@/components/document/parts'
 import { FieldRows } from '@/components/record-fields/FieldRows'
 import type { EditorField } from '@/components/record-fields/model'
 import { RecordCard } from '@/components/record-page/RecordPage'
+import { useLocationTerm } from '@/data/queries/regional-terminology'
 import type { Item } from '@/data/schemas'
 import type { ItemSiteStockBar, ItemTrackingCard, ItemValuation } from '@/domain/item-profile'
 import { EM_DASH, int, money } from '@/lib/format'
@@ -48,6 +49,7 @@ export interface ItemStockTabProps {
 }
 
 export function ItemStockTab({ item, valuation, siteBars, trackingCards }: ItemStockTabProps) {
+  const location = useLocationTerm()
   const replenishment: ReplenishmentValues = {
     rp: valuation.reorderPoint,
     rq: valuation.reorderQty,
@@ -63,7 +65,7 @@ export function ItemStockTab({ item, valuation, siteBars, trackingCards }: ItemS
   return (
     <div className="grid animate-sf-fade grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
       <div className="flex flex-col gap-4">
-        <RecordCard title="Stock by location">
+        <RecordCard title={`Stock by ${location.singular.toLowerCase()}`}>
           {siteBars.length > 0 ? (
             <>
               <div className="space-y-3">

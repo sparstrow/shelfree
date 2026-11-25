@@ -281,15 +281,15 @@ ungated, on by default (multi-state or 3PL sites would likely be Growth).
   stock, open documents) with views All / Active / each type; drawer fields name, code, type, status, country,
   state (GST state dropdown for India, free-text region elsewhere), address, city, PIN, area, GST certificate
   status (India only), site manager (employee), 3PL operator vendor (3PL only); the rules below.
-- **Not ported (G-016, G-017):** the Structure Designer (floors, zones, aisles, bins, 2D/3D) and the 4-step
-  creation wizard, and everything that reads GST registrations — the *Active needs a registration* rule, the
-  read-only registration line, *Add registration*, the GSTIN chip, *Mark as declared*. Creation is the plain
+- **Not ported (G-016, G-032):** the Structure Designer (floors, zones, aisles, bins, 2D/3D) and the 4-step
+  creation wizard, and the registration extras — *Add registration* from the drawer, the GSTIN chip, *Mark as declared*
+  (the *Active needs a registration* rule and the registration line were ported in run 2.5a, see the update below). Creation is the plain
   drawer; sites carry no floors or layouts yet.
 - **Deliberate:** the **code is fixed once any document refers to it** (the prototype let it change, which would
   orphan the purchase orders, receipts and sales orders that carry the code). The site **id never changes**
   (`WH-<CODE>`, numbered when taken). **There is always at least one active location** (new rule: save and
   delete refuse to leave none). `createdAt` / `updatedAt` are optional on the schema (seed rows have none).
-- Terminology: the label stays "Locations" — the workspace's `object.location` wording isn't ported (G-018).
+- Terminology: the section, drawer and sidebar page read the workspace's `object.location` wording since run 2.5a (see the update below).
 
 ### Data model
 Collection `warehouses` (`shelfree.v2.warehouses`, key `id`), schema `warehouseSchema`: `id, name, code, type
@@ -329,3 +329,15 @@ receipts and sales orders carry the `code`. `LocationUsage` (derived, never stor
 Vitest `domain/locations.test.ts` (rules, usage, principal, delete, commands). Playwright
 `e2e/settings-warehouse.spec.ts` (list and type view, create / edit / delete / undo, validation, principal move,
 fixed code, blocked delete, last active location, help, member read-only).
+
+### Update 2026-11-25 (run 2.5a) — GST registrations and Terminology (closes G-017 and G-018)
+- **G-017 — registrations.** `validateLocation(draft, others, original, usage, vendorNos, registrations?)`: with the registrations
+  passed, a site can't be saved **Active** (or moved to another state while Active) when its state has no active Normal
+  registration; the error is on *Status*. `saveWarehouse` passes them; the editor passes them too. The list gains a *GST
+  registration* column (GSTIN, hidden by default) and the drawer a *GST registration* fact ("None for this state" when
+  uncovered) with the same warning as the notice. Adding the registration is on Settings ▸ GST registrations (its gap banner
+  lists the site). See `docs/gst-registrations/README.md`.
+- **G-018 — terminology.** The section title (`<plural> & warehouses`), the grid and drawer nouns (*New store*, *Store TVM-MAIN*,
+  "No stores match"), the Warehouse sidebar page *Stock by Location*, the item card's *Stock by location* card and the Items
+  drawer's *STOCK BY LOCATION* heading read the workspace's `object.location` wording (`useLocationTerm()`); unchanged
+  by default. Settings navigation, breadcrumb and Find a setting still use the registry label (G-033).

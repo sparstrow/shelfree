@@ -6,6 +6,7 @@ import { type ListPreview, ListPage } from '@/components/list-page/ListPage'
 import { useCollectionDelete } from '@/components/list-page/use-collection-delete'
 import { NotesBlock } from '@/components/notes/NotesBlock'
 import { useBulkRemove, useBulkUpsert, useDuplicateItems, useList, useRemoveDuplicatedItems } from '@/data/queries'
+import { useLocationTerm } from '@/data/queries/regional-terminology'
 import type { Item } from '@/data/schemas'
 import { pluralNoun } from '@/domain/bulk-actions'
 import { categoryParentNames } from '@/domain/item-categories'
@@ -41,6 +42,7 @@ export function ItemsPage() {
   const { mutateAsync: runBulkRemove } = useBulkRemove('items')
   const { mutateAsync: runBulkUpsert } = useBulkUpsert('items')
 
+  const location = useLocationTerm()
   const warehouseList = useMemo(() => warehouses.data ?? [], [warehouses.data])
 
   const dataset = useMemo(
@@ -99,7 +101,7 @@ export function ItemsPage() {
           )}
           <div className="px-[14px] pt-[14px] pb-1">
             <div className="mb-[9px] text-[11px] font-semibold tracking-[0.05em] text-muted-foreground">
-              STOCK BY LOCATION
+              STOCK BY {location.singular.toUpperCase()}
             </div>
             {siteRows.length === 0 ? (
               <div className="mb-2 text-[12.5px] text-muted-foreground">No active locations.</div>

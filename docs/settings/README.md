@@ -39,12 +39,12 @@ the new app yet" inside the frame, with a link to a ported section.
 | Area | URL | Type | Ported |
 |---|---|---|---|
 | Workspace | `/settings/ws-profile` Business profile | form | yes |
-| Workspace | `/settings/ws-gst` GST registrations | list | not moved yet |
+| Workspace | `/settings/ws-gst` GST registrations | list | yes (run 2.5a) |
 | Workspace | `/settings/ws-plan` Plan & billing | custom | not moved yet |
 | Workspace | `/settings/ws-modules` Modules & capabilities | custom | not moved yet |
-| Workspace | `/settings/ws-regional` Regional & format | form | not moved yet |
+| Workspace | `/settings/ws-regional` Regional & format | form | yes (run 2.5a) |
 | Workspace | `/settings/ws-team` Team & roles | list | not moved yet |
-| Workspace | `/settings/terminology` Terminology | list | not moved yet |
+| Workspace | `/settings/terminology` Terminology | list | yes (run 2.5a) |
 | Workspace | `/settings/cfg-nav` Navigation | custom | not moved yet |
 | Workspace | `/settings/cfg-favorites` Favorites & views (workspace part) | custom | not moved yet |
 | Workspace | `/settings/cfg-states` States & territories | list | yes (read-only reference list + Check a GSTIN) |
@@ -342,7 +342,7 @@ Tax-relevant identity fields (GSTIN, PAN, legal name) keep their change history.
   - Spec: Team & roles lists the Manage settings column. The column ships on People ▸ Users; Team & roles is
     not moved yet.
 - **Deferred:** the 20+ sections marked "not moved yet" (Phase 2 of the plan); module on/off checks; review
-  before save for Tax settings; terminology overrides; plan and billing (no billing is built); logo upload,
+  before save for Tax settings; plan and billing (no billing is built); logo upload,
   password change and session revocation (stubs).
 
 ## Prototype reference — sections not moved yet

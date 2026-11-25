@@ -82,10 +82,6 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
   stores `roundOffAcct`, but Chart of accounts doesn't count it as usage (the default 6190 is a system account, so
   it is safe). *Fix by:* add the setting to `accountDeleteBlocked` and the deactivate check in
   `domain/chart-of-accounts.ts`.
-- **G-025 · The GSTIN check compares against the workspace address state** — States & territories has no
-  registrations to compare with, and no *Registered* badge or *Locations* count (same dependency as G-017).
-  *Fix by:* the run that ports Workspace ▸ GST registrations.
-
 ### Testing
 
 - **G-012 · Some browser tests fail under full-suite load** — assembly-order-document, customer-profile,
@@ -99,13 +95,6 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
   (floors, zones, aisles, bins, occupancy) and 4-step wizard on Locations & warehouses are not in the React app;
   sites are created and edited in the drawer and carry no floors or layouts. *Fix by:* its own run (needs a
   layout data model: floors, zones, aisles, bin overrides — see `docs/locations-warehouses/README.md`).
-- **G-017 · Locations don't read GST registrations** — the rule "a site can't be Active while its state has no
-  active Normal registration", the registration line, *Add registration*, the GSTIN chip and *Mark as declared*
-  need the GST registrations collection, which isn't ported. Only the one-principal-per-state rule is enforced.
-  *Fix by:* the run that ports Workspace ▸ GST registrations (then add the rule to `validateLocation`).
-- **G-018 · Location terminology is fixed to "Locations"** — the prototype's `locLabel()` reads the workspace
-  terminology (`object.location`); Terminology isn't ported, so the section, nav and drawer say "Location(s)".
-  *Fix by:* the run that ports Workspace ▸ Terminology.
 - **G-019 · Inactive sites still appear in document pickers; some references don't block delete** —
   `selectableLocations()` exists but the PO, receipt, assembly-order and item-stock pickers still list every
   site; BOM `wipLocation` and production settings' output location aren't counted as usage, so deleting a site
@@ -130,8 +119,43 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
   Save. Flipping a switch and then discarding the rule leaves the switch changed. *Fix by:* backend (a bulk
   eligibility endpoint) or a staged-changes list if users trip over it.
 
+### Settings ▸ Workspace part A (run 2.5a)
+
+- **G-030 · Regional & format isn't applied to the app's display** — currency, number format, date format, time zone and week
+  start are saved (`settings.regional`), but `money()`, `int()` and `fmtDate()` in `src/lib/format.ts` still print en-IN, ₹ and
+  `Jul 12, 2026`; `todayLocal()` uses the browser's zone. The prototype's default date format (`DD/MM/YYYY`) is not the app's
+  current output, so wiring would change every date on screen. Pure formatters (`formatMoneyAs`, `formatNumberAs`,
+  `formatDateAs`) exist and are tested. *Fix by:* a task that decides the visible default, reads the block through one
+  provider in `lib/format.ts` and re-renders on change; `docs/regional/README.md`.
+- **G-031 · Most terminology renames aren't read by screens** — only the Location wording (Locations section, Stock by Location
+  page, item card and Items drawer headings) reads `terms`. Modules, the other records, Favorites and field labels have rows in
+  Settings ▸ Terminology but the UI keeps its fixed wording; the *Lot/Batch* row stays hidden until Modules & capabilities
+  provides the capability flag. *Fix by:* each page as it touches its labels (use `useTerm` / `recordTerm`); Phase 2 run 2.5b
+  for module names and Favorites; `docs/terminology/README.md`.
+- **G-032 · GST registrations: card extras not ported** — the per-location rows on a registration (open location, mark as
+  declared, make principal), the "Add a registration in another state" tile and the Business profile PAN warning reading *all*
+  registrations; Locations has no *Add registration* button or GSTIN chip (the drawer shows the registration and a warning
+  only). The link is derived by state, not stored (`locations.registrationId` of the prototype's later model).
+  *Fix by:* the run that adds the Structure Designer / site wizard (G-016), or a polish pass.
+- **G-033 · Settings navigation and Find a setting still say "Locations & warehouses"** — the registry label is static, so after
+  a Location → Store rename the nav entry, breadcrumb and search hit keep the old name while the section's own title reads the
+  term. *Fix by:* let `SettingsFrame` pass section labels through `useTerm` (registry label → term key) when Navigation (run 2.5b)
+  settles the nav model.
+- **G-034 · The workspace record still carries the regional fields** — `workspaceSchema` (`data/api/session.ts`) has `currency,
+  timezone, dateFmt, numFmt, fiscalStart, weekStart` which nothing reads now that Regional & format owns them in
+  `settings.regional`. *Fix by:* drop them from `workspaceSchema` when the backend splits workspace identity from settings.
+
 ## Closed
 
+- **G-017 · Locations didn't read GST registrations** (closed 2026-11-25, run 2.5a) — `validateLocation` refuses *Active* (and moving an
+  Active site to another state) while the state has no active Normal registration; the Locations list and drawer show the
+  registration the site files under (`registrationForSite`, derived by state). Extras left over are G-032.
+- **G-018 · Location terminology was fixed to "Locations"** (closed 2026-11-25, run 2.5a) — Terminology is ported; the Locations
+  section, its grid / drawer nouns, the Warehouse sidebar page, the item card and Items drawer headings read `object.location`
+  (`useLocationTerm`). The settings navigation still uses the registry label (G-033).
+- **G-025 · The GSTIN check compared against the workspace address state** (closed 2026-11-25, run 2.5a) — it reads the GST
+  registrations (same state as one of them is CGST + SGST, otherwise IGST against the primary); States & territories also has
+  the *Registered* badge, *Locations* column and the *Registered* view.
 - **G-004 · Form sections' read-only mode is untested in the UI** (closed 2026-11-25, runs 2.3 and 2.4) — Tax settings, Sales pricing and Assembly & production are module
   form sections; `e2e/settings-finance.spec.ts` and `e2e/settings-sales-production.spec.ts` switch to the Member (Kavitha: reads Finance, Sales and Production, no Manage settings right)
   and check the values show as text in the same rows with the "View only" line, no inputs and no Save bar.

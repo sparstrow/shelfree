@@ -13,6 +13,8 @@ import {
   TAX_SETTINGS_DEFAULTS,
 } from '@/domain/tax-settings'
 import { DEFAULT_PRODUCTION_SETTINGS } from '@/domain/assembly-order'
+import { REGIONAL_DEFAULTS, type RegionalSettings, normalizeRegional } from '@/domain/regional'
+import { type TermMap, applyTermPatch, knownTermKeys } from '@/domain/terminology'
 import { CUSTOMER_PRICING_MODES, DEFAULT_SALES_PRICING_SETTINGS } from '@/domain/sales-prices'
 
 // Run 2.4 block (Sales pricing, Assembly & production) — kept apart from the other sections.
@@ -39,6 +41,18 @@ export const productionSchema = z.object({
   allowOverConsume: z.boolean(),
 })
 export type ProductionConfig = z.infer<typeof productionSchema>
+
+// Run 2.5a block (Regional & format, Terminology) — kept apart from the other sections.
+export const regionalSchema = z.object({
+  currency: z.string(),
+  timezone: z.string(),
+  dateFmt: z.string(),
+  numFmt: z.string(),
+  fiscalStart: z.string(),
+  weekStart: z.string(),
+})
+/** Renamed labels: key → text (see `domain/terminology`). Only keys with text are stored. */
+export const termsSchema = z.record(z.string(), z.string())
 
 export const settingsSchema = z.object({
   purchasing: z.object({
@@ -72,6 +86,9 @@ export const settingsSchema = z.object({
   // Run 2.4 block — Settings ▸ Sales pricing and Settings ▸ Assembly & production.
   salesPricing: salesPricingSchema,
   production: productionSchema,
+  // Run 2.5a block — Settings ▸ Regional & format and Settings ▸ Terminology.
+  regional: regionalSchema,
+  terms: termsSchema,
 })
 export type Settings = z.infer<typeof settingsSchema>
 
@@ -80,9 +97,23 @@ export const DEFAULT_SETTINGS: Settings = {
   tax: { ...TAX_SETTINGS_DEFAULTS },
   salesPricing: { ...DEFAULT_SALES_PRICING_SETTINGS },
   production: { ...DEFAULT_PRODUCTION_SETTINGS },
+  regional: { ...REGIONAL_DEFAULTS },
+  terms: {},
 }
 
 const KEY = 'shelfree.v2.settings'
+
+/** Keep only keys the app knows, with non-blank text (older or hand-edited storage can't poison labels). */
+function readTerms(stored: unknown): Record<string, string> {
+  const known = knownTermKeys()
+  const out: Record<string, string> = {}
+  if (stored && typeof stored === 'object') {
+    for (const [key, value] of Object.entries(stored as Record<string, unknown>)) {
+      if (known.has(key) && typeof value === 'string' && value.trim() !== '') out[key] = value
+    }
+  }
+  return out
+}
 
 function read(): Settings {
   try {
@@ -94,6 +125,8 @@ function read(): Settings {
         tax: { ...DEFAULT_SETTINGS.tax, ...stored.tax },
         salesPricing: { ...DEFAULT_SETTINGS.salesPricing, ...stored.salesPricing },
         production: { ...DEFAULT_SETTINGS.production, ...stored.production },
+        regional: normalizeRegional({ ...DEFAULT_SETTINGS.regional, ...stored.regional }),
+        terms: readTerms(stored.terms),
       })
     }
   } catch {
@@ -118,5 +151,12 @@ export const settingsApi = {
     settingsApi.update({ ...read(), salesPricing: salesPricingSchema.parse(next) }),
   updateProduction: (next: ProductionConfig): Promise<Settings> =>
     settingsApi.update({ ...read(), production: productionSchema.parse(next) }),
+  /** Regional & format. Backend: `PATCH /workspace/regional`, owner / admin only. */
+  updateRegional: (next: RegionalSettings): Promise<Settings> =>
+    settingsApi.update({ ...read(), regional: normalizeRegional(next) }),
+  /** Terminology: set (text) or clear (`null`) individual labels on top of the latest stored map. */
+  patchTerms: (patch: Readonly<Record<string, string | null>>): Promise<Settings> =>
+    settingsApi.update({ ...read(), terms: applyTermPatch(read().terms as TermMap, patch) }),
+  resetTerms: (): Promise<Settings> => settingsApi.update({ ...read(), terms: {} }),
   updateTax: (next: Settings['tax']): Promise<Settings> => settingsApi.update({ ...read(), tax: next }),
 }

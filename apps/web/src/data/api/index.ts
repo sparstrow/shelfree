@@ -19,6 +19,7 @@ import {
   customFieldSchema,
   employeeSchema,
   favoriteSchema,
+  gstRegistrationSchema,
   gstStateSchema,
   itemCategorySchema,
   itemSchema,
@@ -46,6 +47,7 @@ import {
   seedStatuses,
 } from '@/data/seed/settings-purchasing'
 import { seedGstStates, seedTaxCodes } from '@/data/seed/settings-finance'
+import { seedGstRegistrations } from '@/data/seed/settings-workspace'
 import { seedItemUnits } from '@/data/seed/item-units'
 import { seedNumberSequences } from '@/data/seed/number-sequences'
 import { seedPurchasePrices } from '@/data/seed/purchase-prices'
@@ -249,6 +251,13 @@ export const api = {
     schema: gstStateSchema,
     seed: seedGstStates,
     idOf: (r) => r.code,
+  }),
+  /** Settings ▸ Workspace: the business's own GSTINs, one per state (`shelfree.v2.gstRegistrations`). */
+  gstRegistrations: createCollection({
+    key: 'gstRegistrations',
+    schema: gstRegistrationSchema,
+    seed: seedGstRegistrations,
+    idOf: (r) => r.id,
   }),
 } as const
 

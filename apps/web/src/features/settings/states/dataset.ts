@@ -4,7 +4,13 @@ import { GST_STATE_TYPE_LABELS, type PartyCount, partiesText, stateSplitText, st
 import { EM_DASH } from '@/lib/format'
 
 /** A GST state / territory with the vendors and customers whose address is in it (derived, never stored). */
-export type GstStateRow = GstState & { parties: PartyCount }
+export type GstStateRow = GstState & {
+  parties: PartyCount
+  /** `Primary` / `Registered` when we hold an active registration in the state, else ''. */
+  registered: string
+  /** Trading locations in the state. */
+  sites: number
+}
 
 const col = (key: string, label: string, width: number, extra: Partial<GridColumn> = {}): GridColumn => ({
   key,
@@ -37,6 +43,10 @@ export function gstStatesDataset(): Dataset<GstStateRow> {
         return stateSplitText(r)
       case 'parties':
         return partiesTotal(r.parties)
+      case 'registered':
+        return r.registered
+      case 'sites':
+        return r.sites
       case 'status':
         return r.legacy ? 'Retired' : ''
       default:
@@ -55,12 +65,15 @@ export function gstStatesDataset(): Dataset<GstStateRow> {
       col('abbr', 'Short', 80, { type: 'mono' }),
       col('type', 'Type', 180),
       col('split', 'Same-state tax', 140),
+      col('registered', 'Registered', 110, { type: 'pill' }),
+      col('sites', 'Locations', 96, { type: 'num', align: 'right' }),
       col('parties', 'Parties', 90, { type: 'num', align: 'right' }),
       col('status', 'Status', 100, { type: 'pill' }),
     ],
     raw,
     text: (r, key) => {
       if (key === 'status') return r.legacy ? 'Retired' : EM_DASH
+      if (key === 'registered') return r.registered || EM_DASH
       const v = raw(r, key)
       return v === '' ? EM_DASH : String(v)
     },
@@ -72,11 +85,13 @@ export function gstStatesDataset(): Dataset<GstStateRow> {
       { id: 'all', name: 'All', system: true, filters: [] },
       { id: 'states', name: 'States', filters: [{ key: 'type', op: 'isAny', value: [GST_STATE_TYPE_LABELS.state] }] },
       { id: 'uts', name: 'Union territories', filters: [{ key: 'type', op: 'isAny', value: UT_LABELS }] },
+      { id: 'registered', name: 'Registered', filters: [{ key: 'registered', op: 'isAny', value: ['Primary', 'Registered'] }] },
     ],
     filterColumns: [
       { key: 'code', label: 'Code', type: 'text' },
       { key: 'name', label: 'Name', type: 'text' },
       { key: 'type', label: 'Type', type: 'enum', options: TYPE_LABELS },
+      { key: 'registered', label: 'Registered', type: 'enum', options: ['Primary', 'Registered'] },
       { key: 'status', label: 'Status', type: 'enum', options: ['Retired'] },
     ],
     defaultSort: { key: 'code', dir: 'asc' },

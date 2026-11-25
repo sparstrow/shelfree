@@ -25,7 +25,7 @@ export const LOCATIONS_HELP: HelpMap = {
   status: {
     title: 'Status',
     body: 'Setting up: visible but not yet trading. Active: stock can move in and out. Inactive: hidden from pickers; history stays.',
-    note: 'There is always at least one active location.',
+    note: 'There is always at least one active location. A site can only be Active once its state has an active GST registration.',
   },
   addr: {
     title: 'Address',
@@ -57,6 +57,10 @@ export const LOCATIONS_HELP: HelpMap = {
   operatorVendorId: {
     title: 'Operated by (3PL vendor)',
     body: 'The 3PL’s vendor record carries their GSTIN, contacts and storage bills. Stock held there still files under your GSTIN.',
+  },
+  registration: {
+    title: 'GST registration',
+    body: 'The GSTIN the site files under: your active Normal registration in the site’s state. Add or change registrations in Settings › GST registrations.',
   },
   stock: {
     title: 'Units in stock',

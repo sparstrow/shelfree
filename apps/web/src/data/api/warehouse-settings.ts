@@ -96,7 +96,12 @@ export interface SaveWarehouseResult {
 
 /** Create or update a site: `PUT /locations/{id}`. Enforces the location rules in `domain/locations`. */
 export async function saveWarehouse(input: Warehouse): Promise<SaveWarehouseResult> {
-  const [all, vendors, usage] = await Promise.all([api.warehouses.list(), api.vendors.list(), loadLocationUsage()])
+  const [all, vendors, usage, registrations] = await Promise.all([
+    api.warehouses.list(),
+    api.vendors.list(),
+    loadLocationUsage(),
+    api.gstRegistrations.list(),
+  ])
   const original = all.find((w) => w.id === input.id) ?? null
   const now = new Date().toISOString()
   const candidate = normalizeLocation({
@@ -106,7 +111,7 @@ export async function saveWarehouse(input: Warehouse): Promise<SaveWarehouseResu
   })
   const others = all.filter((w) => w.id !== candidate.id)
   const problem = firstError(
-    validateLocation(candidate, others, original, usage.get(candidate.id), new Set(vendors.map((v) => v.no))),
+    validateLocation(candidate, others, original, usage.get(candidate.id), new Set(vendors.map((v) => v.no)), registrations),
   )
   if (problem) throw new CommandError(problem)
   const withIt = original ? all.map((w) => (w.id === candidate.id ? candidate : w)) : [...all, candidate]

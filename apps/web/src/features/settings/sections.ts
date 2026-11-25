@@ -29,6 +29,13 @@ import { TaxSettingsSection } from './tax-settings/TaxSettingsSection'
 import { TAX_SETTINGS_HELP } from './tax-settings/help'
 import { UnitsOfMeasureSection } from './units-of-measure/UnitsOfMeasureSection'
 import { UOM_HELP } from './units-of-measure/help'
+// Run 2.5a — Workspace (part A): GST registrations, Regional & format, Terminology.
+import { GstRegistrationsSection } from './gst-registrations/GstRegistrationsSection'
+import { GST_REGISTRATIONS_HELP } from './gst-registrations/help'
+import { RegionalSection } from './regional/RegionalSection'
+import { REGIONAL_HELP } from './regional/help'
+import { TerminologySection } from './terminology/TerminologySection'
+import { TERMINOLOGY_HELP } from './terminology/help'
 
 /**
  * Sections already moved to the React app, by id (see `components/settings/registry.ts`
@@ -51,6 +58,9 @@ export const SETTINGS_SECTIONS: Readonly<Record<string, SettingsSectionComponent
   'cfg-states': StatesSection,
   'cfg-pricing': SalesPricingSection,
   assembly: AssemblyProductionSection,
+  'ws-gst': GstRegistrationsSection,
+  'ws-regional': RegionalSection,
+  terminology: TerminologySection,
 }
 
 /** Quiet-help maps keyed by section id, used by central Settings "Find a setting". */
@@ -69,4 +79,7 @@ export const SETTINGS_HELP_MAPS: Readonly<Record<string, HelpMap>> = {
   'cfg-states': STATES_HELP,
   'cfg-pricing': SALES_PRICING_HELP,
   assembly: ASSEMBLY_PRODUCTION_HELP,
+  'ws-gst': GST_REGISTRATIONS_HELP,
+  'ws-regional': REGIONAL_HELP,
+  terminology: TERMINOLOGY_HELP,
 }

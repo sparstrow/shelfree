@@ -119,3 +119,59 @@ status: 'Active'|'Cancelled', cancelledOn }`. State = GSTIN digits 1–2 (never 
 - Gap banner and cancel/delete guards ignore inactive locations.
 - Backend: `POST /locations/:id/declare`, `POST /locations/:id/make-principal` (audited; unique principal
   per registration). Permission `locations.manage`.
+
+## React app (2026-11-25)
+
+**Settings ▸ Workspace ▸ GST registrations** is ported as a list section (Phase 2 run 2.5a): **`/settings/ws-gst`**
+(area Workspace — owners and admins only). `GstRegistrationsSection` in
+`apps/web/src/features/settings/gst-registrations/` is a `ListPage embedded` with an `editor` (edit in place in the
+drawer), inside `SettingsPage flush`. Rules: `apps/web/src/domain/gst-registrations.ts` (Vitest); commands:
+`apps/web/src/data/api/gst-registrations.ts`. Tier: Starter base, ungated.
+
+### Data and persistence
+Collection **`gstRegistrations`** (`shelfree.v2.gstRegistrations`, key `id`, `gstRegistrationSchema`): the fields in
+*Data model* above (`gstin, legal, trade, scheme, regType, validFrom, validTo, registeredOn, filing, eInvoice, ewayMin,
+series, addr1, city, postal, primary, status, cancelledOn`) plus `createdAt` / `updatedAt`. The state is the first two
+digits of the GSTIN, never stored. **Seed:** one row — `REG-TN`, primary, taken from the Business profile (the
+workspace's GSTIN, legal name, trade name and address) so there is no second source; Regular, Quarterly, e-invoice off,
+₹50,000, prefix `TN/{FY}/`. The workspace `gstin` stays a **read mirror of the primary** (every save / make-primary /
+cancel / delete writes it back to the Business profile record).
+
+### Parity and deliberate changes
+- **Ported:** every validation above (own-GSTIN check character **blocks**, PAN equals the Business profile PAN, one
+  active Normal registration per state, Casual 180-day window, prefix characters and the 16-character invoice number,
+  unique prefix, e-way threshold, PIN); scheme Composition forces Quarterly and e-invoice off; Casual can't be primary;
+  exactly one primary; GSTIN fixed after saving; cancel / reactivate / delete rules with the reason shown (toast, or the
+  drawer notice); invoice-number preview `TN/2026-27/0001` using Regional & format's financial-year start; the amber
+  **gap banner** per state with **Add <state> registration** (opens New with the state code and prefix filled in); the
+  *no locations in this state*, *PAN mismatch* and *casual validity ended* notes (drawer notice).
+- **Changed:** the card layout is a list row + drawer (the list template); the *Locations* fact is the site names in
+  the drawer and a count in the grid. Keys are the template's plus **P** (make primary) and **C** (cancel registration).
+- **Not ported (G-032):** the per-location rows on a card (mark as declared, make principal), the dashed "Add a
+  registration in another state" tile, and the PAN warning inside Business profile reading *all* registrations (it still
+  reads the primary GSTIN).
+
+### How locations read registrations (closes G-017)
+A site's registration is **derived**: the active Normal registration whose GSTIN state equals the site's state code
+(`registrationForSite`). `validateLocation` now refuses saving a site as **Active** — or moving an Active site to another
+state — when its state has none ("<state> has no active GST registration — add one in Settings ▸ GST registrations first, or
+keep the site Setting up"); Setting up and Inactive sites, non-Indian sites, and edits that don't change status or state
+are unaffected. The Locations list has a *GST registration* column (GSTIN, hidden by default) and the drawer a *GST
+registration* fact. Cancelling or deleting a registration is refused while a non-inactive site would be left uncovered.
+
+### Backend-build notes (additions)
+- Endpoints as above; add `GET /gst-registrations/gaps` (states with a trading location and no active Normal
+  registration). `locations` need no `registration_id` column — it is the join on (workspace, state_code, status =
+  Active, reg_type = Normal); add one only if documents must freeze the registration they were issued under.
+- The backend also enforces: delete refused once any document references the registration; cancel refused while open
+  documents use it; the mirror `workspace.gstin` is the primary's GSTIN (derive it, don't store it twice).
+- **Audit events:** `gst_registration.created | updated (field diff) | made_primary | cancelled | reactivated | deleted`.
+  **Permission:** `tax.registrations.manage` (finance admin) to write; Workspace settings are owner / admin only in the
+  frame. No portal credentials or e-invoice secrets anywhere (the e-invoice switch is a flag).
+
+### Tests
+Vitest `domain/gst-registrations.test.ts` (validation, sites and gaps, the location rule, cancel / reactivate / delete /
+primary transitions, States badge and split), `data/api/gst-registrations.test.ts` (commands, the workspace mirror,
+Locations reading registrations), `domain/locations.test.ts`. Playwright `e2e/settings-workspace-a.spec.ts` (list, add,
+edit in place, validation, casual, primary protection, cancel / reactivate / delete / undo, make primary + Business profile,
+the Active-location rule and the banner, States).

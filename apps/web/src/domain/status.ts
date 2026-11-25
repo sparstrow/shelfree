@@ -9,6 +9,8 @@ const TONES: Record<string, Tone> = {
   'No price': 'warn',
   'Below cost': 'bad',
   Active: 'ok',
+  Primary: 'ok',
+  Registered: 'ok',
   'On hold': 'bad',
   Blocked: 'bad',
   Overdue: 'bad',
