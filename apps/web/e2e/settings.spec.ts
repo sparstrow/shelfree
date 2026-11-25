@@ -10,26 +10,31 @@ test.describe('Settings ▸ frame and navigation', () => {
     await expect(page.getByLabel('Business name', { exact: true })).toHaveValue('Kanalora')
 
     const nav = page.getByRole('navigation', { name: 'Settings' })
+    await nav.getByRole('button', { name: 'Warehouse', exact: true }).click()
     await nav.getByRole('link', { name: 'Units of measure', exact: true }).click()
-    await expect(page).toHaveURL(/\/settings\/uom$/)
+    await expect(page).toHaveURL(/\/warehouse\/settings\/uom$/)
     await expect(page.getByRole('heading', { name: 'Units of measure', level: 1 })).toBeVisible()
 
-    // A section that is still in the prototype keeps the frame and says so.
+    // Return to central Settings and open a section still in the prototype.
+    await nav.getByRole('link', { name: 'All settings', exact: true }).click()
+    await expect(page).toHaveURL(/\/settings\/ws-profile$/)
+    await nav.getByRole('button', { name: 'Finance', exact: true }).click()
     await nav.getByRole('link', { name: 'Tax settings', exact: true }).click()
-    await expect(page).toHaveURL(/\/settings\/cfg-taxset$/)
+    await expect(page).toHaveURL(/\/finance\/settings\/cfg-taxset$/)
     await expect(page.getByText('has not been moved to the new app yet')).toBeVisible()
     await expect(nav.getByRole('link', { name: 'Tax settings', exact: true })).toHaveAttribute('aria-current', 'page')
 
-    // Scope switch: My settings.
-    await nav.getByRole('link', { name: 'My settings', exact: true }).click()
+    // Personal sections live in central Settings too.
+    await nav.getByRole('link', { name: 'All settings', exact: true }).click()
+    await nav.getByRole('link', { name: 'Profile', exact: true }).click()
     await expect(page).toHaveURL(/\/settings\/me-profile$/)
     await expect(nav.getByRole('link', { name: 'Security', exact: true })).toBeVisible()
-    await expect(nav.getByRole('link', { name: 'Business profile', exact: true })).toHaveCount(0)
+    await expect(nav.getByRole('link', { name: 'Business profile', exact: true })).toBeVisible()
   })
 
   test('the sidebar entries open Settings and My settings', async ({ page }) => {
     await page.goto('/')
-    await page.getByRole('link', { name: 'Settings', exact: true }).click()
+    await page.locator('aside a[href="/settings"]').click()
     await expect(page).toHaveURL(/\/settings\/ws-profile$/)
     await page.getByRole('button', { name: 'Account menu', exact: true }).click()
     await page.getByRole('menuitem', { name: 'My settings', exact: true }).click()
@@ -183,24 +188,24 @@ test.describe('Business profile: dirty, save, discard, leave guard', () => {
     const name = page.getByLabel('Business name', { exact: true })
     await name.fill('Kanalora Holdings')
 
-    await nav.getByRole('link', { name: 'Units of measure', exact: true }).click()
+    await nav.getByRole('link', { name: 'Keyboard shortcuts', exact: true }).click()
     const dialog = page.getByRole('dialog', { name: 'Leave without saving?' })
     await expect(dialog).toBeVisible()
     await dialog.getByRole('button', { name: 'Keep editing', exact: true }).click()
     await expect(page).toHaveURL(/\/settings\/ws-profile$/)
     await expect(name).toHaveValue('Kanalora Holdings')
 
-    await nav.getByRole('link', { name: 'Units of measure', exact: true }).click()
+    await nav.getByRole('link', { name: 'Keyboard shortcuts', exact: true }).click()
     await page.getByRole('dialog', { name: 'Leave without saving?' }).getByRole('button', { name: 'Discard and leave', exact: true }).click()
-    await expect(page).toHaveURL(/\/settings\/uom$/)
+    await expect(page).toHaveURL(/\/settings\/shortcuts$/)
 
     await nav.getByRole('link', { name: 'Business profile', exact: true }).click()
     await expect(page.getByLabel('Business name', { exact: true })).toHaveValue('Kanalora')
 
     await page.getByLabel('Business name', { exact: true }).fill('Kanalora Holdings')
-    await nav.getByRole('link', { name: 'Units of measure', exact: true }).click()
+    await nav.getByRole('link', { name: 'Keyboard shortcuts', exact: true }).click()
     await page.getByRole('dialog', { name: 'Leave without saving?' }).getByRole('button', { name: 'Save and leave', exact: true }).click()
-    await expect(page).toHaveURL(/\/settings\/uom$/)
+    await expect(page).toHaveURL(/\/settings\/shortcuts$/)
     await nav.getByRole('link', { name: 'Business profile', exact: true }).click()
     await expect(page.getByLabel('Business name', { exact: true })).toHaveValue('Kanalora Holdings')
   })
@@ -208,7 +213,7 @@ test.describe('Business profile: dirty, save, discard, leave guard', () => {
 
 test.describe('Settings ▸ Units of measure', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/settings/uom')
+    await page.goto('/warehouse/settings/uom')
     await expect(page.getByRole('row', { name: /PNL/ })).toBeVisible()
   })
 

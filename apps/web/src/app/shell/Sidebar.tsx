@@ -9,12 +9,14 @@ import {
   type ModuleDef,
   type ModuleId,
   type PageDef,
+  findModule,
   findPage,
 } from '@/app/nav'
 import { useGridViews } from '@/app/stores/grid-views'
 import { type DemoRole, useUi } from '@/app/stores/ui'
 import { useFavoriteActions } from '@/components/saved-views/use-favorite-actions'
 import { pageIdentityOf } from '@/components/saved-views/use-page-identity'
+import { firstSection, isSettingsModule, moduleSettingsFromPath } from '@/components/settings/registry'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -232,6 +234,74 @@ function PageLink({
   )
 }
 
+const ICON_SETTINGS =
+  'M12 9a3 3 0 1 0 0 6 3 3 0 1 0 0-6M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'
+
+function ModuleSettingsLink({
+  module,
+  active,
+  fav,
+  onToggleFav,
+  onOpenInTab,
+}: {
+  module: ModuleDef
+  active: boolean
+  fav: boolean
+  onToggleFav: () => void
+  onOpenInTab: () => void
+}) {
+  const onStar = (e: MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    onToggleFav()
+  }
+  const label = `${module.name} Settings`
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div className="group/page relative">
+          <Link
+            to="/$module/settings"
+            params={{ module: module.id }}
+            className={pageClass(active)}
+            aria-current={active ? 'page' : undefined}
+          >
+            <span className="flex size-[15px] flex-none items-center justify-center opacity-80">
+              <ModuleIcon id="settings" size={15} strokeWidth={1.7} />
+            </span>
+            <span className="min-w-0 flex-1 truncate text-left">Settings</span>
+            <span className="w-[15px] flex-none" />
+          </Link>
+          <button
+            type="button"
+            onClick={onStar}
+            title={fav ? 'Remove from favorites' : 'Add to favorites'}
+            aria-label={fav ? `Remove ${label} from favorites` : `Add ${label} to favorites`}
+            aria-pressed={fav}
+            className={cn(
+              'absolute top-1/2 right-[10px] flex size-[15px] -translate-y-1/2 items-center justify-center border-0 bg-transparent p-0 transition-[opacity,scale] duration-[140ms] hover:scale-[1.18] hover:opacity-100 focus-visible:opacity-100',
+              fav
+                ? 'text-primary opacity-95'
+                : cn('opacity-0 group-hover/page:opacity-50', active ? 'text-primary' : 'text-muted-foreground'),
+            )}
+          >
+            <StarGlyph on={fav} />
+          </button>
+        </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="min-w-[196px]">
+        <ContextMenuLabel className="truncate text-[11px] font-semibold text-muted-foreground">{label}</ContextMenuLabel>
+        <ContextMenuItem className={ctxItem} onSelect={onToggleFav}>
+          {fav ? 'Remove from favorites' : 'Add to favorites'}
+        </ContextMenuItem>
+        <ContextMenuItem className={ctxItem} onSelect={onOpenInTab}>
+          Open in new tab
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  )
+}
+
 /** The name box of a view favourite being renamed in place: Enter / click away saves, Esc cancels. */
 function RenameInput({ initial, onCommit, onCancel }: { initial: string; onCommit: (name: string) => void; onCancel: () => void }) {
   const [value, setValue] = useState(initial)
@@ -312,7 +382,8 @@ export function Sidebar() {
   const dragId = useRef<string | null>(null)
   const flyoutTimer = useRef<number | undefined>(undefined)
 
-  const activeModuleId = active.kind === 'page' ? active.module.id : null
+  const moduleSettingsId = moduleSettingsFromPath(active.pathname)
+  const activeModuleId = active.kind === 'page' ? active.module.id : moduleSettingsId
   const isOpen = (id: string) => (navExpanded[id] !== undefined ? navExpanded[id] : id === activeModuleId)
 
   const toggleModule = (module: ModuleDef) => {
@@ -356,6 +427,20 @@ export function Sidebar() {
         icon: ICON_VIEW,
         title: `${view.pageLabel} · ${view.name}`,
         active: activePageKey === view.pageKey && gridActiveView[view.pageKey] === view.id,
+      })
+      continue
+    }
+    if (fav.page === 'settings' && fav.module && isSettingsModule(fav.module)) {
+      const mod = findModule(fav.module)
+      if (!mod) continue
+      allFavRows.push({
+        fav,
+        isView: false,
+        label: `${mod.name} Settings`,
+        sub: '',
+        icon: ICON_SETTINGS,
+        title: `${mod.name} › Settings`,
+        active: moduleSettingsId === mod.id,
       })
       continue
     }
@@ -613,10 +698,11 @@ export function Sidebar() {
 
         {MODULES.map((module) => {
           const moduleActive = module.id === activeModuleId
-          const expandable = module.pages.length > 1
+          const hasSettings = isSettingsModule(module.id)
+          const expandable = module.pages.length > 1 || hasSettings
           const open = expandable && !collapsed && isOpen(module.id)
           return (
-            <div key={module.id} className="flex flex-col gap-0.5">
+            <div key={module.id} data-module={module.id} className="flex flex-col gap-0.5">
               <button
                 type="button"
                 onClick={() => toggleModule(module)}
@@ -645,6 +731,15 @@ export function Sidebar() {
                     onOpenInTab={() => openPageInTab(module.id, page.slug)}
                   />
                 ))}
+                {hasSettings && (
+                  <ModuleSettingsLink
+                    module={module}
+                    active={moduleSettingsId === module.id}
+                    fav={!!favoriteActions.pageFavorite(module.id, 'settings')}
+                    onToggleFav={() => favoriteActions.togglePage(module.id, 'settings', `${module.name} Settings`)}
+                    onOpenInTab={() => openPageInTab(module.id, 'settings')}
+                  />
+                )}
               </Collapsible>
             </div>
           )
@@ -698,7 +793,7 @@ export function Sidebar() {
               </span>
             </div>
             <DropdownMenuItem asChild className="gap-[10px] text-[12.5px] font-medium">
-              <Link to="/settings/$section" params={{ section: 'me-profile' }}>
+              <Link to="/settings/$section" params={{ section: firstSection('personal').id }}>
                 <ModuleIcon id="settings" size={15} />
                 My settings
               </Link>
@@ -770,6 +865,20 @@ export function Sidebar() {
               )}
             </Link>
           ))}
+          {isSettingsModule(flyoutModule.id) && (
+            <Link
+              to="/$module/settings"
+              params={{ module: flyoutModule.id }}
+              onClick={() => setFlyout(null)}
+              aria-current={moduleSettingsId === flyoutModule.id ? 'page' : undefined}
+              className={pageClass(moduleSettingsId === flyoutModule.id)}
+            >
+              <span className="flex size-[15px] flex-none items-center justify-center opacity-80">
+                <ModuleIcon id="settings" size={15} strokeWidth={1.7} />
+              </span>
+              <span className="min-w-0 flex-1 truncate text-left">Settings</span>
+            </Link>
+          )}
         </div>
       )}
     </aside>

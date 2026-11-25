@@ -17,6 +17,8 @@ import { Route as NotesIndexRouteImport } from './routes/notes/index'
 import { Route as NotesNotesRouteImport } from './routes/notes/notes'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SettingsSectionRouteImport } from './routes/settings/$section'
+import { Route as ModuleSettingsIndexRouteImport } from './routes/$module/settings/index'
+import { Route as ModuleSettingsSectionRouteImport } from './routes/$module/settings/$section'
 import { Route as FinanceChartOfAccountsIndexRouteImport } from './routes/finance/chart-of-accounts/index'
 import { Route as PeopleContactsIndexRouteImport } from './routes/people/contacts/index'
 import { Route as PeopleEmployeesIndexRouteImport } from './routes/people/employees/index'
@@ -39,6 +41,7 @@ import { Route as PurchasingVendorsNoRouteImport } from './routes/purchasing/ven
 import { Route as SalesCustomersIndexRouteImport } from './routes/sales/customers/index'
 import { Route as SalesCustomersNoRouteImport } from './routes/sales/customers/$no'
 import { Route as SalesSalesPricesIndexRouteImport } from './routes/sales/sales-prices/index'
+import { Route as SettingsSharedListRouteImport } from './routes/settings/shared/$list'
 import { Route as WarehouseItemsIndexRouteImport } from './routes/warehouse/items/index'
 import { Route as WarehouseItemsNoRouteImport } from './routes/warehouse/items/$no'
 import { Route as WarehouseUnitsOfMeasureIndexRouteImport } from './routes/warehouse/units-of-measure/index'
@@ -83,6 +86,16 @@ const SettingsIndexRoute = SettingsIndexRouteImport.update({
 const SettingsSectionRoute = SettingsSectionRouteImport.update({
   id: '/settings/$section',
   path: '/settings/$section',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ModuleSettingsIndexRoute = ModuleSettingsIndexRouteImport.update({
+  id: '/$module/settings/',
+  path: '/$module/settings/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ModuleSettingsSectionRoute = ModuleSettingsSectionRouteImport.update({
+  id: '/$module/settings/$section',
+  path: '/$module/settings/$section',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FinanceChartOfAccountsIndexRoute =
@@ -207,6 +220,11 @@ const SalesSalesPricesIndexRoute = SalesSalesPricesIndexRouteImport.update({
   path: '/sales/sales-prices/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsSharedListRoute = SettingsSharedListRouteImport.update({
+  id: '/settings/shared/$list',
+  path: '/settings/shared/$list',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WarehouseItemsIndexRoute = WarehouseItemsIndexRouteImport.update({
   id: '/warehouse/items/',
   path: '/warehouse/items/',
@@ -244,13 +262,16 @@ export interface FileRoutesByFullPath {
   '/departments/': typeof DepartmentsIndexRoute
   '/notes/': typeof NotesIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/$module/settings/$section': typeof ModuleSettingsSectionRoute
   '/production/assembly-orders/$no': typeof ProductionAssemblyOrdersNoRoute
   '/production/bills-of-materials/$no': typeof ProductionBillsOfMaterialsNoRoute
   '/purchasing/purchase-orders/$no': typeof PurchasingPurchaseOrdersNoRoute
   '/purchasing/purchase-receipts/$no': typeof PurchasingPurchaseReceiptsNoRoute
   '/purchasing/vendors/$no': typeof PurchasingVendorsNoRoute
   '/sales/customers/$no': typeof SalesCustomersNoRoute
+  '/settings/shared/$list': typeof SettingsSharedListRoute
   '/warehouse/items/$no': typeof WarehouseItemsNoRoute
+  '/$module/settings/': typeof ModuleSettingsIndexRoute
   '/finance/chart-of-accounts/': typeof FinanceChartOfAccountsIndexRoute
   '/people/contacts/': typeof PeopleContactsIndexRoute
   '/people/employees/': typeof PeopleEmployeesIndexRoute
@@ -280,13 +301,16 @@ export interface FileRoutesByTo {
   '/departments': typeof DepartmentsIndexRoute
   '/notes': typeof NotesIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/$module/settings/$section': typeof ModuleSettingsSectionRoute
   '/production/assembly-orders/$no': typeof ProductionAssemblyOrdersNoRoute
   '/production/bills-of-materials/$no': typeof ProductionBillsOfMaterialsNoRoute
   '/purchasing/purchase-orders/$no': typeof PurchasingPurchaseOrdersNoRoute
   '/purchasing/purchase-receipts/$no': typeof PurchasingPurchaseReceiptsNoRoute
   '/purchasing/vendors/$no': typeof PurchasingVendorsNoRoute
   '/sales/customers/$no': typeof SalesCustomersNoRoute
+  '/settings/shared/$list': typeof SettingsSharedListRoute
   '/warehouse/items/$no': typeof WarehouseItemsNoRoute
+  '/$module/settings': typeof ModuleSettingsIndexRoute
   '/finance/chart-of-accounts': typeof FinanceChartOfAccountsIndexRoute
   '/people/contacts': typeof PeopleContactsIndexRoute
   '/people/employees': typeof PeopleEmployeesIndexRoute
@@ -318,13 +342,16 @@ export interface FileRoutesById {
   '/departments/': typeof DepartmentsIndexRoute
   '/notes/': typeof NotesIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/$module/settings/$section': typeof ModuleSettingsSectionRoute
   '/production/assembly-orders/$no': typeof ProductionAssemblyOrdersNoRoute
   '/production/bills-of-materials/$no': typeof ProductionBillsOfMaterialsNoRoute
   '/purchasing/purchase-orders/$no': typeof PurchasingPurchaseOrdersNoRoute
   '/purchasing/purchase-receipts/$no': typeof PurchasingPurchaseReceiptsNoRoute
   '/purchasing/vendors/$no': typeof PurchasingVendorsNoRoute
   '/sales/customers/$no': typeof SalesCustomersNoRoute
+  '/settings/shared/$list': typeof SettingsSharedListRoute
   '/warehouse/items/$no': typeof WarehouseItemsNoRoute
+  '/$module/settings/': typeof ModuleSettingsIndexRoute
   '/finance/chart-of-accounts/': typeof FinanceChartOfAccountsIndexRoute
   '/people/contacts/': typeof PeopleContactsIndexRoute
   '/people/employees/': typeof PeopleEmployeesIndexRoute
@@ -357,13 +384,16 @@ export interface FileRouteTypes {
     | '/departments/'
     | '/notes/'
     | '/settings/'
+    | '/$module/settings/$section'
     | '/production/assembly-orders/$no'
     | '/production/bills-of-materials/$no'
     | '/purchasing/purchase-orders/$no'
     | '/purchasing/purchase-receipts/$no'
     | '/purchasing/vendors/$no'
     | '/sales/customers/$no'
+    | '/settings/shared/$list'
     | '/warehouse/items/$no'
+    | '/$module/settings/'
     | '/finance/chart-of-accounts/'
     | '/people/contacts/'
     | '/people/employees/'
@@ -393,13 +423,16 @@ export interface FileRouteTypes {
     | '/departments'
     | '/notes'
     | '/settings'
+    | '/$module/settings/$section'
     | '/production/assembly-orders/$no'
     | '/production/bills-of-materials/$no'
     | '/purchasing/purchase-orders/$no'
     | '/purchasing/purchase-receipts/$no'
     | '/purchasing/vendors/$no'
     | '/sales/customers/$no'
+    | '/settings/shared/$list'
     | '/warehouse/items/$no'
+    | '/$module/settings'
     | '/finance/chart-of-accounts'
     | '/people/contacts'
     | '/people/employees'
@@ -430,13 +463,16 @@ export interface FileRouteTypes {
     | '/departments/'
     | '/notes/'
     | '/settings/'
+    | '/$module/settings/$section'
     | '/production/assembly-orders/$no'
     | '/production/bills-of-materials/$no'
     | '/purchasing/purchase-orders/$no'
     | '/purchasing/purchase-receipts/$no'
     | '/purchasing/vendors/$no'
     | '/sales/customers/$no'
+    | '/settings/shared/$list'
     | '/warehouse/items/$no'
+    | '/$module/settings/'
     | '/finance/chart-of-accounts/'
     | '/people/contacts/'
     | '/people/employees/'
@@ -467,13 +503,16 @@ export interface RootRouteChildren {
   SettingsSectionRoute: typeof SettingsSectionRoute
   NotesIndexRoute: typeof NotesIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
+  ModuleSettingsSectionRoute: typeof ModuleSettingsSectionRoute
   ProductionAssemblyOrdersNoRoute: typeof ProductionAssemblyOrdersNoRoute
   ProductionBillsOfMaterialsNoRoute: typeof ProductionBillsOfMaterialsNoRoute
   PurchasingPurchaseOrdersNoRoute: typeof PurchasingPurchaseOrdersNoRoute
   PurchasingPurchaseReceiptsNoRoute: typeof PurchasingPurchaseReceiptsNoRoute
   PurchasingVendorsNoRoute: typeof PurchasingVendorsNoRoute
   SalesCustomersNoRoute: typeof SalesCustomersNoRoute
+  SettingsSharedListRoute: typeof SettingsSharedListRoute
   WarehouseItemsNoRoute: typeof WarehouseItemsNoRoute
+  ModuleSettingsIndexRoute: typeof ModuleSettingsIndexRoute
   FinanceChartOfAccountsIndexRoute: typeof FinanceChartOfAccountsIndexRoute
   PeopleContactsIndexRoute: typeof PeopleContactsIndexRoute
   PeopleEmployeesIndexRoute: typeof PeopleEmployeesIndexRoute
@@ -552,6 +591,20 @@ declare module '@tanstack/react-router' {
       path: '/settings/$section'
       fullPath: '/settings/$section'
       preLoaderRoute: typeof SettingsSectionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$module/settings/': {
+      id: '/$module/settings/'
+      path: '/$module/settings'
+      fullPath: '/$module/settings/'
+      preLoaderRoute: typeof ModuleSettingsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$module/settings/$section': {
+      id: '/$module/settings/$section'
+      path: '/$module/settings/$section'
+      fullPath: '/$module/settings/$section'
+      preLoaderRoute: typeof ModuleSettingsSectionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/finance/chart-of-accounts/': {
@@ -708,6 +761,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SalesSalesPricesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/shared/$list': {
+      id: '/settings/shared/$list'
+      path: '/settings/shared/$list'
+      fullPath: '/settings/shared/$list'
+      preLoaderRoute: typeof SettingsSharedListRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/warehouse/items/': {
       id: '/warehouse/items/'
       path: '/warehouse/items'
@@ -766,13 +826,16 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsSectionRoute: SettingsSectionRoute,
   NotesIndexRoute: NotesIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
+  ModuleSettingsSectionRoute: ModuleSettingsSectionRoute,
   ProductionAssemblyOrdersNoRoute: ProductionAssemblyOrdersNoRoute,
   ProductionBillsOfMaterialsNoRoute: ProductionBillsOfMaterialsNoRoute,
   PurchasingPurchaseOrdersNoRoute: PurchasingPurchaseOrdersNoRoute,
   PurchasingPurchaseReceiptsNoRoute: PurchasingPurchaseReceiptsNoRoute,
   PurchasingVendorsNoRoute: PurchasingVendorsNoRoute,
   SalesCustomersNoRoute: SalesCustomersNoRoute,
+  SettingsSharedListRoute: SettingsSharedListRoute,
   WarehouseItemsNoRoute: WarehouseItemsNoRoute,
+  ModuleSettingsIndexRoute: ModuleSettingsIndexRoute,
   FinanceChartOfAccountsIndexRoute: FinanceChartOfAccountsIndexRoute,
   PeopleContactsIndexRoute: PeopleContactsIndexRoute,
   PeopleEmployeesIndexRoute: PeopleEmployeesIndexRoute,
