@@ -447,6 +447,17 @@ the user says to plan, write a task-by-task plan to
 `docs/superpowers/reference/`. These specs/plans are the in-flight lane; shipped
 outcomes still fold into the per-page `docs/<page>/README.md` per the rule below.
 
+## Known gaps — `docs/gaps.md` (since 2026-11-25)
+`docs/gaps.md` lists caveats, gaps and future problems that could not be fixed
+in the task that found them. Every task (and every delegated brief):
+- **Before starting:** read it; if an open gap touches the area you're working
+  in, fix it in this task and move it to **Closed** (date + PR).
+- **While working:** fix a gap you find when you can. If you can't now (out of
+  scope, needs the backend, needs a later stage), add it under **Open** in the
+  same turn with an id (`G-0NN`), where, what, why it was left and *Fix by*.
+- Review findings from agents that aren't fixed go here too — never only in a
+  chat message or a PR body.
+
 ## Keep `docs/` in sync — always
 **This app is a frontend-only prototype. The plan is to export the full
 prototype later and build a real backend against these docs — so `docs/` is the
