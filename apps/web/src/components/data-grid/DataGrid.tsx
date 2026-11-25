@@ -10,9 +10,12 @@ import {
   ChevronsUpDown,
   CircleAlert,
   Copy,
+  CopyPlus,
   Download,
+  ExternalLink,
   Eye,
   Funnel,
+  Hash,
   List,
   Pencil,
   type LucideIcon,
@@ -25,6 +28,7 @@ import {
   SlidersVertical,
   SquareCheckBig,
   TextSearch,
+  Trash2,
   Ungroup,
   X,
 } from 'lucide-react'
@@ -53,6 +57,7 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuLabel,
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
@@ -71,6 +76,12 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useList } from '@/data/queries'
 import type { SavedView } from '@/data/schemas'
+import {
+  type BulkOpDotToken,
+  type BulkRowOpSpec,
+  evaluateBulkDelete,
+  evaluateBulkOp,
+} from '@/domain/bulk-actions'
 import {
   AGG_OPTIONS,
   type AggKind,
@@ -108,6 +119,7 @@ import { int, money } from '@/lib/format'
 import { isTypingTarget } from '@/lib/keyboard'
 import { useLatest, useLatestCallback } from '@/lib/use-latest-callback'
 import { cn } from '@/lib/utils'
+import { BulkEditDialog, type GridBulkEdit } from './BulkEditDialog'
 import { CellEditor } from './CellEditor'
 import { ColumnMenuItems } from './ColumnMenu'
 import { contextKit, dropdownKit } from './column-menu-kits'
@@ -145,6 +157,8 @@ export interface GridAction<T> {
   onSelect: (row: T) => void
 }
 
+export type { GridBulkEdit }
+
 export interface GridBulkAction<T> {
   label: string
   icon?: LucideIcon
@@ -152,6 +166,11 @@ export interface GridBulkAction<T> {
   /** Hidden from the bulk bar when this returns false for the selected rows. */
   when?: (rows: T[]) => boolean
   run: (rows: T[], ctx: { clearSelection: () => void }) => void | Promise<void>
+}
+
+export interface GridBulkOp<T> extends BulkRowOpSpec<T> {
+  /** Execute the status or lock op on the eligible rows. */
+  run: (eligible: T[], allSelected: T[], ctx: { clearSelection: () => void }) => void | Promise<void>
 }
 
 export interface DataGridProps<T> {
@@ -169,6 +188,20 @@ export interface DataGridProps<T> {
   actions?: GridAction<T>[]
   /** Action buttons shown in the bulk bar when one or more rows are checked. */
   bulkActions?: GridBulkAction<T>[]
+  /** One-column bulk edit dialog (bulk bar "Edit" and multi-row menu "Edit column…"). */
+  bulkEdit?: GridBulkEdit<T>
+  /** Duplicate the selected rows (return the new record ids to focus/select them). */
+  onDuplicate?: (rows: T[]) => Promise<string[] | void> | void
+  /** Bulk status transitions shown in the bulk bar (when 1+ apply) and multi-row menu. */
+  statusOps?: readonly GridBulkOp<T>[]
+  /** Bulk lock/reopen transitions shown in the bulk bar (when 1+ apply) and multi-row menu. */
+  lockOps?: readonly GridBulkOp<T>[]
+  /** Open each selected row's page in a new browser tab (multi-row context menu). */
+  onOpenInTabs?: (rows: T[]) => void
+  /** Bulk delete eligible selected rows (bulk bar and multi-row context menu). */
+  onBulkDelete?: (eligible: T[], allSelected: T[], ctx: { clearSelection: () => void }) => void | Promise<void>
+  /** Per-row bulk-delete eligibility (`true` when deletable, or a reason string). */
+  canDelete?: (row: T) => true | string
   /** Side drawer rendered beside the table. */
   drawer?: ReactNode
   emptyText?: string
@@ -178,6 +211,15 @@ export interface DataGridProps<T> {
   initialFilters?: Omit<GridFilter, 'id'>[]
   /** Show the Filters side panel from the toolbar (default true). Pass false for the compact popover picker. */
   filterPanel?: boolean
+}
+
+const DOT_CLASS: Record<BulkOpDotToken, string> = {
+  info: 'bg-info-fg',
+  bad: 'bg-bad-fg',
+  ok: 'bg-ok-fg',
+  warn: 'bg-warn-fg',
+  muted: 'bg-muted-foreground',
+  primary: 'bg-primary',
 }
 
 const toolButton =
@@ -233,6 +275,13 @@ export function DataGrid<T>({
   onOpen,
   actions = [],
   bulkActions = [],
+  bulkEdit,
+  onDuplicate,
+  statusOps = [],
+  lockOps = [],
+  onOpenInTabs,
+  onBulkDelete,
+  canDelete,
   drawer,
   emptyText,
   showTotals = false,
@@ -253,6 +302,7 @@ export function DataGrid<T>({
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(20)
   const [selected, setSelected] = useState<Set<string>>(() => new Set())
+  const [bulkEditOpen, setBulkEditOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [cell, setCell] = useState<{ id: string; key: string } | null>(null)
   const [scrolledX, setScrolledX] = useState(false)
@@ -643,19 +693,69 @@ export function DataGrid<T>({
     toast('Export ready', { description: `${int(list.length)} ${list.length === 1 ? dataset.noun : dataset.nounPlural} saved as CSV.` })
   }
 
+  const clearSelection = useCallback(() => setSelected(new Set()), [])
+
   const exportSelected = () => {
+    if (selectedRows.length === 0) return
     download(`${dataset.id}-selected.csv`, toCsv(selectedRows, dataset, columns))
+    toast(
+      `Exported ${int(selectedRows.length)} ${selectedRows.length === 1 ? dataset.noun : dataset.nounPlural}`,
+      { description: 'CSV · visible columns' },
+    )
   }
 
   const copySelected = async () => {
-    const text = selectedRows.map((r) => columns.map((c) => dataset.text(r, c.key)).join('\t')).join('\n')
+    const target = selectedRows.length > 0 ? selectedRows : activeRow ? [activeRow] : []
+    if (target.length === 0) return
+    const header = columns.map((c) => c.label).join('\t')
+    const body = target.map((r) => columns.map((c) => dataset.text(r, c.key)).join('\t')).join('\n')
     try {
-      await navigator.clipboard.writeText(text)
-      toast('Copied', { description: `${int(selectedRows.length)} ${selectedRows.length === 1 ? 'row' : 'rows'} copied to the clipboard.` })
+      await navigator.clipboard.writeText(`${header}\n${body}`)
+      toast('Copied', { description: `${int(target.length)} ${target.length === 1 ? 'row' : 'rows'} copied as table` })
     } catch {
       toast('Could not copy', { description: 'The browser blocked clipboard access.' })
     }
   }
+
+  const copySelectedNumbers = async () => {
+    const nos = selectedRows.map(dataset.idOf)
+    if (nos.length === 0) return
+    const joined = nos.join(', ')
+    try {
+      await navigator.clipboard.writeText(joined)
+      toast('Copied', { description: `${int(nos.length)} numbers · ${joined}` })
+    } catch {
+      toast('Could not copy', { description: 'The browser blocked clipboard access.' })
+    }
+  }
+
+  const runDuplicate = async (target: T[]) => {
+    if (!onDuplicate || target.length === 0) return
+    const made = await onDuplicate(target)
+    if (Array.isArray(made)) {
+      if (made.length > 1) {
+        setSelected(new Set(made))
+      } else if (made.length === 1) {
+        setSelected(new Set())
+        onActiveChange(made[0])
+      }
+    }
+  }
+
+  const evaluatedLockOps = useMemo(
+    () => lockOps.map((op) => ({ op, ev: evaluateBulkOp(op, selectedRows) })),
+    [lockOps, selectedRows],
+  )
+  const evaluatedStatusOps = useMemo(
+    () => statusOps.map((op) => ({ op, ev: evaluateBulkOp(op, selectedRows) })),
+    [statusOps, selectedRows],
+  )
+  const deleteEval = useMemo(
+    () => evaluateBulkDelete(selectedRows, canDelete),
+    [selectedRows, canDelete],
+  )
+  const canBulkEdit = !!bulkEdit && bulkEdit.fields.length > 0
+  const selectionLabel = `${int(selectedRows.length)} ${selectedRows.length === 1 ? dataset.noun : dataset.nounPlural} selected`
 
   // ── selection ──────────────────────────────────────────────────────────────
   const allChecked = pageIds.length > 0 && pageIds.every((id) => selected.has(id))
@@ -669,13 +769,14 @@ export function DataGrid<T>({
       return next
     })
 
-  const selectRange = (toId: string) => {
+  const selectRange = (toId: string, additive = false) => {
     const ids = shown.map(dataset.idOf)
     const from = ids.indexOf(anchorRef.current ?? toId)
     const to = ids.indexOf(toId)
     if (from < 0 || to < 0) return
     const [a, b] = from < to ? [from, to] : [to, from]
-    setSelected((prev) => new Set([...prev, ...ids.slice(a, b + 1)]))
+    const range = ids.slice(a, b + 1)
+    setSelected((prev) => (additive ? new Set([...prev, ...range]) : new Set(range)))
   }
 
   const toggleAll = () =>
@@ -687,7 +788,7 @@ export function DataGrid<T>({
     })
 
   const onRowClick = (e: MouseEvent, id: string) => {
-    if (e.shiftKey) return selectRange(id)
+    if (e.shiftKey) return selectRange(id, e.metaKey || e.ctrlKey)
     anchorRef.current = id
     if (e.metaKey || e.ctrlKey) {
       toggleRow(id)
@@ -699,29 +800,49 @@ export function DataGrid<T>({
 
   // ── keyboard ───────────────────────────────────────────────────────────────
   const moveActive = useCallback(
-    (delta: number) => {
-      if (pageIds.length === 0) return
+    (delta: number): string | null => {
+      if (pageIds.length === 0) return null
       const index = activeId ? pageIds.indexOf(activeId) : -1
       const next = pageIds[Math.min(pageIds.length - 1, Math.max(0, index + delta))] ?? pageIds[0]
       onActiveChange(next)
       rowRefs.current.get(next)?.scrollIntoView({ block: 'nearest' })
+      return next
     },
     [activeId, pageIds, onActiveChange],
   )
 
   const onGridKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    // Menus and dialogs are portalled but still bubble through React's tree; their keys
+    // (Esc closing a row menu, arrows inside it) are not the grid's.
+    if (!(e.target instanceof Node) || !e.currentTarget.contains(e.target)) return
     if (isTypingTarget(e.target)) return
-    if (e.key === 'ArrowDown') {
+    if ((e.metaKey || e.ctrlKey) && !e.altKey) {
+      const lower = e.key.toLowerCase()
+      if (lower === 'a') {
+        e.preventDefault()
+        setSelected(new Set(shown.map(dataset.idOf)))
+        return
+      }
+      if (lower === 'c' && !window.getSelection()?.toString() && (selectedRows.length > 0 || activeRow)) {
+        e.preventDefault()
+        void copySelected()
+        return
+      }
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
-      moveActive(1)
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      moveActive(-1)
+      if (e.shiftKey && !anchorRef.current && activeId) anchorRef.current = activeId
+      const next = moveActive(e.key === 'ArrowDown' ? 1 : -1)
+      if (next) {
+        if (e.shiftKey) selectRange(next, true)
+        else anchorRef.current = next
+      }
     } else if (e.key === 'Enter' && activeRow) {
       e.preventDefault()
       onOpen(activeRow)
     } else if (e.key === ' ' && activeId) {
       e.preventDefault()
+      anchorRef.current = activeId
       toggleRow(activeId)
     } else if (e.key === 'Escape') {
       // Same order as the prototype's Esc: the preview drawer, find, the filter panel, then the selection.
@@ -1015,7 +1136,7 @@ export function DataGrid<T>({
             aria-label={`Select ${id}`}
             onClick={(e) => {
               e.stopPropagation()
-              if (e.shiftKey) return selectRange(id)
+              if (e.shiftKey) return selectRange(id, true)
               anchorRef.current = id
               toggleRow(id)
             }}
@@ -1120,32 +1241,149 @@ export function DataGrid<T>({
         })}
       </div>
     )
-    if (menu.length === 0) return <div key={id}>{rowEl}</div>
+    const isMulti = selectedRows.length >= 2 && checked
+    if (menu.length === 0 && !isMulti) return <div key={id}>{rowEl}</div>
     return (
-      <ContextMenu key={id} onOpenChange={(open) => open && onActiveChange(id)}>
+      <ContextMenu
+        key={id}
+        onOpenChange={(open) => {
+          if (!open) return
+          if (!isMulti) {
+            onActiveChange(id)
+            if (selected.size > 0 && !checked) setSelected(new Set())
+          }
+        }}
+      >
         <ContextMenuTrigger asChild>{rowEl}</ContextMenuTrigger>
-        <ContextMenuContent className="w-[212px] rounded-[10px] p-1.5">
-          {menu
-            .filter((a) => !a.danger)
-            .map((action) => (
-              <ContextMenuItem key={action.label} className="gap-[9px] text-[12.5px]" onSelect={() => action.onSelect(row)}>
-                {action.icon && <action.icon className="size-[14px]" strokeWidth={2} />}
-                {action.label}
+        <ContextMenuContent className={cn('rounded-[10px] p-1.5', isMulti ? 'w-[236px]' : 'w-[212px]')}>
+          {isMulti ? (
+            <>
+              <ContextMenuLabel className="mb-1 truncate border-b border-border px-2 pt-1 pb-[7px] text-[11px] font-semibold text-muted-foreground">
+                {selectionLabel}
+              </ContextMenuLabel>
+              {onOpenInTabs && (
+                <ContextMenuItem className="gap-[9px] text-[12.5px]" onSelect={() => onOpenInTabs(selectedRows)}>
+                  <ExternalLink className="size-[14px]" strokeWidth={2} />
+                  <span className="flex-1">Open in new tabs</span>{' '}
+                  <span className="tnum font-mono text-[10.5px] text-muted-foreground">{int(selectedRows.length)}</span>
+                </ContextMenuItem>
+              )}
+              <ContextMenuItem className="gap-[9px] text-[12.5px]" onSelect={() => void copySelected()}>
+                <Copy className="size-[14px]" strokeWidth={2} />
+                <span className="flex-1">Copy rows</span>{' '}
+                <span className="tnum font-mono text-[10.5px] text-muted-foreground">{int(selectedRows.length)}</span>
               </ContextMenuItem>
-            ))}
-          {menu.some((a) => a.danger) && <ContextMenuSeparator />}
-          {menu
-            .filter((a) => a.danger)
-            .map((action) => (
-              <ContextMenuItem
-                key={action.label}
-                className="gap-[9px] text-[12.5px] focus:bg-bad-bg focus:text-bad-fg"
-                onSelect={() => action.onSelect(row)}
-              >
-                {action.icon && <action.icon className="size-[14px]" strokeWidth={2} />}
-                {action.label}
+              <ContextMenuItem className="gap-[9px] text-[12.5px]" onSelect={() => void copySelectedNumbers()}>
+                <Hash className="size-[14px]" strokeWidth={2} />
+                <span className="flex-1">Copy numbers</span>{' '}
+                <span className="tnum font-mono text-[10.5px] text-muted-foreground">{int(selectedRows.length)}</span>
               </ContextMenuItem>
-            ))}
+              {onDuplicate && (
+                <ContextMenuItem className="gap-[9px] text-[12.5px]" onSelect={() => void runDuplicate(selectedRows)}>
+                  <CopyPlus className="size-[14px]" strokeWidth={2} />
+                  <span className="flex-1">Duplicate</span>{' '}
+                  <span className="tnum font-mono text-[10.5px] text-muted-foreground">{int(selectedRows.length)}</span>
+                </ContextMenuItem>
+              )}
+              {canBulkEdit && (
+                <ContextMenuItem className="gap-[9px] text-[12.5px]" onSelect={() => setBulkEditOpen(true)}>
+                  <Pencil className="size-[14px]" strokeWidth={2} />
+                  <span className="flex-1">Edit column…</span>{' '}
+                  <span className="tnum font-mono text-[10.5px] text-muted-foreground">{int(selectedRows.length)}</span>
+                </ContextMenuItem>
+              )}
+              {evaluatedStatusOps.length > 0 && (
+                <>
+                  <ContextMenuSeparator />
+                  <ContextMenuLabel className="px-2 pt-1 pb-0.5 text-[10.5px] font-semibold tracking-[0.04em] text-muted-foreground uppercase">
+                    Change status
+                  </ContextMenuLabel>
+                  {evaluatedStatusOps.map(({ op, ev }) => (
+                    <ContextMenuItem
+                      key={op.key}
+                      disabled={!ev.enabled}
+                      title={ev.title}
+                      className="gap-[9px] text-[12.5px]"
+                      onSelect={() => ev.enabled && void op.run(ev.eligible, selectedRows, { clearSelection })}
+                    >
+                      <span className="inline-flex size-[14px] items-center justify-center">
+                        <span className={cn('size-[7px] rounded-full', ev.enabled ? DOT_CLASS[op.dot] : 'bg-muted-foreground')} />
+                      </span>
+                      <span className="flex-1">{op.label}</span>{' '}
+                      <span className="tnum font-mono text-[10.5px] text-muted-foreground">{ev.hint}</span>
+                    </ContextMenuItem>
+                  ))}
+                </>
+              )}
+              {evaluatedLockOps.length > 0 && (
+                <>
+                  <ContextMenuSeparator />
+                  <ContextMenuLabel className="px-2 pt-1 pb-0.5 text-[10.5px] font-semibold tracking-[0.04em] text-muted-foreground uppercase">
+                    Lock
+                  </ContextMenuLabel>
+                  {evaluatedLockOps.map(({ op, ev }) => (
+                    <ContextMenuItem
+                      key={op.key}
+                      disabled={!ev.enabled}
+                      title={ev.title}
+                      className="gap-[9px] text-[12.5px]"
+                      onSelect={() => ev.enabled && void op.run(ev.eligible, selectedRows, { clearSelection })}
+                    >
+                      <span className="inline-flex size-[14px] items-center justify-center">
+                        <span className={cn('size-[7px] rounded-full', ev.enabled ? DOT_CLASS[op.dot] : 'bg-muted-foreground')} />
+                      </span>
+                      <span className="flex-1">{op.label}</span>{' '}
+                      <span className="tnum font-mono text-[10.5px] text-muted-foreground">{ev.hint}</span>
+                    </ContextMenuItem>
+                  ))}
+                </>
+              )}
+              <ContextMenuSeparator />
+              <ContextMenuItem className="gap-[9px] text-[12.5px]" onSelect={exportSelected}>
+                <Download className="size-[14px]" strokeWidth={2} />
+                <span className="flex-1">Export selected</span>{' '}
+                <span className="tnum font-mono text-[10.5px] text-muted-foreground">CSV</span>
+              </ContextMenuItem>
+              {onBulkDelete && (
+                <>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem
+                    title={deleteEval.title || undefined}
+                    className="gap-[9px] text-[12.5px] focus:bg-bad-bg focus:text-bad-fg"
+                    onSelect={() => void onBulkDelete(deleteEval.eligible, selectedRows, { clearSelection })}
+                  >
+                    <Trash2 className="size-[14px]" strokeWidth={2} />
+                    <span className="flex-1">Delete</span>{' '}
+                    <span className="tnum font-mono text-[10.5px] text-muted-foreground">{deleteEval.hint}</span>
+                  </ContextMenuItem>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              {menu
+                .filter((a) => !a.danger)
+                .map((action) => (
+                  <ContextMenuItem key={action.label} className="gap-[9px] text-[12.5px]" onSelect={() => action.onSelect(row)}>
+                    {action.icon && <action.icon className="size-[14px]" strokeWidth={2} />}
+                    {action.label}
+                  </ContextMenuItem>
+                ))}
+              {menu.some((a) => a.danger) && <ContextMenuSeparator />}
+              {menu
+                .filter((a) => a.danger)
+                .map((action) => (
+                  <ContextMenuItem
+                    key={action.label}
+                    className="gap-[9px] text-[12.5px] focus:bg-bad-bg focus:text-bad-fg"
+                    onSelect={() => action.onSelect(row)}
+                  >
+                    {action.icon && <action.icon className="size-[14px]" strokeWidth={2} />}
+                    {action.label}
+                  </ContextMenuItem>
+                ))}
+            </>
+          )}
         </ContextMenuContent>
       </ContextMenu>
     )
@@ -1463,13 +1701,59 @@ export function DataGrid<T>({
         )}
 
         {selectedRows.length > 0 && (
-          <div className="flex animate-sf-fade items-center gap-2 border border-[color-mix(in_oklab,var(--primary)_35%,transparent)] bg-[color-mix(in_oklab,var(--primary)_12%,var(--card))] px-5 py-[9px]">
-            <span className="tnum text-[12.5px] font-semibold text-foreground">{int(selectedRows.length)} selected</span>
+          <div
+            role="region"
+            aria-label="Bulk actions"
+            className="flex animate-sf-fade flex-wrap items-center gap-2 border border-[color-mix(in_oklab,var(--primary)_35%,transparent)] bg-[color-mix(in_oklab,var(--primary)_12%,var(--card))] px-5 py-[9px]"
+          >
+            <span className="tnum text-[12.5px] font-semibold text-foreground">{selectionLabel}</span>
             <div className="h-[18px] w-px bg-[color-mix(in_oklab,var(--primary)_35%,transparent)]" />
-            <button type="button" onClick={copySelected} title="Copy rows" className={bulkButton}>
+            {canBulkEdit && (
+              <button type="button" onClick={() => setBulkEditOpen(true)} className={bulkButton}>
+                <Pencil className="size-[13px] text-muted-foreground" strokeWidth={2} />
+                Edit
+              </button>
+            )}
+            <button type="button" onClick={() => void copySelected()} title="Copy rows (Ctrl/Cmd + C)" className={bulkButton}>
               <Copy className="size-[13px] text-muted-foreground" strokeWidth={2} />
               Copy
             </button>
+            {onDuplicate && (
+              <button type="button" onClick={() => void runDuplicate(selectedRows)} className={bulkButton}>
+                <CopyPlus className="size-[13px] text-muted-foreground" strokeWidth={2} />
+                Duplicate
+              </button>
+            )}
+            {evaluatedLockOps
+              .filter(({ ev }) => ev.count > 0)
+              .map(({ op, ev }) => (
+                <button
+                  key={op.key}
+                  type="button"
+                  title={ev.title}
+                  onClick={() => void op.run(ev.eligible, selectedRows, { clearSelection })}
+                  className={bulkButton}
+                >
+                  <span className={cn('size-[7px] rounded-full', DOT_CLASS[op.dot])} />
+                  {op.label}{' '}
+                  <span className="tnum font-mono text-[11px] text-muted-foreground">{int(ev.count)}</span>
+                </button>
+              ))}
+            {evaluatedStatusOps
+              .filter(({ ev }) => ev.count > 0)
+              .map(({ op, ev }) => (
+                <button
+                  key={op.key}
+                  type="button"
+                  title={ev.title}
+                  onClick={() => void op.run(ev.eligible, selectedRows, { clearSelection })}
+                  className={bulkButton}
+                >
+                  <span className={cn('size-[7px] rounded-full', DOT_CLASS[op.dot])} />
+                  {op.label}{' '}
+                  <span className="tnum font-mono text-[11px] text-muted-foreground">{int(ev.count)}</span>
+                </button>
+              ))}
             <button type="button" onClick={exportSelected} title="Export selected rows as CSV" className={bulkButton}>
               <Download className="size-[13px] text-muted-foreground" strokeWidth={2} />
               Export
@@ -1483,15 +1767,32 @@ export function DataGrid<T>({
                 <button
                   key={a.label}
                   type="button"
-                  onClick={() => void a.run(selectedRows, { clearSelection: () => setSelected(new Set()) })}
+                  onClick={() => void a.run(selectedRows, { clearSelection })}
                   className={cn(bulkButton, a.danger && 'text-bad-fg hover:bg-bad-bg')}
                 >
                   {a.icon && <a.icon className="size-[13px]" strokeWidth={2} />}
                   {a.label}
                 </button>
               ))}
+            {onBulkDelete && (
+              <button
+                type="button"
+                title={deleteEval.title || undefined}
+                onClick={() => void onBulkDelete(deleteEval.eligible, selectedRows, { clearSelection })}
+                className={cn(bulkButton, 'hover:bg-bad-bg hover:text-bad-fg')}
+              >
+                <Trash2 className="size-[13px] text-bad-fg" strokeWidth={2} />
+                Delete
+                {deleteEval.count < deleteEval.total && (
+                  <>
+                    {' '}
+                    <span className="tnum font-mono text-[11px] text-muted-foreground">{deleteEval.hint}</span>
+                  </>
+                )}
+              </button>
+            )}
             <div className="flex-1" />
-            <button type="button" onClick={() => setSelected(new Set())} className={bulkButton}>
+            <button type="button" onClick={clearSelection} className={bulkButton}>
               <X className="size-[13px]" strokeWidth={2} />
               Clear
             </button>
@@ -1859,6 +2160,18 @@ export function DataGrid<T>({
           </button>
         </div>
       </div>
+
+      {bulkEdit && (
+        <BulkEditDialog
+          open={bulkEditOpen}
+          onClose={() => setBulkEditOpen(false)}
+          noun={dataset.noun}
+          nounPlural={dataset.nounPlural}
+          rows={selectedRows}
+          config={bulkEdit}
+          clearSelection={clearSelection}
+        />
+      )}
     </section>
   )
 }

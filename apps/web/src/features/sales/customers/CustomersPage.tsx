@@ -1,10 +1,12 @@
 import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import { useMemo } from 'react'
+import { toast } from 'sonner'
 import { type ListPreview, ListPage } from '@/components/list-page/ListPage'
 import { useCollectionDelete } from '@/components/list-page/use-collection-delete'
 import { NotesBlock } from '@/components/notes/NotesBlock'
+import { useBulkRemove, useBulkUpsert, useDuplicateCustomers, useList } from '@/data/queries'
 import type { Customer } from '@/data/schemas'
-import { useList } from '@/data/queries'
+import { pluralNoun } from '@/domain/bulk-actions'
 import { customerDeleteBlockedReason, customerLocation, customerStatus } from '@/domain/customer'
 import { EM_DASH, fmtDate, int, money } from '@/lib/format'
 import { customerDataset } from './dataset'
@@ -17,6 +19,9 @@ export function CustomersPage() {
   const { sel } = route.useSearch()
   const customers = useList('customers')
   const employees = useList('employees')
+  const { mutateAsync: runDuplicate } = useDuplicateCustomers()
+  const { mutateAsync: runBulkRemove } = useBulkRemove('customers')
+  const { mutateAsync: runBulkUpsert } = useBulkUpsert('customers')
 
   const dataset = useMemo(
     () =>
@@ -33,6 +38,17 @@ export function CustomersPage() {
     blockedReason: customerDeleteBlockedReason,
     describe: (c) => `${c.no} · ${c.name}`,
   })
+
+  const duplicate = async (selected: Customer[]): Promise<string[]> => {
+    const res = await runDuplicate(selected.map((c) => c.no))
+    const made = res.created.map((c) => c.no)
+    if (made.length === 0) return []
+    toast(`${pluralNoun(made.length, 'customer', 'customers')} duplicated`, {
+      description: made.join(', '),
+      action: { label: 'Undo', onClick: () => void runBulkRemove(made) },
+    })
+    return made
+  }
 
   const preview = (c: Customer): ListPreview => {
     const overdue = c.overdue || 0
@@ -94,6 +110,12 @@ export function CustomersPage() {
         run: () => void navigate({ to: '/sales/customers/$no', params: { no: 'new' } }),
       }}
       remove={remove}
+      duplicate={duplicate}
+      openInTabs
+      bulkDelete={{
+        run: (list) => runBulkRemove(list.map((c) => c.no)),
+        undo: (list) => runBulkUpsert(list),
+      }}
       preview={preview}
       initialActiveId={sel ?? null}
       emptyText="No customers yet. Use New customer to add the first one."

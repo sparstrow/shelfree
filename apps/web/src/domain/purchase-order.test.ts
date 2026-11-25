@@ -1,6 +1,11 @@
 import type { PurchaseOrder, PurchaseReceipt } from '@/data/schemas'
 import { nextNo } from './numbering'
 import {
+  duplicatePurchaseOrder,
+  poCanCancel,
+  poCanClose,
+  poCanLock,
+  poCanReopen,
   poLockLabel,
   poLockState,
   poNextNo,
@@ -105,5 +110,52 @@ describe('receipt progress', () => {
       ],
     })
     expect(poStatusAfterReceipts(po(), [receipt(), rest])).toBe('Received')
+  })
+})
+
+describe('purchase order bulk transitions and duplication', () => {
+  it('allows cancel only for Draft/Issued orders with no active receipts', () => {
+    expect(poCanCancel(po({ status: 'Draft' }), [])).toBe(true)
+    expect(poCanCancel(po({ status: 'Issued' }), [])).toBe(true)
+    expect(poCanCancel(po({ status: 'Issued' }), [receipt({ status: 'Cancelled' })])).toBe(true)
+    expect(poCanCancel(po({ status: 'Issued' }), [receipt({ status: 'Draft' })])).toBe(false)
+    expect(poCanCancel(po({ status: 'Received' }), [])).toBe(false)
+  })
+
+  it('allows close only for Partially received or Received orders', () => {
+    expect(poCanClose(po({ status: 'Partially received' }))).toBe(true)
+    expect(poCanClose(po({ status: 'Received' }))).toBe(true)
+    expect(poCanClose(po({ status: 'Issued' }))).toBe(false)
+    expect(poCanClose(po({ status: 'Draft' }))).toBe(false)
+  })
+
+  it('allows reopen on locked Issued orders and lock on reopened Issued orders', () => {
+    expect(poCanReopen(po({ status: 'Issued' }))).toBe(true)
+    expect(poCanReopen(po({ status: 'Issued', locked: false }))).toBe(false)
+    expect(poCanReopen(po({ status: 'Draft' }))).toBe(false)
+    expect(poCanLock(po({ status: 'Issued', locked: false }))).toBe(true)
+    expect(poCanLock(po({ status: 'Issued' }))).toBe(false)
+    expect(poCanLock(po({ status: 'Draft' }))).toBe(false)
+  })
+
+  it('duplicates as a fresh Draft with today order date, blank expected date, copied lines and cleared tax stamp', () => {
+    const src = po({
+      status: 'Issued',
+      locked: true,
+      reopened: true,
+      taxCalc: 'line',
+      roundTotal: true,
+      taxCalcSrc: 'workspace',
+    })
+    const copy = duplicatePurchaseOrder(src, 'PO00011', '2026-11-18')
+    expect(copy.no).toBe('PO00011')
+    expect(copy.status).toBe('Draft')
+    expect(copy.orderDate).toBe('2026-11-18')
+    expect(copy.expectedDate).toBe('')
+    expect(copy.locked).toBeUndefined()
+    expect(copy.reopened).toBeUndefined()
+    expect(copy.taxCalc).toBeUndefined()
+    expect(copy.lines).toEqual(src.lines)
+    expect(copy.lines[0]).not.toBe(src.lines[0])
   })
 })

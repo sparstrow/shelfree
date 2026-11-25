@@ -330,6 +330,11 @@ new `/purchasing/purchase-orders/new`.
   `tax.taxCalc`, `tax.roundTotal`, `tax.compInterState` in `shelfree.v2.settings`
   (UI to change them arrives with the Settings pages).
 - **Line column widths** persist per browser in `shelfree.v2.ui` (`columnWidths['purchase-order-lines']`).
-- **Not yet ported:** bulk actions on the grid (bulk edit, multi-row issue /
-  cancel / close / duplicate / delete), saved user views, grouping.
-- **Tests:** `apps/web/e2e/purchase-orders.spec.ts`, `src/domain/*.test.ts`.
+- **Grid multi-row actions (2026-11-18):** wired on `PurchaseOrdersPage` via `ListPage` props + batched commands in `data/api/commands.ts` (`bulkPurchaseOrderStatus`, `bulkPurchaseOrderLock`, `bulkEditPurchaseOrders`, `duplicatePurchaseOrders`, `bulkDeleteCollection`, `bulkUpsertCollection`):
+  - **Status ops** (`domain/purchase-order.ts` + `domain/purchase-order-editing.ts`): *Issue* (Draft + vendor + ≥1 line + passes composition inter-state rule; stamps tax method & vendor GST snapshot and locks), *Cancel* (Draft or Issued with no non-cancelled goods receipts), *Close* (Partially received or Received). Ineligible rows are skipped with explanation; Undo restores snapshots.
+  - **Lock ops**: *Reopen* (locked Issued orders → `locked: false, reopened: true`), *Lock* (reopened Issued orders → `locked: true, reopened: false`).
+  - **Bulk edit**: Expected date, Order date, Receiving location (active sites), Buyer (Purchasing dept non-Terminated + Unassigned); splits selection into open / locked / final, offers *Reopen & apply* for locked rows, skips final rows; Undo toast.
+  - **Duplicate**: clones selected orders via `duplicatePurchaseOrder` + `poNextNo` (`PO#####`, status `Draft`, order date today, expected date cleared, lines copied, lock/tax snapshot cleared) with Undo toast.
+  - **Bulk delete**: Draft orders only (`Only draft purchase orders can be deleted`); bulk bar and multi-row menu show `k of n` when mixed; confirm dialog + Undo toast.
+  - **Backend**: each bulk command is one server-side transaction that re-validates every order and writes one audit event per affected PO.
+- **Tests:** `apps/web/e2e/purchase-orders.spec.ts`, `apps/web/e2e/grid-bulk-actions.spec.ts`, `src/domain/purchase-order.test.ts`, `src/domain/bulk-actions.test.ts`.
