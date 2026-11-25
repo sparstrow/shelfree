@@ -104,6 +104,11 @@ import {
   withOverride,
 } from '@/domain/grid-layout'
 import {
+  enumValueCounts,
+  initialOpenFilterSections,
+  shouldDockFilterPanelInline,
+} from '@/domain/grid-filters'
+import {
   type GridDefaults,
   type GridSnapshot,
   isViewDirty,
@@ -119,6 +124,7 @@ import { CellEditor } from './CellEditor'
 import { ColumnMenuItems } from './ColumnMenu'
 import { contextKit, dropdownKit } from './column-menu-kits'
 import { FilterChips } from './FilterChips'
+import { FilterPanel } from './FilterPanel'
 import { FindBar } from './FindBar'
 import {
   type Dataset,
@@ -203,6 +209,8 @@ export interface DataGridProps<T> {
   showTotals?: boolean
   /** Filters applied when the grid first opens (deep links such as "lines for item X"). */
   initialFilters?: Omit<GridFilter, 'id'>[]
+  /** Show the Filters side panel from the toolbar (default true). Pass false for the compact popover picker. */
+  filterPanel?: boolean
 }
 
 const DOT_CLASS: Record<BulkOpDotToken, string> = {
@@ -278,7 +286,9 @@ export function DataGrid<T>({
   emptyText,
   showTotals = false,
   initialFilters,
+  filterPanel,
 }: DataGridProps<T>) {
+  const filterPanelEnabled = (filterPanel ?? dataset.filterPanel) !== false
   const [viewId, setViewId] = useState(dataset.views[0]?.id ?? 'all')
   const [filters, setFilters] = useState<GridFilter[]>(() =>
     (initialFilters ?? []).map((f) => ({ ...f, id: nextFilterId() })),
@@ -325,6 +335,83 @@ export function DataGrid<T>({
   const [findQuery, setFindQuery] = useState('')
   const [findIndex, setFindIndex] = useState(0)
   const findRef = useRef<HTMLInputElement>(null)
+  const [viewsOpen, setViewsOpen] = useState(false)
+  const [colsOpen, setColsOpen] = useState(false)
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [filterColQuery, setFilterColQuery] = useState('')
+  const [openFilterSections, setOpenFilterSections] = useState<Set<string>>(() => new Set())
+  const filterBtnRef = useRef<HTMLButtonElement>(null)
+  const gridRowRef = useRef<HTMLDivElement>(null)
+  const [inlineFilterPanel, setInlineFilterPanel] = useState(true)
+
+  const enumCounts = useMemo(
+    () => enumValueCounts(rows ?? [], dataset.filterColumns, dataset.raw),
+    [rows, dataset],
+  )
+
+  const hasDrawer = Boolean(drawer)
+  useEffect(() => {
+    const el = gridRowRef.current
+    if (!el) return
+    const measure = () => {
+      setInlineFilterPanel(shouldDockFilterPanelInline(el.clientWidth, hasDrawer))
+    }
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasDrawer])
+
+  const focusFilterButton = () => {
+    filterBtnRef.current?.focus({ preventScroll: true })
+    requestAnimationFrame(() => filterBtnRef.current?.focus({ preventScroll: true }))
+  }
+  const closeFilterPanel = (restoreFocus = false) => {
+    setFilterOpen(false)
+    if (restoreFocus) focusFilterButton()
+  }
+
+  const toggleFilterPanel = () => {
+    setFilterOpen((wasOpen) => {
+      const next = !wasOpen
+      if (next) {
+        setViewsOpen(false)
+        setColsOpen(false)
+        setOpenFilterSections(initialOpenFilterSections(filters))
+      }
+      return next
+    })
+  }
+
+  const toggleFilterSection = (key: string) => {
+    setOpenFilterSections((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  useEffect(() => {
+    if (!filterPanelEnabled || !filterOpen) return
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      // The preview drawer and find close first (prototype `handleEsc` order).
+      if (e.key !== 'Escape' || e.defaultPrevented || findOpen || activeId) return
+      if (e.target === searchRef.current) return
+      const layerSelector =
+        '[role="alertdialog"], [data-slot="sheet-content"], [data-slot="popover-content"], [data-slot="dropdown-menu-content"], [data-slot="select-content"], [data-slot="context-menu-content"]'
+      if ((e.target instanceof Element && e.target.closest(layerSelector)) || document.querySelector(layerSelector)) {
+        return
+      }
+      e.preventDefault()
+      setFilterOpen(false)
+      filterBtnRef.current?.focus({ preventScroll: true })
+      requestAnimationFrame(() => filterBtnRef.current?.focus({ preventScroll: true }))
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [filterPanelEnabled, filterOpen, findOpen, activeId])
 
   const layout = useMemo(
     () => ({
@@ -758,10 +845,13 @@ export function DataGrid<T>({
       anchorRef.current = activeId
       toggleRow(activeId)
     } else if (e.key === 'Escape') {
-      // Same order as the prototype's Esc: the preview drawer, then find, then the selection.
+      // Same order as the prototype's Esc: the preview drawer, find, the filter panel, then the selection.
       if (activeId) onActiveChange(null)
       else if (findOpen) closeFind()
-      else if (selected.size) setSelected(new Set())
+      else if (filterPanelEnabled && filterOpen) {
+        e.preventDefault()
+        closeFilterPanel(true)
+      } else if (selected.size) setSelected(new Set())
     }
   }
 
@@ -1308,6 +1398,11 @@ export function DataGrid<T>({
       <div className="relative z-20 flex-none border-b border-border bg-panel">
         <div className="flex flex-wrap items-center gap-2 px-5 py-[11px]">
           <ViewsMenu
+            open={viewsOpen}
+            onOpenChange={(next) => {
+              setViewsOpen(next)
+              if (next) setFilterOpen(false)
+            }}
             builtIn={dataset.views}
             saved={saved}
             activeId={viewId}
@@ -1327,34 +1422,59 @@ export function DataGrid<T>({
             onPinBuiltIn={(view) => void pinBuiltIn(view)}
           />
 
-          <Popover>
-            <PopoverTrigger asChild>
-              <button type="button" className={toolButton}>
-                <Funnel className="size-[13px] text-muted-foreground" strokeWidth={2} />
-                Add filter
-                {filters.length > 0 && (
-                  <span className="inline-flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-primary px-[5px] text-[10.5px] font-bold text-primary-foreground">
-                    {filters.length}
-                  </span>
-                )}
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-[212px] rounded-[10px] p-1.5">
-              <div className="px-2 pt-[5px] pb-1.5 text-[10.5px] font-semibold tracking-[0.06em] text-muted-foreground">
-                FILTER BY
-              </div>
-              {dataset.filterColumns.map((column) => (
-                <button
-                  key={column.key}
-                  type="button"
-                  onClick={() => changeFilters([...filters, defaultFilter(column, nextFilterId())])}
-                  className="flex w-full items-center rounded-[7px] border-0 bg-transparent px-[9px] py-[7px] text-left text-[12.5px] text-foreground transition-colors duration-[140ms] hover:bg-tint-10"
-                >
-                  {column.label}
+          {filterPanelEnabled ? (
+            <button
+              ref={filterBtnRef}
+              type="button"
+              aria-expanded={filterOpen}
+              onClick={toggleFilterPanel}
+              className={cn(
+                toolButton,
+                filterOpen &&
+                  'border-[color-mix(in_oklab,var(--primary)_50%,transparent)] bg-[color-mix(in_oklab,var(--primary)_14%,var(--card))] text-primary hover:bg-[color-mix(in_oklab,var(--primary)_18%,var(--card))]',
+              )}
+            >
+              <Funnel
+                className={cn('size-[13px]', filterOpen ? 'text-primary' : 'text-muted-foreground')}
+                strokeWidth={2}
+              />
+              Add filter
+              {filters.length > 0 && (
+                <span className="tnum inline-flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-primary px-[5px] text-[10.5px] font-bold text-primary-foreground">
+                  {filters.length}
+                </span>
+              )}
+            </button>
+          ) : (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" className={toolButton}>
+                  <Funnel className="size-[13px] text-muted-foreground" strokeWidth={2} />
+                  Add filter
+                  {filters.length > 0 && (
+                    <span className="tnum inline-flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-primary px-[5px] text-[10.5px] font-bold text-primary-foreground">
+                      {filters.length}
+                    </span>
+                  )}
                 </button>
-              ))}
-            </PopoverContent>
-          </Popover>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-[212px] rounded-[10px] p-1.5">
+                <div className="px-2 pt-[5px] pb-1.5 text-[10.5px] font-semibold tracking-[0.06em] text-muted-foreground">
+                  FILTER BY
+                </div>
+                {dataset.filterColumns.map((column) => (
+                  <button
+                    key={column.key}
+                    type="button"
+                    onClick={() => changeFilters([...filters, defaultFilter(column, nextFilterId())])}
+                    className="flex w-full items-center rounded-[7px] border-0 bg-transparent px-[9px] py-[7px] text-left text-[12.5px] text-foreground transition-colors duration-[140ms] hover:bg-tint-10"
+                  >
+                    {column.label}
+                  </button>
+                ))}
+              </PopoverContent>
+            </Popover>
+          )}
 
           <div className="flex-1" />
 
@@ -1384,7 +1504,13 @@ export function DataGrid<T>({
             <button type="button" onClick={refresh} title="Refresh" aria-label="Refresh" className={toolIcon}>
               <RefreshCw className={cn('size-[15px]', refreshing && 'animate-sf-spin')} strokeWidth={2} />
             </button>
-            <Popover>
+            <Popover
+              open={colsOpen}
+              onOpenChange={(next) => {
+                setColsOpen(next)
+                if (next) setFilterOpen(false)
+              }}
+            >
               <PopoverTrigger asChild>
                 <button type="button" title="Columns" aria-label="Columns" className={toolIcon}>
                   <SlidersVertical className="size-[15px]" strokeWidth={2} />
@@ -1675,7 +1801,7 @@ export function DataGrid<T>({
       </div>
 
       {/* ── Table + drawer ── */}
-      <div className="flex min-h-0 flex-1 gap-[14px] px-5 pt-[14px] pb-4">
+      <div ref={gridRowRef} className="flex min-h-0 flex-1 gap-[14px] px-5 pt-[14px] pb-4">
         <div
           role="grid"
           aria-label={dataset.nounPlural}
@@ -1961,6 +2087,22 @@ export function DataGrid<T>({
           )}
         </div>
         {drawer}
+        {filterPanelEnabled && filterOpen && (
+          <FilterPanel
+            columns={dataset.filterColumns}
+            filters={filters}
+            openSections={openFilterSections}
+            enumCounts={enumCounts}
+            columnQuery={filterColQuery}
+            inline={inlineFilterPanel}
+            onColumnQueryChange={setFilterColQuery}
+            onToggleSection={toggleFilterSection}
+            onChangeFilters={changeFilters}
+            onClose={() => setFilterOpen(false)}
+            onReturnFocus={focusFilterButton}
+            nextId={nextFilterId}
+          />
+        )}
       </div>
 
       {/* ── Pagination (pinned) ── */}

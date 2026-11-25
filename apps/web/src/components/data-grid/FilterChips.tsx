@@ -1,27 +1,13 @@
 import { Check, ChevronDown, X } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
+import { FilterValueEditor } from './FilterValueEditor'
 import { type FilterColumn, type GridFilter, OPS_BY_KIND, opLabel } from './model'
 
 const menuItem =
   'flex w-full items-center gap-2 rounded-[7px] border-0 bg-transparent px-[9px] py-[6px] text-left text-[12.5px] text-foreground transition-colors duration-[140ms] hover:bg-tint-10'
 const chipButton =
   'inline-flex h-5 items-center gap-[3px] rounded-[5px] border-0 bg-transparent px-1.5 text-xs whitespace-nowrap transition-colors duration-[140ms] hover:bg-[color-mix(in_oklab,var(--primary)_20%,transparent)]'
-const fieldInput =
-  'h-[30px] w-full rounded-[7px] border border-input bg-transparent px-2 text-[12.5px] text-foreground outline-none focus:border-ring'
-
-function CheckBox({ on }: { on: boolean }) {
-  return (
-    <span
-      className={cn(
-        'flex size-[17px] flex-none items-center justify-center rounded-[5px] border transition-colors duration-[140ms]',
-        on ? 'border-primary bg-primary' : 'border-input bg-card',
-      )}
-    >
-      {on && <Check className="size-[11px] text-primary-foreground" strokeWidth={3.2} />}
-    </span>
-  )
-}
 
 function valueLabel(filter: GridFilter): string {
   if (Array.isArray(filter.value)) {
@@ -50,7 +36,6 @@ export function FilterChips({ filters, columns, onChange }: FilterChipsProps) {
       {filters.map((filter) => {
         const column = columns.find((c) => c.key === filter.key)
         if (!column) return null
-        const selected = Array.isArray(filter.value) ? filter.value : []
         return (
           <span
             key={filter.id}
@@ -88,66 +73,17 @@ export function FilterChips({ filters, columns, onChange }: FilterChipsProps) {
                     </button>
                   </PopoverTrigger>
                   <PopoverContent align="start" className="w-auto min-w-[190px] rounded-[10px] p-1.5">
-                    {column.type === 'enum' ? (
-                      <>
-                        <div className="px-[9px] py-[5px] text-[10px] font-semibold tracking-[0.05em] text-muted-foreground">
-                          VALUES
-                        </div>
-                        {(column.options ?? []).map((option) => {
-                          const on = selected.includes(option)
-                          return (
-                            <button
-                              key={option}
-                              type="button"
-                              role="checkbox"
-                              aria-checked={on}
-                              className={menuItem}
-                              onClick={() =>
-                                patch(filter.id, {
-                                  value: on ? selected.filter((v) => v !== option) : [...selected, option],
-                                })
-                              }
-                            >
-                              <CheckBox on={on} />
-                              <span className="flex-1 whitespace-nowrap">{option}</span>
-                            </button>
-                          )
-                        })}
-                      </>
-                    ) : filter.op === 'between' ? (
-                      <div className="flex items-center gap-1.5 p-[5px]">
-                        <input
-                          autoFocus
-                          inputMode="decimal"
-                          placeholder="Min"
-                          aria-label="Minimum"
-                          className={fieldInput}
-                          value={String(filter.value ?? '')}
-                          onChange={(e) => patch(filter.id, { value: e.target.value })}
-                        />
-                        <span className="text-[13px] text-muted-foreground">–</span>
-                        <input
-                          inputMode="decimal"
-                          placeholder="Max"
-                          aria-label="Maximum"
-                          className={fieldInput}
-                          value={filter.value2 ?? ''}
-                          onChange={(e) => patch(filter.id, { value2: e.target.value })}
-                        />
-                      </div>
-                    ) : (
-                      <div className="p-[5px]">
-                        <input
-                          autoFocus
-                          inputMode={column.type === 'num' ? 'decimal' : 'text'}
-                          placeholder="Enter value…"
-                          aria-label={`${column.label} value`}
-                          className={fieldInput}
-                          value={String(filter.value ?? '')}
-                          onChange={(e) => patch(filter.id, { value: e.target.value })}
-                        />
-                      </div>
-                    )}
+                    <FilterValueEditor
+                      column={column}
+                      op={filter.op}
+                      value={filter.value}
+                      value2={filter.value2}
+                      idPrefix={`chip-${filter.id}`}
+                      autoFocus
+                      variant="popover"
+                      onChangeValue={(value) => patch(filter.id, { value })}
+                      onChangeValue2={(value2) => patch(filter.id, { value2 })}
+                    />
                   </PopoverContent>
                 </Popover>
               </>

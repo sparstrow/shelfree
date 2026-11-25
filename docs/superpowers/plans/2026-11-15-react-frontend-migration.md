@@ -38,16 +38,15 @@ same turn a page is ported.**
 
 ## Known gaps in what is done (fix next)
 
-- Grid features still to port: filter side panel. (Ported:
-  in-cell editing; user-saved views and sidebar favourites — views, rename, drag
+- Grid features: all ported. In-cell editing; user-saved views and sidebar favourites — views, rename, drag
   reorder, right-click menu — 2026-11-18; column menu (sort / pin / move / hide /
   group / autofit / reset), resize, drag reorder, pinned left + right, group by,
-  find in view (Ctrl/Cmd+F), footer aggregate picker — 2026-11-18; ~~bulk edit /
-  bulk delete~~ multi-row bulk bar, multi-row right-click menu, bulk edit dialog,
-  duplicate, bulk status / lock ops, bulk delete with undo — 2026-11-18, all in
-  the shared `DataGrid` / `ListPage`; a saved view now stores and applies that
-  layout. The favourites cap, the "Favorites" label and the Settings ▸ Favorites
-  & views page wait for the Settings redesign.)
+  find in view (Ctrl/Cmd+F), footer aggregate picker — 2026-11-18; multi-row bulk bar, multi-row right-click
+  menu, bulk edit dialog, duplicate, bulk status / lock ops, bulk delete with undo — 2026-11-18; 320 px
+  **Filters side panel** with column search, collapsible sections, enum counts, range / date editors and a
+  Sheet on narrow screens — 2026-11-18. All in the shared `DataGrid` / `ListPage`; a saved view stores and
+  applies the layout. The favourites cap, the "Favorites" label and the Settings ▸ Favorites & views page
+  wait for the Settings redesign.
 - Grid parity notes: find opens with Ctrl/Cmd+F only (the prototype also used `/`; here `/`
   already focuses the grid search box). The footer totals row is still off by default; it
   is switched on from Columns ▸ Totals row (remembered per dataset) or a page's

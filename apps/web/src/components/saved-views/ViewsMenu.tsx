@@ -1,5 +1,5 @@
 import { Bookmark, Check, ChevronDown, Copy, Pencil, Plus, Save, Star, X } from 'lucide-react'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import type { GridView } from '@/components/data-grid/model'
 import {
   DropdownMenu,
@@ -48,6 +48,9 @@ export interface ViewsMenuProps {
   onDelete: (view: SavedView) => void
   /** Pin a built-in view (makes a private copy that the favourite points at). */
   onPinBuiltIn: (view: GridView) => void
+  /** Optional controlled open state (used by DataGrid to coordinate popovers and side panels). */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 /** A row button: a real menu item (reachable with the arrow keys) that keeps the menu open. */
@@ -130,11 +133,22 @@ function NameBox({
 
 /** The Views menu of the list toolbar: built-in views, the user's saved views, save / update. */
 export function ViewsMenu(p: ViewsMenuProps) {
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [newName, setNewName] = useState('')
   const [renaming, setRenaming] = useState<{ id: string; value: string } | null>(null)
   const activeSaved = p.saved.find((v) => v.id === p.activeId)
+
+  const controlled = p.open !== undefined
+  const open = p.open ?? internalOpen
+  const onOpenChange = p.onOpenChange
+  const setOpen = useCallback(
+    (next: boolean) => {
+      if (!controlled) setInternalOpen(next)
+      onOpenChange?.(next)
+    },
+    [controlled, onOpenChange],
+  )
 
   const reset = () => {
     setSaving(false)
@@ -143,13 +157,15 @@ export function ViewsMenu(p: ViewsMenuProps) {
   }
 
   // The "save as" shortcut opens the menu with the name box ready.
-  const firstSignal = useRef(p.saveSignal)
+  // Opens "Save as" once per new save signal (Shift+save key); re-renders never reopen it.
+  const lastSignal = useRef(p.saveSignal)
   useEffect(() => {
-    if (p.saveSignal === firstSignal.current) return
+    if (p.saveSignal === lastSignal.current) return
+    lastSignal.current = p.saveSignal
     setOpen(true)
     setRenaming(null)
     setSaving(true)
-  }, [p.saveSignal])
+  }, [p.saveSignal, setOpen])
 
   const submitSave = async () => {
     const saved = await p.onSaveAs(newName)
