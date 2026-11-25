@@ -74,6 +74,32 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
   full parallel run and pass alone. CI runs them on a slower machine with fewer workers so it mostly passes.
   *Fix by:* a dedicated pass to replace timing-sensitive waits with state-based ones.
 
+### Settings ▸ Warehouse (run 2.2)
+
+- **G-016 · Locations: Structure Designer and creation wizard not ported** — the prototype's 2D/3D designer
+  (floors, zones, aisles, bins, occupancy) and 4-step wizard on Locations & warehouses are not in the React app;
+  sites are created and edited in the drawer and carry no floors or layouts. *Fix by:* its own run (needs a
+  layout data model: floors, zones, aisles, bin overrides — see `docs/locations-warehouses/README.md`).
+- **G-017 · Locations don't read GST registrations** — the rule "a site can't be Active while its state has no
+  active Normal registration", the registration line, *Add registration*, the GSTIN chip and *Mark as declared*
+  need the GST registrations collection, which isn't ported. Only the one-principal-per-state rule is enforced.
+  *Fix by:* the run that ports Workspace ▸ GST registrations (then add the rule to `validateLocation`).
+- **G-018 · Location terminology is fixed to "Locations"** — the prototype's `locLabel()` reads the workspace
+  terminology (`object.location`); Terminology isn't ported, so the section, nav and drawer say "Location(s)".
+  *Fix by:* the run that ports Workspace ▸ Terminology.
+- **G-019 · Inactive sites still appear in document pickers; some references don't block delete** —
+  `selectableLocations()` exists but the PO, receipt, assembly-order and item-stock pickers still list every
+  site; BOM `wipLocation` and production settings' output location aren't counted as usage, so deleting a site
+  they point at isn't blocked. *Fix by:* the next run touching those pickers / Assembly & production settings.
+- **G-020 · Sales prices and UoM usage still use the built-in category tree** — the item card, items grid, items
+  drawer and item profile read `itemCategories`; `domain/sales-prices.ts`, its grid and
+  `domain/units-of-measure.ts` (item usage report) derive the top-level group from `DEFAULT_CATEGORY_PARENTS`,
+  so a user-created group shows as its own root there. *Fix by:* pass `categoryParentNames(cats)` into those
+  datasets (as `itemDataset` does).
+- **G-021 · Item categories: Tree and Flow views not ported** — the prototype also had a collapsible tree and a
+  workflow diagram; the React section is the grid (tree order, Parent and Group columns) only. The accent colour
+  is a named select with a live preview chip, not swatches. *Fix by:* a visual-polish pass if wanted.
+
 ## Closed
 
 - **G-011 · Shared records carry one `module`, the spec says `modules[]`** (closed 2026-11-25, run 2.1) — decided

@@ -111,6 +111,11 @@ export interface Dataset<T> {
   noun: string
   nounPlural: string
   idOf: (row: T) => string
+  /**
+   * What people call a row in toasts and "Copy number" when its id is not user-facing
+   * (an internal id such as `WH-TVM`). Default: the id. Opt-in; other lists are unchanged.
+   */
+  labelOf?: (row: T) => string
   columns: GridColumn[]
   /** Value used for sorting, filtering and aggregation. */
   raw: (row: T, key: string) => RawValue

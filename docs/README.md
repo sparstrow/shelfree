@@ -37,6 +37,9 @@ behavior, data-model, or screen change (see root `CLAUDE.md`).
   app chrome, module/page navigation, the three-tier record-navigation pattern,
   Items/Customers/Vendors table pages, People (Users & Employees), Settings
   (Units of measure, Item categories), and the Vendor Purchase Items screen.
+- [`item-categories/`](item-categories/README.md) — **Item categories** (Warehouse ▸ Settings ▸ Item categories,
+  `/warehouse/settings/categories`): the category tree items are classified under, rename cascade, delete blocked
+  while in use. Ungated Starter base.
 - [`units-of-measure/`](units-of-measure/README.md) — **Units of measure** (also
   part of `Shelfree App.dc.html`): the item profile's Units of measure tab plus
   the Warehouse ▸ Units of Measure register (one row per item × unit) on the

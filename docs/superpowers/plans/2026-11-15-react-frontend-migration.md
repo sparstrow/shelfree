@@ -97,5 +97,7 @@ same turn a page is ported.**
 | Settings ▸ Keyboard shortcuts | ported (`/settings/shortcuts`, Personal area; catalogue `src/app/shortcuts.ts`) |
 | Settings ▸ Number sequences | ported (`/<module>/settings/sequences` slices + `/settings/shared/sequences`; PO and receipt numbers issued from the default series; `docs/number-sequences/README.md`) |
 | Settings ▸ Carrier types, Statuses & stages, Custom fields, Payment terms | ported (run 2.1: `/purchasing/settings/carrier-types`; statuses, fields and terms as module slices + `/settings/shared/<list>`; `ListPage embedded` + `editor`; Carriers now reads types from `carrierTypes`; docs `carrier-types`, `statuses`, `custom-fields`, `payment-terms`) |
+| Settings ▸ Item categories | ported (`/warehouse/settings/categories` on `ListPage embedded`; `itemCategories` collection seeded from the catalogue tree; rename cascades to items, delete blocked while used; item card picker and items grid read the tree; `docs/item-categories/README.md`) |
+| Settings ▸ Locations & warehouses | ported (`/warehouse/settings/locations` on `ListPage embedded`; rules in `domain/locations.ts`; Structure Designer, wizard and GST-registration link not ported — G-016 / G-017; `docs/locations-warehouses/README.md`) |
 | Settings ▸ every other section | frame + navigation live at the new URLs; body shows "not moved yet" until ported in Phase 2 (add one line to `features/settings/sections.ts`) |
 | Every other prototype page | pending |

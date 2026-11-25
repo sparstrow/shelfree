@@ -26,6 +26,7 @@ import {
   itemToCardDraft,
   validateItemCard,
 } from '@/domain/item-card'
+import { categoryPickerGroups } from '@/domain/item-categories'
 import { EM_DASH, money, pct } from '@/lib/format'
 import { isTypingTarget } from '@/lib/keyboard'
 import { cn } from '@/lib/utils'
@@ -186,9 +187,14 @@ function ItemCardForm({ mode, items, vendors, saved }: ItemCardFormProps) {
   const normalizedNo = draft.no.trim().toUpperCase()
   const noLabel = editing ? lockedNo : normalizedNo || 'Unsaved'
 
+  // Categories come from Settings ▸ Item categories; before that list exists, fall back to the names items use.
+  const categoryTree = useList('itemCategories').data
   const categoryGroups = useMemo(
-    () => itemCardCategoryGroups(items, draft.category),
-    [items, draft.category],
+    () =>
+      categoryTree && categoryTree.length > 0
+        ? categoryPickerGroups(categoryTree, draft.category)
+        : itemCardCategoryGroups(items, draft.category),
+    [categoryTree, items, draft.category],
   )
   const uomOptions = useMemo(() => itemCardUomOptions(draft.uom), [draft.uom])
   const vendorOptions = useMemo(

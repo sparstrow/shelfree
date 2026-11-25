@@ -10,6 +10,10 @@ import { PaymentTermsSection } from './payment-terms/PaymentTermsSection'
 import { PAYMENT_TERMS_HELP } from './payment-terms/help'
 import { StatusesSection } from './statuses/StatusesSection'
 import { STATUSES_HELP } from './statuses/help'
+import { ItemCategoriesSection } from './item-categories/ItemCategoriesSection'
+import { ITEM_CATEGORIES_HELP } from './item-categories/help'
+import { LocationsSection } from './locations/LocationsSection'
+import { LOCATIONS_HELP } from './locations/help'
 import { NumberSequencesSection } from './number-sequences/NumberSequencesSection'
 import { NUMBER_SEQUENCES_HELP } from './number-sequences/help'
 import { ShortcutsSection } from './shortcuts/ShortcutsSection'
@@ -30,6 +34,8 @@ export const SETTINGS_SECTIONS: Readonly<Record<string, SettingsSectionComponent
   statuses: StatusesSection,
   fields: CustomFieldsSection,
   terms: PaymentTermsSection,
+  categories: ItemCategoriesSection,
+  locations: LocationsSection,
 }
 
 /** Quiet-help maps keyed by section id, used by central Settings "Find a setting". */
@@ -41,4 +47,6 @@ export const SETTINGS_HELP_MAPS: Readonly<Record<string, HelpMap>> = {
   statuses: STATUSES_HELP,
   fields: CUSTOM_FIELDS_HELP,
   terms: PAYMENT_TERMS_HELP,
+  categories: ITEM_CATEGORIES_HELP,
+  locations: LOCATIONS_HELP,
 }

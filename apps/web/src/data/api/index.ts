@@ -11,32 +11,31 @@ import {
   assemblyOrderSchema,
   bomSchema,
   carrierSchema,
+  carrierTypeSchema,
   chargeSchema,
   contactSchema,
   customerPriceSchema,
   customerSchema,
+  customFieldSchema,
   employeeSchema,
   favoriteSchema,
+  itemCategorySchema,
   itemSchema,
   itemUnitSetSchema,
   noteSchema,
   numberSequenceSchema,
+  paymentTermSchema,
   purchaseOrderSchema,
   purchasePriceSchema,
   purchaseReceiptSchema,
   salesInvoiceSchema,
-  savedViewSchema,
   salesOrderSchema,
+  savedViewSchema,
+  statusDefSchema,
   uomSchema,
   userSchema,
   vendorSchema,
   warehouseSchema,
-} from '@/data/schemas'
-import {
-  carrierTypeSchema,
-  customFieldSchema,
-  paymentTermSchema,
-  statusDefSchema,
 } from '@/data/schemas'
 import {
   seedCarrierTypes,
@@ -226,6 +225,13 @@ export const api = {
     schema: paymentTermSchema,
     seed: seedPaymentTerms,
     idOf: (r) => r.code,
+  }),
+  /** Settings ▸ Item categories: the category tree (`shelfree.v2.itemCategories`). */
+  itemCategories: createCollection({
+    key: 'itemCategories',
+    schema: itemCategorySchema,
+    seed: seed.seedItemCategories,
+    idOf: (r) => r.id,
   }),
 } as const
 

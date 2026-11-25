@@ -342,6 +342,9 @@ export const warehouseSchema = z.object({
   pobStatus: z.string(),
   managerEmpId: z.string(),
   operatorVendorId: z.string(),
+  /** Stamped when the site is saved from Settings (ISO date-time); seed rows have none. */
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
 })
 export type Warehouse = z.infer<typeof warehouseSchema>
 
@@ -777,3 +780,20 @@ export const paymentTermSchema = z.object({
   active: z.boolean(),
 })
 export type PaymentTerm = z.infer<typeof paymentTermSchema>
+
+// ── Settings ▸ Item categories (Phase 2 run 2.2) ─────────────────────────────
+/**
+ * A node of the item-category tree. Items store the category *name* (their most
+ * specific category) in `item.category`; the full path is derived from `parent`.
+ * `parent` is the parent node's id, or '' for a top-level category.
+ */
+export const itemCategorySchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  name: z.string(),
+  parent: z.string(),
+  color: z.string(),
+  desc: z.string(),
+  active: z.boolean(),
+})
+export type ItemCategory = z.infer<typeof itemCategorySchema>

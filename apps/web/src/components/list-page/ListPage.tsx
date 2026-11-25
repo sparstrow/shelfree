@@ -313,7 +313,7 @@ export function ListPage<T>({
     : undefined
 
   const copyNo = async (row: T) => {
-    const no = dataset.idOf(row)
+    const no = dataset.labelOf?.(row) ?? dataset.idOf(row)
     try {
       await navigator.clipboard.writeText(no)
       toast('Copied', { description: no })
@@ -435,7 +435,7 @@ export function ListPage<T>({
     if (blocked) {
       setEditing(null)
       setActiveId(dataset.idOf(row))
-      toast(`${dataset.idOf(row)} can’t be edited`, { description: blocked })
+      toast(`${dataset.labelOf?.(row) ?? dataset.idOf(row)} can’t be edited`, { description: blocked })
       return
     }
     setActiveId(dataset.idOf(row))
@@ -506,7 +506,7 @@ export function ListPage<T>({
         e.preventDefault()
         const reason = effectiveRemove.blockedReason?.(active)
         if (reason) {
-          toast.error(`${dataset.idOf(active)} can’t be deleted`, { description: reason })
+          toast.error(`${dataset.labelOf?.(active) ?? dataset.idOf(active)} can’t be deleted`, { description: reason })
         } else {
           setDeleting(active)
         }

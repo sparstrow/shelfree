@@ -56,9 +56,9 @@ the new app yet" inside the frame, with a link to a ported section.
 | Sales | `/sales/settings/cfg-pricing` Sales pricing | form | not moved yet |
 | Sales | `/sales/settings/sequences`, `statuses`, `fields`, `terms` (slices) | list, shared | yes (all four) |
 | Warehouse | `/warehouse/settings/uom` Units of measure | list | yes |
-| Warehouse | `/warehouse/settings/categories` Item categories | list | not moved yet |
-| Warehouse | `/warehouse/settings/locations` Locations & warehouses | list | not moved yet |
-| Warehouse | `/warehouse/settings/sequences`, `fields` (slices) | list, shared | sequences only |
+| Warehouse | `/warehouse/settings/categories` Item categories | list | yes |
+| Warehouse | `/warehouse/settings/locations` Locations & warehouses | list | yes |
+| Warehouse | `/warehouse/settings/sequences`, `fields` (slices) | list, shared | yes |
 | Production | `/production/settings/assembly` Assembly & production | form | not moved yet |
 | Production | `/production/settings/sequences`, `statuses` (slices) | list, shared | yes (both) |
 | Finance | `/finance/settings/cfg-taxset` Tax settings | form | not moved yet |
@@ -216,6 +216,10 @@ the same turn; it also feeds Find a setting.
   State vs GSTIN state code and PAN vs GSTIN are warnings only.
 - **Units of measure** (`/warehouse/settings/uom`, list on `ListPage embedded`) — see
   `docs/units-of-measure/README.md`.
+- **Item categories** (`/warehouse/settings/categories`, list on `ListPage embedded`) — see
+  `docs/item-categories/README.md`.
+- **Locations & warehouses** (`/warehouse/settings/locations`, list on `ListPage embedded`) — see
+  `docs/locations-warehouses/README.md` ("React app"). Structure Designer and wizard not ported (G-016).
 - **Number sequences** (`/<module>/settings/sequences`, `/settings/shared/sequences`) — see
   `docs/number-sequences/README.md`.
 - **Keyboard shortcuts** (`/settings/shortcuts`, custom, personal). Renders `SHORTCUT_GROUPS` from
