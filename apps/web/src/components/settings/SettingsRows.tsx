@@ -132,7 +132,12 @@ export function SettingsRows<V extends Json>({ idPrefix, groups, help, form }: S
         const groupHelp = help[group.help ?? group.id]
         const heading = <h2 className="m-0 text-[13px] font-bold">{group.title}</h2>
         return (
-          <section key={group.id} aria-label={group.title} className="rounded-xl border border-border bg-card px-5 pt-4 pb-3">
+          <section
+            key={group.id}
+            data-setting-row={group.id}
+            aria-label={group.title}
+            className="rounded-xl border border-border bg-card px-5 pt-4 pb-3"
+          >
             <div className="group/row mb-2 flex items-center">
               {groupHelp ? (
                 <HelpTarget help={groupHelp} label={group.title}>
@@ -154,6 +159,7 @@ export function SettingsRows<V extends Json>({ idPrefix, groups, help, form }: S
                 <div
                   key={row.key}
                   data-row={row.key}
+                  data-setting-row={row.key}
                   className="group/row grid grid-cols-1 items-start gap-x-3 border-b border-dashed border-border py-1 last:border-b-0 sm:grid-cols-[minmax(140px,2fr)_minmax(0,3fr)]"
                 >
                   <span className="flex min-h-8 items-center gap-1.5 text-[12.5px] text-muted-foreground">

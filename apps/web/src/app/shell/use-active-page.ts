@@ -1,5 +1,6 @@
 import { useRouterState } from '@tanstack/react-router'
-import { type ModuleDef, type PageDef, resolvePath } from '@/app/nav'
+import { type ModuleDef, type PageDef, findModule, resolvePath } from '@/app/nav'
+import { moduleSettingsFromPath } from '@/components/settings/registry'
 
 export type ActivePage =
   | { kind: 'page'; module: ModuleDef; page: PageDef; rest: string[]; pathname: string }
@@ -40,5 +41,7 @@ export function labelForPath(pathname: string): string {
   }
   if (at.kind === 'departments') return 'Departments'
   if (at.kind === 'settings') return 'Settings'
+  const settingsModule = moduleSettingsFromPath(pathname)
+  if (settingsModule) return `${findModule(settingsModule)?.name ?? ''} settings`.trim()
   return 'Shelfree'
 }

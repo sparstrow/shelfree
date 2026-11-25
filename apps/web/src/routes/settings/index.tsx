@@ -1,11 +1,15 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { firstSection } from '@/components/settings/nav'
 import { useUi } from '@/app/stores/ui'
+import { firstSection } from '@/components/settings/registry'
 
-/** `/settings` lands on the first section the signed-in role may open. */
+/** `/settings` lands on Business profile, or Profile for a member without workspace access. */
 export const Route = createFileRoute('/settings/')({
   beforeLoad: () => {
-    const section = firstSection(useUi.getState().demoRole === 'member' ? 'user' : 'workspace')
-    throw redirect({ to: '/settings/$section', params: { section }, replace: true })
+    const area = useUi.getState().demoRole === 'member' ? 'personal' : 'workspace'
+    throw redirect({
+      to: '/settings/$section',
+      params: { section: firstSection(area).id },
+      replace: true,
+    })
   },
 })

@@ -458,3 +458,23 @@ Tiers are parked (CLAUDE.md "current working mode"): nothing is gated.
   "manage" button); logo upload is still a stub and is not shown.
 - Deferred: the other ~22 sections; the review-before-save dialog of Tax settings (a section can add its own);
   terminology overrides; role-based hiding beyond the demo `member` role.
+
+## Settings redesign — frame and navigation (2026-11-25, Phase 1 run 1a)
+
+Spec `docs/superpowers/specs/2026-11-24-settings-redesign.md`. Full rewrite of this doc follows when
+Phase 1 is complete; until then this section records what shipped.
+
+- **Registry** `apps/web/src/components/settings/registry.ts`: areas `workspace`, one per module
+  (`purchasing`, `sales`, `warehouse`, `production`, `finance`, `people`), `shared`, `personal`; each section
+  has `id`, `label`, `type` (`form | list | custom`), optional `shared` list id and `legacyIds`.
+- **URLs:** module sections `/<module>/settings/<section>` (root opens the first section); workspace and
+  personal `/settings/<section>`; whole shared lists `/settings/shared/<list>`. Old ids redirect with
+  `replace` (`/settings/uom` → `/warehouse/settings/uom`, `/settings/cfg-sequences` → `/settings/shared/sequences`).
+  `?find=<rowKey>` scrolls to and highlights a row (`data-setting-row`).
+- **Frame:** central list grouped Workspace · Modules (collapsible) · Shared lists · Personal (a member sees
+  Personal only); a module area lists only its sections plus "All settings". **Find a setting** searches
+  section names, row labels and help text (best 8, one hit per row label). Keys `/`, ↑ ↓ Enter, Esc, `[` `]`
+  (data in `components/settings/shortcut-meta.ts`).
+- **Entries:** each module's sidebar section ends with **Settings** (favourite-able, open in new tab);
+  Departments lists them; tabs read "<Module> settings".
+- **Backend:** no change — navigation only. The redirect table (legacy id → new path) is client-side.

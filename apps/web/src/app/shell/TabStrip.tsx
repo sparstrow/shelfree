@@ -3,6 +3,7 @@ import { Plus, X } from 'lucide-react'
 import { ModuleIcon } from '@/app/icons'
 import { useUi } from '@/app/stores/ui'
 import { cn } from '@/lib/utils'
+import { moduleSettingsFromPath } from '@/components/settings/registry'
 import { describePath, labelForPath } from './use-active-page'
 
 /** Browser-style workspace tabs. Each tab remembers its own URL. */
@@ -26,7 +27,7 @@ export function TabStrip() {
       {tabs.map((tab) => {
         const active = tab.id === activeTabId
         const at = describePath(tab.path)
-        const iconId = at.kind === 'page' ? at.module.id : at.kind === 'settings' ? 'settings' : at.kind === 'departments' ? 'departments' : 'home'
+        const iconId = at.kind === 'page' ? at.module.id : at.kind === 'settings' || moduleSettingsFromPath(tab.path) ? 'settings' : at.kind === 'departments' ? 'departments' : 'home'
         const label = labelForPath(tab.path)
         return (
           <div

@@ -15,8 +15,10 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import { HelpTarget } from '@/components/help/HelpTarget'
+import { isSettingsModule } from '@/components/settings/registry'
 import { useWorkspace } from '@/data/queries/session'
 import {
+  type DepartmentBlock,
   type DepartmentPageEntry,
   buildDepartmentBlocks,
   clampDepartmentFocus,
@@ -52,6 +54,9 @@ interface RecentPageChip {
   icon: string
 }
 
+const ICON_SETTINGS =
+  'M12 9a3 3 0 1 0 0 6 3 3 0 1 0 0-6M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'
+
 /** Whole-app page directory grouped by module, derived from the sidebar registry. */
 export function DepartmentsPage() {
   const router = useRouter()
@@ -65,7 +70,47 @@ export function DepartmentsPage() {
   const inputRef = useRef<HTMLInputElement>(null)
   const rowRefs = useRef(new Map<string, HTMLButtonElement>())
 
-  const blocks = useMemo(() => buildDepartmentBlocks(MODULES, query), [query])
+  const blocks = useMemo<DepartmentBlock[]>(() => {
+    const base = new Map(buildDepartmentBlocks(MODULES, query).map((b) => [b.id, b]))
+    const q = query.trim().toLowerCase()
+    const out: DepartmentBlock[] = []
+    for (const mod of MODULES) {
+      const existing = base.get(mod.id)
+      const includeSettings =
+        isSettingsModule(mod.id) && (!q || 'settings'.includes(q) || mod.name.toLowerCase().includes(q))
+      if (!existing && !includeSettings) continue
+      const settingsEntry: DepartmentPageEntry | null = includeSettings
+        ? {
+            key: `${mod.id}/settings`,
+            moduleId: mod.id,
+            moduleName: mod.name,
+            label: 'Settings',
+            slug: 'settings',
+            icon: ICON_SETTINGS,
+            path: `/${mod.id}/settings`,
+            built: true,
+            isSetup: true,
+          }
+        : null
+      const work = existing ? existing.work : []
+      const setup = existing
+        ? settingsEntry
+          ? [...existing.setup, settingsEntry]
+          : existing.setup
+        : settingsEntry
+          ? [settingsEntry]
+          : []
+      out.push({
+        id: mod.id,
+        name: mod.name,
+        totalCount: work.length + setup.length,
+        work,
+        setup,
+        all: [...work, ...setup],
+      })
+    }
+    return out
+  }, [query])
   const flat = useMemo(() => flattenDepartmentBlocks(blocks), [blocks])
   const activeFocusIdx = clampDepartmentFocus(focusIdx, flat.length)
   const focusedKey = activeFocusIdx >= 0 ? flat[activeFocusIdx].key : ''
@@ -128,7 +173,8 @@ export function DepartmentsPage() {
       const target = flat[activeFocusIdx]
       if (!target) return
       e.preventDefault()
-      favoriteActions.togglePage(target.moduleId, target.slug, target.label)
+      const favLabel = target.slug === 'settings' ? `${target.moduleName} Settings` : target.label
+      favoriteActions.togglePage(target.moduleId, target.slug, favLabel)
       return
     }
     if (e.key === 'Escape' && query.trim()) {
@@ -157,9 +203,10 @@ export function DepartmentsPage() {
   const renderRow = (entry: DepartmentPageEntry) => {
     const fav = isFav(entry)
     const focused = entry.key === focusedKey
+    const favLabel = entry.slug === 'settings' ? `${entry.moduleName} Settings` : entry.label
     const onStar = (e: MouseEvent) => {
       e.stopPropagation()
-      favoriteActions.togglePage(entry.moduleId, entry.slug, entry.label)
+      favoriteActions.togglePage(entry.moduleId, entry.slug, favLabel)
     }
     return (
       <ContextMenu key={entry.key}>
@@ -229,7 +276,7 @@ export function DepartmentsPage() {
           <ContextMenuSeparator />
           <ContextMenuItem
             className="gap-[9px] text-[12.5px]"
-            onSelect={() => favoriteActions.togglePage(entry.moduleId, entry.slug, entry.label)}
+            onSelect={() => favoriteActions.togglePage(entry.moduleId, entry.slug, favLabel)}
           >
             <Star className="size-[14px]" strokeWidth={2} />
             {fav ? 'Remove from favorites' : 'Add to favorites'}
