@@ -8,6 +8,7 @@ import { NotesBlock } from '@/components/notes/NotesBlock'
 import { useBulkRemove, useBulkUpsert, useDuplicateItems, useList, useRemoveDuplicatedItems } from '@/data/queries'
 import type { Item } from '@/data/schemas'
 import { pluralNoun } from '@/domain/bulk-actions'
+import { categoryParentNames } from '@/domain/item-categories'
 import {
   isItemLowStock,
   itemAvailable,
@@ -34,6 +35,7 @@ export function ItemsPage() {
   const orders = useList('purchaseOrders')
   const receipts = useList('purchaseReceipts')
   const notes = useList('notes')
+  const categories = useList('itemCategories')
   const { mutateAsync: runDuplicate } = useDuplicateItems()
   const { mutateAsync: undoDuplicate } = useRemoveDuplicatedItems()
   const { mutateAsync: runBulkRemove } = useBulkRemove('items')
@@ -44,9 +46,11 @@ export function ItemsPage() {
   const dataset = useMemo(
     () => {
       const packs = new Map((unitSets.data ?? []).map((s) => [s.itemNo, s.pack]))
-      return itemDataset({ items: items.data ?? [], warehouses: warehouseList, masterPackOf: (no) => packs.get(no) ?? '' })
+      // Parent names come from Settings ▸ Item categories once it has loaded (built-in tree until then).
+      const categoryParents = categories.data ? categoryParentNames(categories.data) : undefined
+      return itemDataset({ items: items.data ?? [], warehouses: warehouseList, masterPackOf: (no) => packs.get(no) ?? '', categoryParents })
     },
-    [items.data, warehouseList, unitSets.data],
+    [items.data, warehouseList, unitSets.data, categories.data],
   )
 
   const remove = useCollectionDelete<Item>('items', {
@@ -79,7 +83,7 @@ export function ItemsPage() {
       no: it.no,
       status: itemStockStatus(it),
       title: it.desc,
-      subtitle: itemCategoryPath(it.category),
+      subtitle: itemCategoryPath(it.category, undefined, categories.data ? categoryParentNames(categories.data) : undefined),
       stats: [
         { value: int(onHand), label: 'On hand' },
         { value: int(committed), label: 'Committed' },

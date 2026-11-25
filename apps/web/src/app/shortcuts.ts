@@ -145,6 +145,16 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
     { combo: 'Delete', desc: 'Delete the active term — blocked while a vendor or customer uses it.' },
     ...LIST_PAGE_SHORTCUTS,
   ]),
+  group('settings-item-categories', 'Settings › Item categories', [
+    ...LIST_EDITOR_SHORTCUTS.map((s) => (s.combo === 'N' ? { ...s, desc: 'New category — top-level, active, with the first accent colour.' } : s)),
+    { combo: 'Delete', desc: 'Delete the active category — blocked while an item uses it; its sub-categories move up.' },
+    ...LIST_PAGE_SHORTCUTS,
+  ]),
+  group('settings-locations', 'Settings › Locations & warehouses', [
+    ...LIST_EDITOR_SHORTCUTS.map((s) => (s.combo === 'N' ? { ...s, desc: 'New location — set up as a Distribution site in India, status Setting up.' } : s)),
+    { combo: 'Delete', desc: 'Delete the active location — blocked while it holds stock, has open documents or is the principal place.' },
+    ...LIST_PAGE_SHORTCUTS,
+  ]),
   group('settings-shortcuts', 'Settings › Keyboard shortcuts', [
     { combo: '/', desc: 'Focus the search box.' },
     { combo: 'Esc', desc: 'Clear the search.' },

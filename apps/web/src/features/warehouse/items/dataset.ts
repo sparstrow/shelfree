@@ -19,15 +19,19 @@ export interface ItemLookups {
   warehouses: readonly Warehouse[]
   /** Master pack unit of an item (from its stored unit set); blank when it has none. */
   masterPackOf?: (itemNo: string) => string
+  /** Leaf → parent category names from Settings ▸ Item categories; omit to use the built-in tree. */
+  categoryParents?: Readonly<Record<string, string>>
 }
 
 /**
  * Warehouse ▸ Items grid definition (columns, default visibility, widths,
  * views, filters, search and low-stock row flag).
  */
-export function itemDataset({ items, warehouses, masterPackOf = () => '' }: ItemLookups): Dataset<Item> {
-  const categories = [...new Set(items.map((it) => itemCategoryParent(it.category)).filter(Boolean))].sort()
-  const subCategories = [...new Set(items.map((it) => itemCategorySub(it.category)).filter(Boolean))].sort()
+export function itemDataset({ items, warehouses, masterPackOf = () => '', categoryParents }: ItemLookups): Dataset<Item> {
+  const parentOf = (category: string) => itemCategoryParent(category, categoryParents)
+  const subOf = (category: string) => itemCategorySub(category, categoryParents)
+  const categories = [...new Set(items.map((it) => parentOf(it.category)).filter(Boolean))].sort()
+  const subCategories = [...new Set(items.map((it) => subOf(it.category)).filter(Boolean))].sort()
   const warehouseNames = warehouses.map((w) => w.name).filter(Boolean)
 
   return {
@@ -62,9 +66,9 @@ export function itemDataset({ items, warehouses, masterPackOf = () => '' }: Item
         case 'desc':
           return it.desc
         case 'category':
-          return itemCategoryParent(it.category)
+          return parentOf(it.category)
         case 'subCategory':
-          return itemCategorySub(it.category)
+          return subOf(it.category)
         case 'baseUom':
           return it.uom || ''
         case 'masterPack':
@@ -104,9 +108,9 @@ export function itemDataset({ items, warehouses, masterPackOf = () => '' }: Item
         case 'desc':
           return it.desc
         case 'category':
-          return itemCategoryParent(it.category) || EM_DASH
+          return parentOf(it.category) || EM_DASH
         case 'subCategory':
-          return itemCategorySub(it.category) || EM_DASH
+          return subOf(it.category) || EM_DASH
         case 'baseUom':
           return it.uom || EM_DASH
         case 'masterPack':
@@ -149,8 +153,8 @@ export function itemDataset({ items, warehouses, masterPackOf = () => '' }: Item
       return [
         it.no,
         it.desc,
-        itemCategoryParent(it.category),
-        itemCategorySub(it.category),
+        parentOf(it.category),
+        subOf(it.category),
         it.uom,
         itemOnHand(it),
         itemAvailable(it),

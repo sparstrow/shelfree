@@ -7,6 +7,7 @@ import { RecordPage, type RecordPageState, type RecordTab } from '@/components/r
 import { useList, useRemove } from '@/data/queries'
 import type { Item } from '@/data/schemas'
 import { itemCategoryPath, itemDeleteBlockedReason } from '@/domain/item'
+import { categoryParentNames } from '@/domain/item-categories'
 import {
   itemBomSummary,
   itemProfileStatus,
@@ -44,6 +45,7 @@ const NOOP_SAVE = async () => {}
 export function ItemProfilePage({ no }: { no: string }) {
   const navigate = useNavigate()
   const items = useList('items')
+  const categories = useList('itemCategories')
   const warehouses = useList('warehouses')
   const vendors = useList('vendors')
   const purchaseOrders = useList('purchaseOrders')
@@ -140,7 +142,7 @@ export function ItemProfilePage({ no }: { no: string }) {
           title: item.desc,
           no: item.no,
           status: itemProfileStatus(item),
-          subtitle: [item.type || 'Inventory', itemCategoryPath(item.category), `UoM ${item.uom}`]
+          subtitle: [item.type || 'Inventory', itemCategoryPath(item.category, undefined, categories.data ? categoryParentNames(categories.data) : undefined), `UoM ${item.uom}`]
             .filter(Boolean)
             .join('  ·  '),
         })}

@@ -266,3 +266,66 @@ registration-card actions (declare / make principal). The page reports every sav
 - Manager = employee link (internal), not a Contacts link — Contacts are external people.
 - The app never files REG-14; "Mark as declared" only records that it was done on the portal.
 - Another-state 3PL needs that state's registration and branch-transfer invoices (task 12).
+
+## React app (2026-11-25)
+
+**Settings ▸ Locations & warehouses** is ported as a list section (Phase 2 run 2.2): **`/warehouse/settings/locations`**
+(area Warehouse, type list). `LocationsSection` in `apps/web/src/features/settings/locations/` is a
+`ListPage embedded` with an `editor` inside `SettingsPage flush`: list + drawer, view and edit show the same
+rows (N / E / Ctrl+S / Esc, delete with undo). Rules: `apps/web/src/domain/locations.ts`; commands:
+`apps/web/src/data/api/warehouse-settings.ts`; hooks: `data/queries/warehouse-settings.ts`. Tier: Starter base,
+ungated, on by default (multi-state or 3PL sites would likely be Growth).
+
+### Parity and deliberate changes
+- **Ported:** the site list (code, name, type, status, city, state, manager, GST certificate, area, units in
+  stock, open documents) with views All / Active / each type; drawer fields name, code, type, status, country,
+  state (GST state dropdown for India, free-text region elsewhere), address, city, PIN, area, GST certificate
+  status (India only), site manager (employee), 3PL operator vendor (3PL only); the rules below.
+- **Not ported (G-016, G-017):** the Structure Designer (floors, zones, aisles, bins, 2D/3D) and the 4-step
+  creation wizard, and everything that reads GST registrations — the *Active needs a registration* rule, the
+  read-only registration line, *Add registration*, the GSTIN chip, *Mark as declared*. Creation is the plain
+  drawer; sites carry no floors or layouts yet.
+- **Deliberate:** the **code is fixed once any document refers to it** (the prototype let it change, which would
+  orphan the purchase orders, receipts and sales orders that carry the code). The site **id never changes**
+  (`WH-<CODE>`, numbered when taken). **There is always at least one active location** (new rule: save and
+  delete refuse to leave none). `createdAt` / `updatedAt` are optional on the schema (seed rows have none).
+- Terminology: the label stays "Locations" — the workspace's `object.location` wording isn't ported (G-018).
+
+### Data model
+Collection `warehouses` (`shelfree.v2.warehouses`, key `id`), schema `warehouseSchema`: `id, name, code, type
+(mixed|dc|3pl|retail), addr, city, state (GST code for IN), zip, country (ISO-2), area, status
+(setup|active|inactive), pobStatus (principal|additional|undeclared), managerEmpId, operatorVendorId,
+createdAt?, updatedAt?`. Stock is `item.locs[<warehouse id>]`; assembly orders carry the id; purchase orders,
+receipts and sales orders carry the `code`. `LocationUsage` (derived, never stored): `stock`, `openDocs`, `docs`.
+
+### Rules (`domain/locations.ts`, Vitest-tested; the backend enforces the same)
+- Name and code required; code unique (letters / digits / hyphen); Indian sites need a state.
+- State or country can't change while **open** documents use the site (open POs Draft / Issued / Partially
+  received, Draft receipts, draft / released / in-progress assembly orders, Open / Released sales orders).
+- Code can't change once **any** document refers to it. A 3PL operator must be an existing vendor.
+- One principal place per state: saving a site as Principal moves the state's previous principal to Additional
+  (the drawer says so before saving; a toast after).
+- **Delete** blocked while the site holds stock or has open documents ("set it to Inactive instead"), while it is
+  the principal place and other sites exist, and when it would leave no active location.
+- Inactive sites drop out of pickers while holding no stock (`selectableLocations`; pickers aren't wired to it yet, G-019).
+
+### Persistence
+`localStorage` key `shelfree.v2.warehouses` (the prototype's `shelfree.wh.v7` blob is not read).
+
+### Backend-build notes
+- `GET /locations`, `GET /locations/usage`, `PUT /locations/{id}`, `DELETE /locations/{id}` (409 with the reason
+  when blocked). Constraints: unique code per tenant; unique principal per (tenant, state) among non-inactive rows;
+  at least one `status='active'` per tenant; code immutable once referenced; state immutable while open documents
+  reference the site; delete rejected while stock or open documents exist. Foreign keys: `manager_employee_id`,
+  `operator_vendor_id`.
+- **Audit:** create, edit and delete of a site; status, state, certificate status, operator and manager changes
+  (actor, site, before / after). **Permission:** Warehouse *Manage settings* right to write; Warehouse read access
+  to view (read-only mode without the right). No personal data beyond the business address.
+- Decisions & deferred-to-backend: registrations (Active needs one), the Structure Designer and wizard (G-016 / G-017),
+  filtering inactive sites out of document pickers and counting BOM WIP / production output locations as usage
+  (G-019).
+
+### Tests
+Vitest `domain/locations.test.ts` (rules, usage, principal, delete, commands). Playwright
+`e2e/settings-warehouse.spec.ts` (list and type view, create / edit / delete / undo, validation, principal move,
+fixed code, blocked delete, last active location, help, member read-only).
