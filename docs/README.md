@@ -15,6 +15,8 @@ behavior, data-model, or screen change (see root `CLAUDE.md`).
 - [`skills/`](skills/interactive-prototype.md) — verbatim source of the built-in
   skills this project builds against, plus how each maps onto our rules.
   Currently: [`interactive-prototype.md`](skills/interactive-prototype.md).
+- [`gaps.md`](gaps.md) — known gaps, caveats and future problems not fixed yet;
+  read before a task, close what you can, add what you find.
 - [`security/`](security/README.md) — security & compliance checklist, a **hard
   gate** every feature/page must pass (see root `CLAUDE.md`).
 
