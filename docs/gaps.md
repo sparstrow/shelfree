@@ -110,14 +110,25 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
   `selectableLocations()` exists but the PO, receipt, assembly-order and item-stock pickers still list every
   site; BOM `wipLocation` and production settings' output location aren't counted as usage, so deleting a site
   they point at isn't blocked. *Fix by:* the next run touching those pickers / Assembly & production settings.
-- **G-020 · Sales prices and UoM usage still use the built-in category tree** — the item card, items grid, items
-  drawer and item profile read `itemCategories`; `domain/sales-prices.ts`, its grid and
-  `domain/units-of-measure.ts` (item usage report) derive the top-level group from `DEFAULT_CATEGORY_PARENTS`,
-  so a user-created group shows as its own root there. *Fix by:* pass `categoryParentNames(cats)` into those
-  datasets (as `itemDataset` does).
 - **G-021 · Item categories: Tree and Flow views not ported** — the prototype also had a collapsible tree and a
   workflow diagram; the React section is the grid (tree order, Parent and Group columns) only. The accent colour
   is a named select with a live preview chip, not swatches. *Fix by:* a visual-polish pass if wanted.
+
+### Settings ▸ Sales and Production (run 2.4)
+
+- **G-040 · Units of measure usage report still uses the built-in category tree** — `domain/units-of-measure.ts`
+  (item usage rows, `itemCategoryParent(it.category)`) groups by the built-in tree, so a user-created group shows as
+  its own root there. Sales prices were fixed under G-020; this is the remaining reader. *Fix by:* pass
+  `categoryParentNames(cats)` into the UoM usage dataset (as `itemDataset` and the sales-price grid do).
+- **G-041 · Sales pricing's capability switch and Assembly's work-in-progress site have no owner yet** — the stored
+  `salesPricing.enabled` flag has no row (the prototype ties it to the *customer pricing* capability in Modules &
+  capabilities), and *Work-in-progress location* is always shown (the prototype hides it unless the Production
+  capability is on) and is not read by anything in the React app (new BOMs still start at `WH-ASSY`). *Fix by:* Phase 2
+  run 2.5 (Modules & capabilities), then read `production.wipLoc` in `newBom`.
+- **G-042 · Customer pricing switches save outside the section's Save / Discard** — on Settings ▸ Sales pricing the
+  per-customer switches write `customer.pricingEligible` straight away, while the rule above them is a draft until
+  Save. Flipping a switch and then discarding the rule leaves the switch changed. *Fix by:* backend (a bulk
+  eligibility endpoint) or a staged-changes list if users trip over it.
 
 ## Closed
 
@@ -128,3 +139,10 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
   per list: number sequences, statuses and custom fields have one `module` (derived from document type /
   flow / entity, which each belong to exactly one module); payment terms carry `modules: string[]` and the
   slice filters by inclusion. Recorded in `docs/settings/README.md` and each list's doc.
+- **G-004 · Form sections' read-only mode is untested in the UI** (closed 2026-11-25, run 2.4) — a member (Kavitha
+  Elumalai) has read access to Sales and Production but no *Manage settings* right, so Sales pricing and Assembly &
+  production render view-only for her; `e2e/settings-sales-production.spec.ts` checks values as text in the same
+  rows, no Save bar, the "View only" line, Ctrl+S inert, and the customer switches disabled.
+- **G-020 · Sales prices still used the built-in category tree** (closed 2026-11-25, run 2.4 — Sales prices part) —
+  the List prices grid, its category filter and `buildListPriceRows` now take `categoryParentNames(itemCategories)`;
+  the same result for the seed (`sales-pricing-settings.test.ts`). The UoM usage report is split out as G-040.

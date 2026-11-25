@@ -215,6 +215,7 @@ export function SettingsRows<V extends Json>({ idPrefix, groups, help, form, rea
                 </div>
               )
             })}
+            {group.footer?.(values)}
           </section>
         )
       })}

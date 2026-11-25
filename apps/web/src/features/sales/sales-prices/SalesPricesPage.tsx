@@ -15,11 +15,12 @@ import {
 } from '@/components/list-page/ListPage'
 import { RecordCard } from '@/components/record-page/RecordPage'
 import { useList, useRemove, useUpsert } from '@/data/queries'
+import { useSalesPricingSettings } from '@/data/queries/sales-production-settings'
+import { useItemCategories } from '@/data/queries/warehouse-settings'
 import type { Customer, CustomerPrice, Item } from '@/data/schemas'
 import {
   type CustomerPriceEditableKey,
   type CustomerPriceRow,
-  DEFAULT_SALES_PRICING_SETTINGS,
   type ListPriceRow,
   blankCustomerPrice,
   buildListPriceRows,
@@ -40,6 +41,7 @@ import {
   validCustomerPrices,
   validateCustomerPrice,
 } from '@/domain/sales-prices'
+import { categoryParentNames } from '@/domain/item-categories'
 import { EM_DASH, fmtDate, int, money, todayLocal } from '@/lib/format'
 import { isTypingTarget } from '@/lib/keyboard'
 import { useLatestCallback } from '@/lib/use-latest-callback'
@@ -99,6 +101,8 @@ export function SalesPricesPage() {
   const prices = useList('customerPrices')
   const customers = useList('customers')
   const items = useList('items')
+  const categories = useItemCategories()
+  const pricingSettings = useSalesPricingSettings()
 
   const savePrice = useUpsert('customerPrices')
   const removePrice = useRemove('customerPrices')
@@ -118,9 +122,11 @@ export function SalesPricesPage() {
     () => validCustomerPrices(priceList, customerList, itemList),
     [priceList, customerList, itemList],
   )
+  // Top-level category group comes from Settings ▸ Item categories (built-in tree until it loads).
+  const categoryParents = useMemo(() => (categories.data ? categoryParentNames(categories.data) : undefined), [categories.data])
   const listRows = useMemo(
-    () => buildListPriceRows(itemList, validPrices, customerList),
-    [itemList, validPrices, customerList],
+    () => buildListPriceRows(itemList, validPrices, customerList, categoryParents),
+    [itemList, validPrices, customerList, categoryParents],
   )
   const selectableItems = useMemo(() => sellableItems(itemList), [itemList])
   const refs = useMemo(
@@ -205,8 +211,8 @@ export function SalesPricesPage() {
   )
 
   const listDs = useMemo(
-    () => listPriceDataset({ items: itemList, commit: commitListCell }),
-    [itemList, commitListCell],
+    () => listPriceDataset({ items: itemList, commit: commitListCell, categoryParents }),
+    [itemList, commitListCell, categoryParents],
   )
   const customerDs = useMemo(
     () =>
@@ -214,10 +220,10 @@ export function SalesPricesPage() {
         customers: customerList,
         items: itemList,
         today,
-        settings: DEFAULT_SALES_PRICING_SETTINGS,
+        settings: pricingSettings,
         commit: commitCustomerCell,
       }),
-    [customerList, itemList, today, commitCustomerCell],
+    [customerList, itemList, today, pricingSettings, commitCustomerCell],
   )
 
   useEffect(() => {
@@ -323,7 +329,7 @@ export function SalesPricesPage() {
     view: (r) => {
       const cust = customerOf(r.customer)
       const listPrice = itemOf(r.item)?.price ?? 0
-      const eligible = cust ? isCustomerPricingEligible(cust, DEFAULT_SALES_PRICING_SETTINGS) : false
+      const eligible = cust ? isCustomerPricingEligible(cust, pricingSettings) : false
       return {
         no: r.id,
         status: customerPriceStatus(r, today),
@@ -501,12 +507,13 @@ function PriceCheckPanel({
   ready: boolean
   error: unknown
 }) {
+  const pricingSettings = useSalesPricingSettings()
   const [chkCustomer, setChkCustomer] = useState('')
   const [chkItem, setChkItem] = useState('')
   const [chkQty, setChkQty] = useState('1')
   const [chkDate, setChkDate] = useState(today)
 
-  const eligible = useMemo(() => eligibleCustomers(customers, DEFAULT_SALES_PRICING_SETTINGS), [customers])
+  const eligible = useMemo(() => eligibleCustomers(customers, pricingSettings), [customers, pricingSettings])
   const pricedCustomerCount = useMemo(() => new Set(prices.map((r) => r.customer)).size, [prices])
 
   const selectedCustomer = customers.find((c) => c.no === chkCustomer)
@@ -519,7 +526,7 @@ function PriceCheckPanel({
           prices,
           qty: Math.max(1, Number.parseInt(chkQty, 10) || 1),
           date: chkDate || today,
-          settings: DEFAULT_SALES_PRICING_SETTINGS,
+          settings: pricingSettings,
         })
       : null
 
@@ -535,14 +542,14 @@ function PriceCheckPanel({
         <div className="grid max-w-[1040px] grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-4">
           <RecordCard title="Who gets their own price">
             <div className="flex flex-wrap items-center gap-2.5">
-              <StatusPill label={pricingModeLabel(DEFAULT_SALES_PRICING_SETTINGS.mode)} tone="neutral" />
+              <StatusPill label={pricingModeLabel(pricingSettings.mode)} tone="neutral" />
               <span className="tnum text-xs text-muted-foreground">{int(eligible.length)} eligible</span>
             </div>
             <p className="mt-2.5 mb-0 text-[12.5px] leading-relaxed text-pretty text-muted-foreground">
-              {pricingModeNote(DEFAULT_SALES_PRICING_SETTINGS, fmtDate)}
+              {pricingModeNote(pricingSettings, fmtDate)}
             </p>
             <p className="mt-1.5 mb-0 text-[12.5px] leading-relaxed text-pretty text-muted-foreground">
-              {pricingFallbackNote(DEFAULT_SALES_PRICING_SETTINGS)}
+              {pricingFallbackNote(pricingSettings)}
             </p>
             <div className="tnum mt-3 border-t border-dashed border-border pt-2.5 text-xs text-muted-foreground">
               {int(prices.length)} {prices.length === 1 ? 'price row' : 'price rows'} · {int(pricedCustomerCount)} priced{' '}

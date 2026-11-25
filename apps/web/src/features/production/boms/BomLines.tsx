@@ -11,6 +11,7 @@ import {
   type LineSubRow,
 } from '@/components/document/LineGrid'
 import { numberInputClass } from '@/components/document/parts'
+import { useProductionSettings } from '@/data/queries/sales-production-settings'
 import type { Bom, BomLine, Item } from '@/data/schemas'
 import { bomMoveLine, bomSetLine, bomTree, newBomLine, renumberBomLines } from '@/domain/bom-document'
 import { activeBomFor, bomReqQty, bomUnitCostOf } from '@/domain/production'
@@ -306,6 +307,7 @@ function AddComponent({
   items: readonly Item[]
 }) {
   const [query, setQuery] = useState('')
+  const { defaultScrap } = useProductionSettings()
   const taken = useMemo(() => new Set(draft.lines.map((l) => l.item)), [draft.lines])
   const q = query.trim().toLowerCase()
   const matches = useMemo(
@@ -321,7 +323,7 @@ function AddComponent({
     [items, draft.parentItem, taken, q],
   )
 
-  const pick = (item: Item) => ctx.insert(newBomLine(item, (draft.lines.length + 1) * 10, 0))
+  const pick = (item: Item) => ctx.insert(newBomLine(item, (draft.lines.length + 1) * 10, defaultScrap))
 
   return (
     <>

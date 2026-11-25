@@ -20,7 +20,7 @@ import {
   itemUnitSetSchema,
   numberSequenceSchema,
 } from '@/data/schemas'
-import { DEFAULT_PRODUCTION_SETTINGS, aoFinish } from '@/domain/assembly-order'
+import { aoFinish } from '@/domain/assembly-order'
 import { nextDupNo } from '@/domain/bulk-actions'
 import { dropFavorite, favoritesOfView, nextFavoriteOrder, renumberFavorites, sortFavorites } from '@/domain/favorites'
 import {
@@ -143,8 +143,8 @@ export async function finishAssemblyOrder(
     consumed: input.consumed,
     items,
     warehouses,
-    // Settings come from the workspace, never from the caller (no production settings store yet → defaults).
-    cfg: DEFAULT_PRODUCTION_SETTINGS,
+    // Settings come from the workspace (Settings ▸ Assembly & production), never from the caller.
+    cfg: (await settingsApi.get()).production,
   })
   if (!result.ok) throw new CommandError(result.error)
 

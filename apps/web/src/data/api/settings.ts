@@ -12,6 +12,33 @@ import {
   PAPER_TRANSFER_VALUES,
   TAX_SETTINGS_DEFAULTS,
 } from '@/domain/tax-settings'
+import { DEFAULT_PRODUCTION_SETTINGS } from '@/domain/assembly-order'
+import { CUSTOMER_PRICING_MODES, DEFAULT_SALES_PRICING_SETTINGS } from '@/domain/sales-prices'
+
+// Run 2.4 block (Sales pricing, Assembly & production) — kept apart from the other sections.
+/** Who may have their own customer price, and what a sales line does without one. */
+export const salesPricingSchema = z.object({
+  /** Customer pricing capability on/off (Modules & capabilities will own this switch; no row in Sales pricing). */
+  enabled: z.boolean(),
+  mode: z.enum(CUSTOMER_PRICING_MODES),
+  /** ISO date; accounts opened on or after it are eligible in `newOnly` mode. Stamped when the mode is switched. */
+  newCutoff: z.string(),
+  fallbackToList: z.boolean(),
+  blockUnpriced: z.boolean(),
+})
+export type SalesPricingConfig = z.infer<typeof salesPricingSchema>
+
+/** Defaults and behaviour of assembly orders and bills of materials. */
+export const productionSchema = z.object({
+  outputLoc: z.string(),
+  wipLoc: z.string(),
+  manualConsumption: z.boolean(),
+  allowShortRelease: z.boolean(),
+  /** Percent, 0–100. */
+  defaultScrap: z.number(),
+  allowOverConsume: z.boolean(),
+})
+export type ProductionConfig = z.infer<typeof productionSchema>
 
 export const settingsSchema = z.object({
   purchasing: z.object({
@@ -42,12 +69,17 @@ export const settingsSchema = z.object({
     /** Share of selling price (1–100) when branchValue is pctSell. */
     branchPct: z.number().min(1).max(100),
   }),
+  // Run 2.4 block — Settings ▸ Sales pricing and Settings ▸ Assembly & production.
+  salesPricing: salesPricingSchema,
+  production: productionSchema,
 })
 export type Settings = z.infer<typeof settingsSchema>
 
 export const DEFAULT_SETTINGS: Settings = {
   purchasing: { lockCostToPriceList: true, blockBelowMinQty: true },
   tax: { ...TAX_SETTINGS_DEFAULTS },
+  salesPricing: { ...DEFAULT_SALES_PRICING_SETTINGS },
+  production: { ...DEFAULT_PRODUCTION_SETTINGS },
 }
 
 const KEY = 'shelfree.v2.settings'
@@ -60,6 +92,8 @@ function read(): Settings {
       return settingsSchema.parse({
         purchasing: { ...DEFAULT_SETTINGS.purchasing, ...stored.purchasing },
         tax: { ...DEFAULT_SETTINGS.tax, ...stored.tax },
+        salesPricing: { ...DEFAULT_SETTINGS.salesPricing, ...stored.salesPricing },
+        production: { ...DEFAULT_SETTINGS.production, ...stored.production },
       })
     }
   } catch {
@@ -79,4 +113,10 @@ export const settingsApi = {
     }
     return Promise.resolve(parsed)
   },
+  /** Save one block without touching the others (they may have changed since this tab loaded). */
+  updateSalesPricing: (next: SalesPricingConfig): Promise<Settings> =>
+    settingsApi.update({ ...read(), salesPricing: salesPricingSchema.parse(next) }),
+  updateProduction: (next: ProductionConfig): Promise<Settings> =>
+    settingsApi.update({ ...read(), production: productionSchema.parse(next) }),
+  updateTax: (next: Settings['tax']): Promise<Settings> => settingsApi.update({ ...read(), tax: next }),
 }

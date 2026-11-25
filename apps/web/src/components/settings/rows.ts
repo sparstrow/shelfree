@@ -3,6 +3,7 @@
  * them (label | control grid, quiet help, dirty marker, errors) and the form
  * hook tracks and saves them.
  */
+import type { ReactNode } from 'react'
 
 export type RowControl =
   | { type: 'text'; mono?: boolean; maxLength?: number; placeholder?: string; inputMode?: 'text' | 'numeric' | 'email' | 'tel' }
@@ -39,4 +40,9 @@ export interface SettingsGroup<V> {
   /** Key in the help map for the section title. Default: the group id. */
   help?: string
   rows: readonly SettingsRow<V>[]
+  /**
+   * Optional content under the group's rows, for the current draft (e.g. a customer list that
+   * only applies in one mode). It manages its own saving; it is not part of the form.
+   */
+  footer?: (draft: V) => ReactNode
 }
