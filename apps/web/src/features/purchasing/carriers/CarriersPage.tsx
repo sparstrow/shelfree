@@ -5,7 +5,7 @@ import type { Dataset, RawValue } from '@/components/data-grid/model'
 import { type ListEditor, ListPage } from '@/components/list-page/ListPage'
 import { useCollectionDelete } from '@/components/list-page/use-collection-delete'
 import { useList, useUpsert } from '@/data/queries'
-import type { Carrier, Contact } from '@/data/schemas'
+import type { Carrier, CarrierTypeRecord, Contact } from '@/data/schemas'
 import {
   CARRIER_BEHAVIORS,
   CARRIER_TYPE_DEFAULTS,
@@ -33,7 +33,7 @@ import { maskPhone } from '@/lib/privacy'
 
 const route = getRouteApi('/purchasing/carriers/')
 
-function carrierDataset(contacts: readonly Contact[]): Dataset<Carrier> {
+function carrierDataset(contacts: readonly Contact[], types: readonly CarrierTypeRecord[]): Dataset<Carrier> {
   const contactById = new Map(contacts.map((c) => [c.no, c]))
   const contactName = (c: Carrier) => (c.contactId ? (contactById.get(c.contactId)?.name ?? '') : '')
   const contactPhone = (c: Carrier) => (c.contactId ? (contactById.get(c.contactId)?.phone ?? '') : '')
@@ -41,17 +41,17 @@ function carrierDataset(contacts: readonly Contact[]): Dataset<Carrier> {
   const raw = (c: Carrier, key: string): RawValue => {
     switch (key) {
       case 'type':
-        return carrierTypeName(c.type)
+        return carrierTypeName(c.type, types)
       case 'kind':
-        return carrierBehaviorLabel(carrierBehavior(c.type))
+        return carrierBehaviorLabel(carrierBehavior(c.type, types))
       case 'gstin':
-        return carrierBehavior(c.type) === 'own' ? '' : c.gstin || ''
+        return carrierBehavior(c.type, types) === 'own' ? '' : c.gstin || ''
       case 'tax':
-        return carrierGstTreatment(c)
+        return carrierGstTreatment(c, types)
       case 'ref':
-        return carrierTrackingRef(c.type)
+        return carrierTrackingRef(c.type, types)
       case 'link':
-        return carrierTrackingLinkStatus(c)
+        return carrierTrackingLinkStatus(c, types)
       case 'contact':
         return contactName(c)
       case 'phone':
@@ -106,11 +106,11 @@ function carrierDataset(contacts: readonly Contact[]): Dataset<Carrier> {
       [
         c.no,
         c.name,
-        carrierTypeName(c.type),
+        carrierTypeName(c.type, types),
         raw(c, 'gstin'),
-        carrierGstTreatment(c),
-        carrierTrackingRef(c.type),
-        carrierTrackingLinkStatus(c),
+        carrierGstTreatment(c, types),
+        carrierTrackingRef(c.type, types),
+        carrierTrackingLinkStatus(c, types),
         c.service,
         contactName(c),
         maskPhone(contactPhone(c)),
@@ -134,7 +134,7 @@ function carrierDataset(contacts: readonly Contact[]): Dataset<Carrier> {
     filterColumns: [
       { key: 'no', label: 'Code', type: 'text' },
       { key: 'name', label: 'Name', type: 'text' },
-      { key: 'type', label: 'Type', type: 'enum', options: CARRIER_TYPE_DEFAULTS.map((t) => t.name) },
+      { key: 'type', label: 'Type', type: 'enum', options: types.map((t) => t.name) },
       { key: 'kind', label: 'Behaves as', type: 'enum', options: CARRIER_BEHAVIORS.map((b) => b.label) },
       { key: 'gstin', label: 'GSTIN', type: 'text' },
       {
@@ -148,7 +148,7 @@ function carrierDataset(contacts: readonly Contact[]): Dataset<Carrier> {
         label: 'Tracking ref.',
         type: 'enum',
         options: [
-          ...new Set(CARRIER_TYPE_DEFAULTS.filter((t) => t.behavior !== 'own').map((t) => t.refLabel || 'Tracking no.')),
+          ...new Set(types.filter((t) => t.behavior !== 'own').map((t) => t.refLabel || 'Tracking no.')),
           EM_DASH,
         ],
       },
@@ -159,7 +159,7 @@ function carrierDataset(contacts: readonly Contact[]): Dataset<Carrier> {
       { key: 'desc', label: 'Notes', type: 'text' },
     ],
     defaultSort: { key: 'no', dir: 'asc' },
-    rowFlag: (c) => carrierRowFlag(c),
+    rowFlag: (c) => carrierRowFlag(c, types),
   }
 }
 
@@ -171,9 +171,15 @@ export function CarriersPage() {
   const contacts = useList('contacts')
   const save = useUpsert('carriers')
 
+  const carrierTypes = useList('carrierTypes')
+  // Types come from Settings ▸ Carrier types; the built-in defaults cover the moment before they load.
+  const typeList = useMemo<readonly CarrierTypeRecord[]>(
+    () => carrierTypes.data ?? CARRIER_TYPE_DEFAULTS,
+    [carrierTypes.data],
+  )
   const contactList = useMemo(() => contacts.data ?? [], [contacts.data])
   const contactById = useMemo(() => new Map(contactList.map((c) => [c.no, c])), [contactList])
-  const dataset = useMemo(() => carrierDataset(contactList), [contactList])
+  const dataset = useMemo(() => carrierDataset(contactList, typeList), [contactList, typeList])
   const label = (c: Carrier) => `${c.no || EM_DASH} · ${c.name || 'Untitled carrier'}`
 
   const remove = useCollectionDelete<Carrier>('carriers', {
@@ -183,7 +189,7 @@ export function CarriersPage() {
 
   const editor: ListEditor<Carrier> = {
     fields: (d) => {
-      const beh = carrierBehavior(d.type)
+      const beh = carrierBehavior(d.type, typeList)
       const own = beh === 'own'
       const gta = beh === 'gta'
       return [
@@ -200,7 +206,7 @@ export function CarriersPage() {
           key: 'type',
           label: 'Type',
           type: 'select',
-          options: carrierTypeOptions(d.type),
+          options: carrierTypeOptions(d.type, typeList),
           hint: 'Add or rename types in Settings › Carrier types.',
         },
         {
@@ -246,7 +252,7 @@ export function CarriersPage() {
                 type: 'text' as const,
                 mono: true,
                 placeholder: 'https://…/track?no={tracking}',
-                hint: `Paste the carrier’s tracking page and put {tracking} where the ${carrierTrackingRef(d.type)} goes. Shipments turn it into a clickable link.`,
+                hint: `Paste the carrier’s tracking page and put {tracking} where the ${carrierTrackingRef(d.type, typeList)} goes. Shipments turn it into a clickable link.`,
               },
             ]
           : []),
@@ -281,24 +287,24 @@ export function CarriersPage() {
       ]
     },
     view: (c) => {
-      const own = carrierBehavior(c.type) === 'own'
-      const typeLabel = carrierTypeName(c.type)
+      const own = carrierBehavior(c.type, typeList) === 'own'
+      const typeLabel = carrierTypeName(c.type, typeList)
       return {
         no: c.no || EM_DASH,
         status: carrierStatus(c),
         title: c.name || 'Untitled carrier',
-        subtitle: typeLabel + (own ? '' : ` · ${carrierGstTreatment(c)}`),
-        notice: carrierNotices(c).join(' ') || undefined,
+        subtitle: typeLabel + (own ? '' : ` · ${carrierGstTreatment(c, typeList)}`),
+        notice: carrierNotices(c, typeList).join(' ') || undefined,
         facts: [
-          { k: 'Behaves as', v: carrierBehaviorLabel(carrierBehavior(c.type)) },
-          ...(!own ? [{ k: 'Tracking ref.', v: carrierTrackingRef(c.type) }] : []),
+          { k: 'Behaves as', v: carrierBehaviorLabel(carrierBehavior(c.type, typeList)) },
+          ...(!own ? [{ k: 'Tracking ref.', v: carrierTrackingRef(c.type, typeList) }] : []),
           { k: 'Last changed', v: c.updatedAt ? fmtDate(c.updatedAt.slice(0, 10)) : EM_DASH },
         ],
       }
     },
     extra: (c) => {
-      const own = carrierBehavior(c.type) === 'own'
-      const sampleUrl = carrierSampleTrackUrl(c)
+      const own = carrierBehavior(c.type, typeList) === 'own'
+      const sampleUrl = carrierSampleTrackUrl(c, typeList)
       const linkedContact = c.contactId ? contactById.get(c.contactId) : undefined
       return (
         <div className="flex flex-col gap-3.5 pt-3.5">
@@ -351,11 +357,11 @@ export function CarriersPage() {
         </div>
       )
     },
-    blank: () => blankCarrier(),
+    blank: () => blankCarrier(typeList),
     duplicate: duplicateCarrier,
-    onChange: (d, key) => carrierOnChange(d, key),
-    normalize: (d) => normalizeCarrier(d),
-    validate: (d, others) => validateCarrier(d, others, contactList),
+    onChange: (d, key) => carrierOnChange(d, key, typeList),
+    normalize: (d) => normalizeCarrier(d, typeList),
+    validate: (d, others) => validateCarrier(d, others, contactList, d.createdAt ? 'edit' : 'new', typeList),
     save: (c, mode) => {
       const now = new Date().toISOString()
       return save.mutateAsync({ ...c, createdAt: mode === 'new' || !c.createdAt ? now : c.createdAt, updatedAt: now })
@@ -369,7 +375,7 @@ export function CarriersPage() {
       rows={carriers.data}
       isLoading={carriers.isPending}
       error={carriers.error}
-      onRefresh={() => Promise.all([carriers.refetch(), contacts.refetch()])}
+      onRefresh={() => Promise.all([carriers.refetch(), contacts.refetch(), carrierTypes.refetch()])}
       remove={remove}
       editor={editor}
       initialActiveId={sel ?? null}

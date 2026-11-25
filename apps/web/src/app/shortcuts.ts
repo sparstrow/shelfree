@@ -125,6 +125,26 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
     { combo: 'Delete', desc: 'Delete the active series — blocked once numbers were issued from it.' },
     ...LIST_PAGE_SHORTCUTS,
   ]),
+  group('settings-carrier-types', 'Settings › Carrier types', [
+    ...LIST_EDITOR_SHORTCUTS.map((s) => (s.combo === 'N' ? { ...s, desc: 'New carrier type.' } : s)),
+    { combo: 'Delete', desc: 'Delete the active type — blocked for built-in types and types a carrier uses.' },
+    ...LIST_PAGE_SHORTCUTS,
+  ]),
+  group('settings-statuses', 'Settings › Statuses & stages', [
+    ...LIST_EDITOR_SHORTCUTS.map((s) => (s.combo === 'N' ? { ...s, desc: 'New status — starts on this module’s first document.' } : s)),
+    { combo: 'Delete', desc: 'Delete the active status — blocked for system statuses.' },
+    ...LIST_PAGE_SHORTCUTS,
+  ]),
+  group('settings-custom-fields', 'Settings › Custom fields', [
+    ...LIST_EDITOR_SHORTCUTS.map((s) => (s.combo === 'N' ? { ...s, desc: 'New custom field — starts on this module’s first record type.' } : s)),
+    { combo: 'Delete', desc: 'Delete the active field definition.' },
+    ...LIST_PAGE_SHORTCUTS,
+  ]),
+  group('settings-payment-terms', 'Settings › Payment terms', [
+    ...LIST_EDITOR_SHORTCUTS.map((s) => (s.combo === 'N' ? { ...s, desc: 'New payment term.' } : s)),
+    { combo: 'Delete', desc: 'Delete the active term — blocked while a vendor or customer uses it.' },
+    ...LIST_PAGE_SHORTCUTS,
+  ]),
   group('settings-shortcuts', 'Settings › Keyboard shortcuts', [
     { combo: '/', desc: 'Focus the search box.' },
     { combo: 'Esc', desc: 'Clear the search.' },

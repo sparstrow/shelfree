@@ -76,3 +76,31 @@ CarrierType[]. Absent → built-in defaults; built-ins missing from a saved list
 - Behaviours are a fixed code-level enum (not user-definable) because they carry tax rules.
 - Types live on the workspace settings record in the prototype; a real table in the backend.
 - Reassigning carriers in bulk from one type to another is deferred (edit carriers one by one).
+
+## React app (2026-11-25)
+- **URL:** `/purchasing/settings/carrier-types` (Purchasing ▸ Settings, section type **list**; the old
+  `/settings/carrier-types` redirects). Code: `apps/web/src/features/settings/carrier-types/`
+  (`CarrierTypesSection.tsx`, `dataset.ts`, `help.ts`), rules in `domain/carrier-types.ts`
+  (+ `carrier-types.test.ts`). Built on `ListPage embedded` with an `editor`: edit in place in the drawer.
+- **Parity:** same three built-in types, behaviours, code / name / behaviour / ref. label / description / active
+  fields, and the same validation and lock rules: code immutable, behaviour locked for built-in and in-use types, at
+  least one active type, delete blocked for built-in and in-use types, ref. label suggested from the behaviour unless
+  the user typed one. The quiet help in `help.ts` carries the explainer text (the three behaviours are the options of
+  *Behaves as*).
+- **Deliberate changes:** the prototype's "What each behaviour does" cards below the list are now the quiet help
+  options on *Behaves as* (no inline description). The editor is the shared drawer, not a modal. There is no separate
+  Activate / Deactivate menu item: *Status* is a switch in the drawer.
+- **Data model:** `carrierTypeSchema` in `data/schemas` (`code` PK, `name`, `behavior`, `refLabel`, `desc`, `active`,
+  `system`, `createdAt?`, `updatedAt?`). The grid adds a derived **Carriers** count (never stored).
+- **Persistence:** collection `shelfree.v2.carrierTypes` (`api.carrierTypes`), seeded by `seedCarrierTypes()` from the
+  three built-ins. Carriers already stored the type **code** (`Carrier.type`); Purchasing ▸ Carriers now reads the
+  types from this collection (Type dropdown, behaviour, tracking ref., GST treatment, filters) instead of the
+  built-in constants. The constants stay only as the fallback while the list loads.
+- **Shortcuts:** group *Settings › Carrier types* in `src/app/shortcuts.ts` (N, E, Ctrl+S, Esc, Delete, list keys).
+- **Permissions:** Purchasing ▸ Settings needs the Manage settings right for Purchasing (owner / admin always);
+  other users see the list view-only. UX only; the backend enforces.
+- **Audit (backend):** type create / edit (field diff) / activate / deactivate / delete. No PII, nothing sensitive in
+  localStorage.
+- **Tests:** `domain/carrier-types.test.ts`; `e2e/settings-purchasing.spec.ts` (list, create + validation, offered on
+  Carriers, delete, built-in lock, member view-only).
+- **Backend:** as in Backend-build notes above (`carriers.type_code` FK, same rules).

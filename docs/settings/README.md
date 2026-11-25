@@ -48,25 +48,26 @@ the new app yet" inside the frame, with a link to a ported section.
 | Workspace | `/settings/cfg-nav` Navigation | custom | not moved yet |
 | Workspace | `/settings/cfg-favorites` Favorites & views (workspace part) | custom | not moved yet |
 | Workspace | `/settings/cfg-states` States & territories | list | not moved yet |
-| Purchasing | `/purchasing/settings/carrier-types` Carrier types | list | not moved yet |
+| Purchasing | `/purchasing/settings/carrier-types` Carrier types | list | yes |
 | Purchasing | `/purchasing/settings/sequences` Number sequences (slice) | list, shared | yes |
-| Purchasing | `/purchasing/settings/statuses` Statuses & stages (slice) | list, shared | not moved yet |
-| Purchasing | `/purchasing/settings/fields` Custom fields (slice) | list, shared | not moved yet |
-| Purchasing | `/purchasing/settings/terms` Payment terms (slice) | list, shared | not moved yet |
+| Purchasing | `/purchasing/settings/statuses` Statuses & stages (slice) | list, shared | yes |
+| Purchasing | `/purchasing/settings/fields` Custom fields (slice) | list, shared | yes |
+| Purchasing | `/purchasing/settings/terms` Payment terms (slice) | list, shared | yes |
 | Sales | `/sales/settings/cfg-pricing` Sales pricing | form | not moved yet |
-| Sales | `/sales/settings/sequences`, `statuses`, `fields`, `terms` (slices) | list, shared | sequences only |
+| Sales | `/sales/settings/sequences`, `statuses`, `fields`, `terms` (slices) | list, shared | yes (all four) |
 | Warehouse | `/warehouse/settings/uom` Units of measure | list | yes |
 | Warehouse | `/warehouse/settings/categories` Item categories | list | not moved yet |
 | Warehouse | `/warehouse/settings/locations` Locations & warehouses | list | not moved yet |
 | Warehouse | `/warehouse/settings/sequences`, `fields` (slices) | list, shared | sequences only |
 | Production | `/production/settings/assembly` Assembly & production | form | not moved yet |
-| Production | `/production/settings/sequences`, `statuses` (slices) | list, shared | sequences only |
+| Production | `/production/settings/sequences`, `statuses` (slices) | list, shared | yes (both) |
 | Finance | `/finance/settings/cfg-taxset` Tax settings | form | not moved yet |
 | Finance | `/finance/settings/tax-codes` Tax codes (slice) | list, shared | not moved yet |
 | Finance | `/finance/settings/sequences` Number sequences (slice) | list, shared | yes, but no document type belongs to Finance yet, so it shows an empty read-only list |
-| People | `/people/settings/fields`, `sequences` (slices) | list, shared | sequences only |
+| People | `/people/settings/fields`, `sequences` (slices) | list, shared | yes (both) |
 | Shared lists | `/settings/shared/sequences` Number sequences | list | yes |
-| Shared lists | `/settings/shared/statuses`, `fields`, `terms`, `tax-codes` | list | not moved yet |
+| Shared lists | `/settings/shared/statuses`, `fields`, `terms` | list | yes
+| Shared lists | `/settings/shared/tax-codes` | list | not moved yet |
 | Personal | `/settings/me-profile`, `me-appearance`, `me-notifications`, `me-language`, `me-defaults`, `me-security` | form | not moved yet |
 | Personal | `/settings/me-favorites` Favorites & views | custom | not moved yet |
 | Personal | `/settings/shortcuts` Keyboard shortcuts | custom | yes |
@@ -327,8 +328,10 @@ Tax-relevant identity fields (GSTIN, PAN, legal name) keep their change history.
     allowed to view them; there is no module on/off check yet (`areasForModules` exists but is not used by
     the frame or routes). Deferred until Modules & capabilities is ported.
   - Spec: module off redirects to `/settings`. Not implemented, same reason.
-  - Spec: shared records carry `modules: string[]`. Code: number sequences carry a single `module`
-    derived from their document type. Revisit with payment terms and statuses.
+  - Spec: shared records carry `modules: string[]`. Code (decided in run 2.1, gap G-011): number sequences,
+    statuses and custom fields carry a single `module` derived from their document type / flow / entity (each
+    belongs to exactly one module); payment terms carry `modules: string[]` (a term serves Purchasing and Sales)
+    and a module slice filters by inclusion.
   - Spec: Find a setting highlights the row. Code: only form sections mark rows; list sections only open.
   - Spec: Team & roles lists the Manage settings column. The column ships on People ▸ Users; Team & roles is
     not moved yet.

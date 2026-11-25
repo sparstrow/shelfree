@@ -2,6 +2,14 @@ import type { HelpMap } from '@/components/help/types'
 import type { SettingsSectionComponent } from '@/components/settings/SettingsFrame'
 import { BusinessProfileSection } from './business-profile/BusinessProfileSection'
 import { BUSINESS_PROFILE_HELP } from './business-profile/help'
+import { CarrierTypesSection } from './carrier-types/CarrierTypesSection'
+import { CARRIER_TYPES_HELP } from './carrier-types/help'
+import { CustomFieldsSection } from './custom-fields/CustomFieldsSection'
+import { CUSTOM_FIELDS_HELP } from './custom-fields/help'
+import { PaymentTermsSection } from './payment-terms/PaymentTermsSection'
+import { PAYMENT_TERMS_HELP } from './payment-terms/help'
+import { StatusesSection } from './statuses/StatusesSection'
+import { STATUSES_HELP } from './statuses/help'
 import { NumberSequencesSection } from './number-sequences/NumberSequencesSection'
 import { NUMBER_SEQUENCES_HELP } from './number-sequences/help'
 import { ShortcutsSection } from './shortcuts/ShortcutsSection'
@@ -18,6 +26,10 @@ export const SETTINGS_SECTIONS: Readonly<Record<string, SettingsSectionComponent
   sequences: NumberSequencesSection,
   shortcuts: ShortcutsSection,
   uom: UnitsOfMeasureSection,
+  'carrier-types': CarrierTypesSection,
+  statuses: StatusesSection,
+  fields: CustomFieldsSection,
+  terms: PaymentTermsSection,
 }
 
 /** Quiet-help maps keyed by section id, used by central Settings "Find a setting". */
@@ -25,4 +37,8 @@ export const SETTINGS_HELP_MAPS: Readonly<Record<string, HelpMap>> = {
   'ws-profile': BUSINESS_PROFILE_HELP,
   sequences: NUMBER_SEQUENCES_HELP,
   uom: UOM_HELP,
+  'carrier-types': CARRIER_TYPES_HELP,
+  statuses: STATUSES_HELP,
+  fields: CUSTOM_FIELDS_HELP,
+  terms: PAYMENT_TERMS_HELP,
 }
