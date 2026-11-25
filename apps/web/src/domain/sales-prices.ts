@@ -264,6 +264,8 @@ export function buildListPriceRows(
   items: readonly Item[],
   customerPrices: readonly CustomerPrice[],
   customers: readonly Pick<Customer, 'no'>[] = [],
+  /** Leaf → parent category names from Settings ▸ Item categories; omit for the built-in tree. */
+  categoryParents?: Readonly<Record<string, string>>,
 ): ListPriceRow[] {
   const valid = validCustomerPrices(customerPrices, customers, items)
   const countByItem = new Map<string, number>()
@@ -277,7 +279,7 @@ export function buildListPriceRows(
     return {
       no: it.no,
       desc: it.desc,
-      category: itemCategoryParent(it.category),
+      category: itemCategoryParent(it.category, categoryParents),
       uom: it.uom || '',
       cost,
       price,
@@ -485,4 +487,25 @@ export function commitCustomerPriceCell(
   const saved = toCustomerPrice(draft)
   if (saved[key] === row[key]) return { kind: 'unchanged' }
   return { kind: 'saved', row: saved }
+}
+
+// ── Settings ▸ Sales pricing ─────────────────────────────────────────────────
+
+/**
+ * Settings as saved from Sales pricing. Switching to "new customers only" stamps the
+ * cut-off with today: accounts opened from then on are eligible, everyone already on the
+ * books is not. Any other change leaves the cut-off as it was.
+ */
+export function applyPricingSettingsChange(
+  prev: SalesPricingSettings,
+  next: SalesPricingSettings,
+  today: string,
+): SalesPricingSettings {
+  if (next.mode === 'newOnly' && prev.mode !== 'newOnly') return { ...next, newCutoff: today }
+  return next
+}
+
+/** Why the "block the item" switch is not in use right now, or null. */
+export function pricingBlockUnusedNote(settings: Pick<SalesPricingSettings, 'fallbackToList'>): string | null {
+  return settings.fallbackToList ? 'Not used while the fallback above is on — there is always a price to fall back to.' : null
 }

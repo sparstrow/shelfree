@@ -169,6 +169,15 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
     { combo: 'Type in Check a GSTIN', desc: 'Shows the state, PAN and the tax split against your state as you type. Nothing is saved.' },
     ...LIST_PAGE_SHORTCUTS,
   ]),
+  group('settings-sales-pricing', 'Settings › Sales pricing', [
+    { combo: 'Ctrl/Cmd + S', desc: 'Save the pricing rules. Switching to “New customers only” stamps today as the cut-off.' },
+    { combo: 'Esc', desc: 'Discard unsaved changes to the rules.' },
+    { combo: 'Space (on a customer’s switch)', desc: 'Put that customer on customer pricing, or take them off — saves straight away, not with Save.' },
+  ]),
+  group('settings-assembly-production', 'Settings › Assembly & production', [
+    { combo: 'Ctrl/Cmd + S', desc: 'Save the defaults and behaviour options.' },
+    { combo: 'Esc', desc: 'Discard unsaved changes.' },
+  ]),
   group('settings-shortcuts', 'Settings › Keyboard shortcuts', [
     { combo: '/', desc: 'Focus the search box.' },
     { combo: 'Esc', desc: 'Clear the search.' },

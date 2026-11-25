@@ -53,13 +53,13 @@ the new app yet" inside the frame, with a link to a ported section.
 | Purchasing | `/purchasing/settings/statuses` Statuses & stages (slice) | list, shared | yes |
 | Purchasing | `/purchasing/settings/fields` Custom fields (slice) | list, shared | yes |
 | Purchasing | `/purchasing/settings/terms` Payment terms (slice) | list, shared | yes |
-| Sales | `/sales/settings/cfg-pricing` Sales pricing | form | not moved yet |
+| Sales | `/sales/settings/cfg-pricing` Sales pricing | form | yes (run 2.4) |
 | Sales | `/sales/settings/sequences`, `statuses`, `fields`, `terms` (slices) | list, shared | yes (all four) |
 | Warehouse | `/warehouse/settings/uom` Units of measure | list | yes |
 | Warehouse | `/warehouse/settings/categories` Item categories | list | yes |
 | Warehouse | `/warehouse/settings/locations` Locations & warehouses | list | yes |
 | Warehouse | `/warehouse/settings/sequences`, `fields` (slices) | list, shared | yes |
-| Production | `/production/settings/assembly` Assembly & production | form | not moved yet |
+| Production | `/production/settings/assembly` Assembly & production | form | yes (run 2.4) |
 | Production | `/production/settings/sequences`, `statuses` (slices) | list, shared | yes (both) |
 | Finance | `/finance/settings/cfg-taxset` Tax settings | form | yes |
 | Finance | `/finance/settings/tax-codes` Tax codes (slice) | list, shared | yes (no `module`: the slice and the shared list are the same rows) |

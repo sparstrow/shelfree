@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { SettingsSection } from '@/components/settings/SettingsSection'
 import type { SettingsGroup } from '@/components/settings/rows'
 import { useList } from '@/data/queries'
-import { useSettings, useUpdateSettings } from '@/data/queries/settings'
+import { useSettings, useUpdateTaxSettings } from '@/data/queries/settings'
 import {
   BRANCH_VALUE_OPTIONS,
   COMP_INTER_STATE_OPTIONS,
@@ -30,7 +30,7 @@ const choices = (list: readonly TaxOption[]) => list.map((o) => ({ value: o.valu
  */
 export function TaxSettingsSection({ readOnly = false }: { readOnly?: boolean } = {}) {
   const settings = useSettings()
-  const update = useUpdateSettings()
+  const update = useUpdateTaxSettings()
   const accounts = useList('accounts')
   const saved = settings.data?.tax
   const accountList = useMemo(() => accounts.data ?? [], [accounts.data])
@@ -143,8 +143,7 @@ export function TaxSettingsSection({ readOnly = false }: { readOnly?: boolean } 
       error={settings.error ?? accounts.error}
       onRetry={() => void Promise.all([settings.refetch(), accounts.refetch()])}
       onSave={(next) => {
-        if (!settings.data) return Promise.resolve()
-        return update.mutateAsync({ ...settings.data, tax: normalizeTaxSettings(next) })
+        return update.mutateAsync(normalizeTaxSettings(next))
       }}
       groups={groups}
       readOnly={readOnly}

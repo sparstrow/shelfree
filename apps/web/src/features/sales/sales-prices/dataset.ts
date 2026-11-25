@@ -16,11 +16,13 @@ import { EM_DASH, fmtDate, int, money } from '@/lib/format'
 export interface ListPriceDatasetOptions {
   items: readonly Item[]
   commit: (row: ListPriceRow, value: string) => Promise<string | void>
+  /** Leaf → parent category names from Settings ▸ Item categories; omit for the built-in tree. */
+  categoryParents?: Readonly<Record<string, string>>
 }
 
 /** Sales ▸ Sales Prices ▸ List prices tab — all items with inline-editable list prices. */
-export function listPriceDataset({ items, commit }: ListPriceDatasetOptions): Dataset<ListPriceRow> {
-  const categories = [...new Set(items.map((it) => itemCategoryParent(it.category)).filter(Boolean))].sort()
+export function listPriceDataset({ items, commit, categoryParents }: ListPriceDatasetOptions): Dataset<ListPriceRow> {
+  const categories = [...new Set(items.map((it) => itemCategoryParent(it.category, categoryParents)).filter(Boolean))].sort()
 
   const raw = (r: ListPriceRow, key: string): string | number => {
     switch (key) {

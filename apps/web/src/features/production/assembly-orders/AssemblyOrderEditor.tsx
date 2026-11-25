@@ -29,9 +29,11 @@ import {
 } from '@/components/ui/dialog'
 import { CommandError } from '@/data/api/commands'
 import { useFinishAssemblyOrder, useList, useUpsert } from '@/data/queries'
+import { useSettings } from '@/data/queries/settings'
 import type { AoStatus, AssemblyOrder, AssemblyOrderLine, Bom, Employee, Item, Warehouse } from '@/data/schemas'
 import {
   DEFAULT_PRODUCTION_SETTINGS,
+  type ProductionSettings,
   aoApplyItem,
   aoCancelOrder,
   aoEditable,
@@ -76,6 +78,8 @@ interface Loaded {
   boms: Bom[]
   warehouses: Warehouse[]
   employees: Employee[]
+  /** Settings ▸ Assembly & production. */
+  production: ProductionSettings
 }
 
 /** Production ▸ Assembly Orders ▸ document (`$no`, or `new`). */
@@ -85,8 +89,10 @@ export function AssemblyOrderEditor({ routeNo, initialItemNo }: { routeNo: strin
   const boms = useList('boms')
   const warehouses = useList('warehouses')
   const employees = useList('employees')
+  const settings = useSettings()
+  const production = settings.data?.production ?? DEFAULT_PRODUCTION_SETTINGS
 
-  const queries = [orders, items, boms, warehouses, employees]
+  const queries = [orders, items, boms, warehouses, employees, settings]
   const failed = queries.find((q) => q.isError)
   const loading = queries.some((q) => q.isLoading)
 
@@ -104,12 +110,12 @@ export function AssemblyOrderEditor({ routeNo, initialItemNo }: { routeNo: strin
     if (state.kind !== 'ready') return null
     if (!isNew) return saved ?? null
     const base = newAssemblyOrder(orders.data ?? [], todayLocal(), {
-      defaultLoc: DEFAULT_PRODUCTION_SETTINGS.outputLoc,
+      defaultLoc: production.outputLoc,
     })
     if (!initialItemNo) return base
     const foundItem = (items.data ?? []).find((it) => it.no === initialItemNo)
     return foundItem ? aoApplyItem(base, foundItem, boms.data ?? [], base.orderDate) : base
-  }, [state.kind, isNew, saved, orders.data, initialItemNo, items.data, boms.data])
+  }, [state.kind, isNew, saved, orders.data, initialItemNo, items.data, boms.data, production.outputLoc])
 
   if (state.kind !== 'ready') {
     return (
@@ -143,6 +149,7 @@ export function AssemblyOrderEditor({ routeNo, initialItemNo }: { routeNo: strin
     boms: boms.data ?? [],
     warehouses: warehouses.data ?? [],
     employees: employees.data ?? [],
+    production,
   }
 
   return <Editor key={routeNo} initial={initialDraft} isNew={isNew} data={data} />
@@ -322,7 +329,7 @@ function Editor({ initial, isNew, data }: { initial: AssemblyOrder; isNew: boole
   }, [draft, commit])
 
   const handleRelease = useCallback(async () => {
-    const res = aoReleaseOrder(draft, data.items, mainLocId, DEFAULT_PRODUCTION_SETTINGS)
+    const res = aoReleaseOrder(draft, data.items, mainLocId, data.production)
     if (!res.ok) {
       setError(res.error)
       return
@@ -332,7 +339,7 @@ function Editor({ initial, isNew, data }: { initial: AssemblyOrder; isNew: boole
       res.shortages.length > 0 ? 'Released with shortages' : 'Assembly order released',
       true,
     )
-  }, [draft, data.items, mainLocId, commit])
+  }, [draft, data.items, mainLocId, data.production, commit])
 
   const handleStart = useCallback(async () => {
     const res = aoStartOrder(draft)
@@ -774,7 +781,7 @@ function Editor({ initial, isNew, data }: { initial: AssemblyOrder; isNew: boole
         items={data.items}
         warehouses={data.warehouses}
         mainLocId={mainLocId}
-        manualConsumption={DEFAULT_PRODUCTION_SETTINGS.manualConsumption}
+        manualConsumption={data.production.manualConsumption}
         pending={busy}
         onSubmit={handleFinishSubmit}
       />

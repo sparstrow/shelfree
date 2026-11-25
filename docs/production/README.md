@@ -313,3 +313,14 @@ document editor (`/production/bills-of-materials/$no`, `new`) and the **Assembly
 - Covered by unit tests (`production.test.ts`, `bom-document.test.ts`, `assembly-order.test.ts`), schema seed validation
   (`seed.test.ts`), and Playwright specs (`production.spec.ts`, `bom-document.spec.ts`, `assembly-order-document.spec.ts`).
 
+## React app (2026-11-25) — Settings ▸ Assembly & production
+
+Ported: `/production/settings/assembly`. A `SettingsSection` form; view-only for a member without *Manage settings* for Production.
+
+- **Files:** `apps/web/src/features/settings/assembly-production/` — `AssemblyProductionSection.tsx`, `help.ts`. Store: `apps/web/src/data/api/settings.ts` (`production` block; `settingsApi.updateProduction`); hooks `apps/web/src/data/queries/sales-production-settings.ts` (`useProductionSettings`, `useUpdateProduction`). Domain: `apps/web/src/domain/assembly-order.ts` (`DEFAULT_PRODUCTION_SETTINGS`, `defaultScrapError`, `productionLocationError`).
+- **Rows:** *Defaults* — Finished goods arrive at (site), Default scrap allowance % (0–100, step 0.5), Work-in-progress location (site). *Behaviour* — Correct component quantities when finishing, Allow release with shortages, Allow consuming more than planned. Help text from `q.asm.*` / `qhReg('prod')`; the three default rows have short help of their own.
+- **One store:** `shelfree.v2.settings` -> `production: { outputLoc, wipLoc, manualConsumption, allowShortRelease, defaultScrap, allowOverConsume }`; defaults equal the former constants, so nothing changes until a value is edited. Readers: the `finishAssemblyOrder` command (`aoFinish` cfg, read from the store, never the caller), the assembly-order editor (new-order site, release rule, finish dialog's manual consumption) and the BOM component picker (a new line's scrap %).
+- **Deliberate changes:** the prototype shows *Work-in-progress location* only while the Production capability axis is on; the axis isn't ported (run 2.5), so the row is always shown. A scrap value outside 0–100 is an error on Save (the prototype clamped silently). Site pickers list sites that are not inactive plus the currently chosen one.
+- **Backend:** `GET/PUT /settings/production` (workspace scope); the Finish transaction and Release read it server-side; validate `defaultScrap` 0–100 and that both sites exist and belong to the tenant. Audit: `settings.production.updated` (before / after). Permission: Manage settings for Production (view: Production read).
+- **Not yet wired:** the work-in-progress location isn't read by anything in the React app yet (new BOMs still start at `WH-ASSY`); deleting a site these settings point at isn't blocked (G-019).
+- **Tests:** `domain/production-settings.test.ts`, `e2e/settings-sales-production.spec.ts`.

@@ -6,11 +6,11 @@ import { StatusPill } from '@/components/StatusPill'
 import { CellEditor } from '@/components/data-grid/CellEditor'
 import { Notice, fieldClass, primaryButton, secondaryButton } from '@/components/document/parts'
 import { useList, useRemove, useUpsert } from '@/data/queries'
+import { useSalesPricingSettings } from '@/data/queries/sales-production-settings'
 import type { Customer, CustomerPrice } from '@/data/schemas'
 import {
   type CustomerPriceEditableKey,
   type CustomerPriceRow,
-  DEFAULT_SALES_PRICING_SETTINGS,
   blankCustomerPrice,
   commitCustomerPriceCell,
   customerPriceStatus,
@@ -51,6 +51,7 @@ export function CustomerPricesTab({ customer }: CustomerPricesTabProps) {
   const savePrice = useUpsert('customerPrices')
   const removePrice = useRemove('customerPrices')
   const saveCustomer = useUpsert('customers')
+  const pricingSettings = useSalesPricingSettings()
 
   const today = useMemo(() => todayLocal(), [])
   const [draft, setDraft] = useState<CustomerPriceRow | null>(null)
@@ -87,7 +88,7 @@ export function CustomerPricesTab({ customer }: CustomerPricesTabProps) {
     [customerList, itemList],
   )
 
-  const eligible = isCustomerPricingEligible(customer, DEFAULT_SALES_PRICING_SETTINGS)
+  const eligible = isCustomerPricingEligible(customer, pricingSettings)
 
   // Esc closes the inline price draft before RecordPage treats it as "back to list".
   useEffect(() => {
@@ -249,7 +250,7 @@ export function CustomerPricesTab({ customer }: CustomerPricesTabProps) {
         </span>
         <StatusPill label={eligible ? 'On customer pricing' : 'List price'} tone={eligible ? 'ok' : 'neutral'} />
         <div className="min-w-3 flex-1" />
-        {DEFAULT_SALES_PRICING_SETTINGS.mode === 'selected' && (
+        {pricingSettings.mode === 'selected' && (
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium">
             <span>Own agreed prices</span>
             <button

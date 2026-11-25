@@ -388,3 +388,15 @@ export function aoFinish(params: {
 
   return { ok: true, order: nextOrder, updatedItems, completed }
 }
+
+// ── Settings ▸ Assembly & production ─────────────────────────────────────────
+
+/** Error for the default scrap allowance (a percentage from 0 to 100), or null. */
+export function defaultScrapError(value: number): string | null {
+  return Number.isFinite(value) && value >= 0 && value <= 100 ? null : 'Enter a percentage from 0 to 100.'
+}
+
+/** Error for a location pick (output / work-in-progress), or null. */
+export function productionLocationError(id: string, label: string): string | null {
+  return id.trim() ? null : `Choose ${label}.`
+}

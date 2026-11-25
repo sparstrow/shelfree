@@ -16,6 +16,10 @@ import { LocationsSection } from './locations/LocationsSection'
 import { LOCATIONS_HELP } from './locations/help'
 import { NumberSequencesSection } from './number-sequences/NumberSequencesSection'
 import { NUMBER_SEQUENCES_HELP } from './number-sequences/help'
+import { AssemblyProductionSection } from './assembly-production/AssemblyProductionSection'
+import { ASSEMBLY_PRODUCTION_HELP } from './assembly-production/help'
+import { SalesPricingSection } from './sales-pricing/SalesPricingSection'
+import { SALES_PRICING_HELP } from './sales-pricing/help'
 import { ShortcutsSection } from './shortcuts/ShortcutsSection'
 import { StatesSection } from './states/StatesSection'
 import { STATES_HELP } from './states/help'
@@ -45,6 +49,8 @@ export const SETTINGS_SECTIONS: Readonly<Record<string, SettingsSectionComponent
   'cfg-taxset': TaxSettingsSection,
   'tax-codes': TaxCodesSection,
   'cfg-states': StatesSection,
+  'cfg-pricing': SalesPricingSection,
+  assembly: AssemblyProductionSection,
 }
 
 /** Quiet-help maps keyed by section id, used by central Settings "Find a setting". */
@@ -61,4 +67,6 @@ export const SETTINGS_HELP_MAPS: Readonly<Record<string, HelpMap>> = {
   'cfg-taxset': TAX_SETTINGS_HELP,
   'tax-codes': TAX_CODES_HELP,
   'cfg-states': STATES_HELP,
+  'cfg-pricing': SALES_PRICING_HELP,
+  assembly: ASSEMBLY_PRODUCTION_HELP,
 }
