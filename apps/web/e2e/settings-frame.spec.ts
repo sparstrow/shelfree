@@ -105,7 +105,9 @@ test.describe('Settings frame — module areas, central search, shortcuts and re
     await expect(page.getByRole('heading', { name: 'Purchase Orders', level: 1 })).toBeVisible()
   })
 
-  test('a member sees Personal only in central Settings', async ({ page }) => {
+  // A member sees Personal and the modules they can read (view-only without Manage settings),
+  // never Workspace or the cross-module Shared lists.
+  test('a member sees Personal and their modules, not Workspace or Shared lists', async ({ page }) => {
     await page.goto('/settings/ws-profile')
     await page.getByRole('button', { name: 'Account menu', exact: true }).click()
     await page.getByRole('menuitem', { name: /Member/ }).click()
@@ -117,7 +119,7 @@ test.describe('Settings frame — module areas, central search, shortcuts and re
     await expect(nav.getByText('Personal', { exact: true })).toBeVisible()
     await expect(nav.getByRole('link', { name: 'Profile', exact: true })).toBeVisible()
     await expect(nav.getByText('Workspace', { exact: true })).toHaveCount(0)
-    await expect(nav.getByText('Modules', { exact: true })).toHaveCount(0)
+    await expect(nav.getByText('Modules', { exact: true })).toBeVisible()
     await expect(nav.getByText('Shared lists', { exact: true })).toHaveCount(0)
   })
 })

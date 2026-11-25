@@ -6,11 +6,13 @@ import { StatusPill } from '@/components/StatusPill'
 import { DocumentCard, DocumentPage, type DocumentState, TotalsCard } from '@/components/document/DocumentPage'
 import { Field, Notice, fieldClass, primaryButton, secondaryButton } from '@/components/document/parts'
 import { NotesBlock } from '@/components/notes/NotesBlock'
+import { CommandError } from '@/data/api/commands'
 import type { Settings } from '@/data/api/settings'
 import type { Employee, Item, PurchaseOrder, PurchasePrice, PurchaseReceipt, Vendor, Warehouse } from '@/data/schemas'
-import { useList, useUpsert } from '@/data/queries'
+import { useCreatePurchaseOrder, useList, useNumberSequences, useUpsert } from '@/data/queries'
 import { useSettings } from '@/data/queries/settings'
 import { vendorGstTag, vendorGstType, vendorGstTypeInfo } from '@/domain/gst'
+import { defaultSeriesFor, previewNext } from '@/domain/number-sequences'
 import { poEditable, poLockState, poNextNo, poOutstandingQty, poReceivable, poSubtotal } from '@/domain/purchase-order'
 import {
   canIssue,
@@ -52,6 +54,7 @@ export function PurchaseOrderEditor({ routeNo }: { routeNo: string }) {
   const prices = useList('purchasePrices')
   const receipts = useList('purchaseReceipts')
   const settings = useSettings()
+  const numberSequences = useNumberSequences()
   const queries = [orders, vendors, employees, items, warehouses, prices, receipts, settings]
 
   const isNew = routeNo === 'new'
@@ -77,14 +80,18 @@ export function PurchaseOrderEditor({ routeNo }: { routeNo: string }) {
     receipts: receipts.data ?? [],
     settings: settings.data as Settings,
   }
+  const defaultSeries = numberSequences.data ? defaultSeriesFor(numberSequences.data, 'purchase-order') : null
+  const previewNo = defaultSeries ? previewNext(defaultSeries) : poNextNo(data.orders)
   // Keyed so a different order always starts from a fresh draft.
-  return <Editor key={routeNo} routeNo={routeNo} data={data} />
+  return <Editor key={routeNo} routeNo={routeNo} previewNo={previewNo} data={data} />
 }
 
-function Editor({ routeNo, data }: { routeNo: string; data: Loaded }) {
+function Editor({ routeNo, previewNo, data }: { routeNo: string; previewNo: string; data: Loaded }) {
   const navigate = useNavigate()
   const save = useUpsert('purchaseOrders')
+  const create = useCreatePurchaseOrder()
   const isNew = routeNo === 'new'
+  const busy = save.isPending || create.isPending
   const today = todayLocal()
   const pricing = useMemo(() => ({ prices: data.prices, settings: data.settings }), [data.prices, data.settings])
 
@@ -93,13 +100,14 @@ function Editor({ routeNo, data }: { routeNo: string; data: Loaded }) {
   const [initial] = useState(() => {
     const stashed = draftStash.peek(routeNo)
     const saved = data.orders.find((po) => po.no === routeNo)
-    const base = stashed ?? (isNew ? newPurchaseOrder(poNextNo(data.orders), today) : structuredClone(saved as PurchaseOrder))
+    const base = stashed ?? (isNew ? newPurchaseOrder(previewNo, today) : structuredClone(saved as PurchaseOrder))
     const priced = repriceOrder(base, pricing)
     const repriced = stashed ? 0 : priced.lines.filter((l, i) => Number(l.unitCost) !== Number(base.lines[i].unitCost)).length
     return { draft: priced, repriced }
   })
   const [draft, setDraft] = useState<PurchaseOrder>(initial.draft)
   const [error, setError] = useState('')
+  const displayNo = isNew ? previewNo : draft.no
 
   useEffect(() => {
     draftStash.clear(routeNo)
@@ -153,14 +161,19 @@ function Editor({ routeNo, data }: { routeNo: string; data: Loaded }) {
     const v = data.vendors.find((x) => x.no === order.vendor)
     if (order.vendor && !order.taxCalc) order = stampTax(order, v, data.settings)
     if (v) order = { ...order, ...gstSnapshot(v) }
+    let saved: PurchaseOrder
     try {
-      await save.mutateAsync(order)
-    } catch {
-      setError('Could not save the purchase order. Check your connection and try again.')
+      saved = isNew ? await create.mutateAsync(order) : await save.mutateAsync(order)
+    } catch (e) {
+      setError(
+        e instanceof CommandError
+          ? e.message
+          : 'Could not save the purchase order. Check your connection and try again.',
+      )
       return
     }
-    toast(title, { description: `${order.no} · ${v?.name ?? order.vendor}` })
-    void navigate({ to: BACK_TO, search: { sel: order.no } })
+    toast(title, { description: `${saved.no} · ${v?.name ?? saved.vendor}` })
+    void navigate({ to: BACK_TO, search: { sel: saved.no } })
   }
 
   const guardPrices = (): boolean => {
@@ -203,7 +216,7 @@ function Editor({ routeNo, data }: { routeNo: string; data: Loaded }) {
     window.setTimeout(
       () =>
         toast('Purchase order kept open', {
-          description: draft.no + ' · not saved yet',
+          description: displayNo + ' · not saved yet',
           duration: 10_000,
           action: {
             label: 'Back to order',
@@ -223,7 +236,7 @@ function Editor({ routeNo, data }: { routeNo: string; data: Loaded }) {
       backTo={BACK_TO}
       header={{
         title: isNew ? 'New purchase order' : 'Edit purchase order',
-        no: draft.no,
+        no: displayNo,
         status: draft.status,
         subtitle: 'Goods-in document · receiving is recorded separately in Purchase Receipts.',
         backLabel: BACK_LABEL,
@@ -247,18 +260,18 @@ function Editor({ routeNo, data }: { routeNo: string; data: Loaded }) {
             Discard
           </button>
           {editable && (
-            <button type="button" onClick={saveDraft} disabled={save.isPending} className={cn(secondaryButton, 'font-semibold')}>
+            <button type="button" onClick={saveDraft} disabled={busy} className={cn(secondaryButton, 'font-semibold')}>
               {draft.status === 'Issued' ? 'Save, keep open' : 'Save draft'}
             </button>
           )}
           {draft.status === 'Draft' && (
-            <button type="button" onClick={issue} disabled={save.isPending} className={primaryButton}>
+            <button type="button" onClick={issue} disabled={busy} className={primaryButton}>
               <Check className="size-[14px]" strokeWidth={2.4} />
               Issue purchase order
             </button>
           )}
           {draft.status === 'Issued' && editable && (
-            <button type="button" onClick={lockOrder} disabled={save.isPending} className={primaryButton}>
+            <button type="button" onClick={lockOrder} disabled={busy} className={primaryButton}>
               <Lock className="size-[14px]" strokeWidth={2} />
               Save &amp; lock
             </button>
@@ -381,7 +394,7 @@ function Editor({ routeNo, data }: { routeNo: string; data: Loaded }) {
         <DocumentCard className="px-4 py-[14px]">
           <NotesBlock
             entityType="purchaseOrder"
-            entityNo={draft.no}
+            entityNo={displayNo}
             placeholder="Add a note to this order — delays, vendor calls, anything the next person needs."
           />
         </DocumentCard>

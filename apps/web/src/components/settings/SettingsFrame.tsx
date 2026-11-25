@@ -9,8 +9,8 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeft, ArrowRight, ChevronRight, Lock, Search, Settings2 } from 'lucide-react'
 import { type ComponentType, type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { TopBar } from '@/app/shell/TopBar'
-import { useUi } from '@/app/stores/ui'
 import type { HelpMap } from '@/components/help/types'
+import { canViewArea } from '@/domain/settings-permissions'
 import { isTypingTarget } from '@/lib/keyboard'
 import { useLatestCallback } from '@/lib/use-latest-callback'
 import { cn } from '@/lib/utils'
@@ -21,13 +21,18 @@ import {
   type SettingsAreaId,
   type SettingsModuleId,
   type SettingsSearchMatch,
+  findArea,
   findSection,
   firstSection,
   searchSettings,
   sectionPath,
 } from './registry'
+import { useSettingsAccess, useSettingsActor } from './use-settings-access'
 
-export type SettingsSectionComponent = ComponentType<{ module?: SettingsModuleId }>
+export type SettingsSectionComponent = ComponentType<{
+  module?: SettingsModuleId
+  readOnly?: boolean
+}>
 
 export interface SettingsFrameProps {
   /** Settings area (`workspace`, a module id, `shared`, or `personal`). */
@@ -107,7 +112,8 @@ function SectionLink({
 
 export function SettingsFrame({ area, sectionId, sections, helpMaps, highlightRow }: SettingsFrameProps) {
   const navigate = useNavigate()
-  const demoRole = useUi((s) => s.demoRole)
+  const { actor } = useSettingsActor()
+  const access = useSettingsAccess(area)
   const found = findSection(area, sectionId)
 
   const [query, setQuery] = useState('')
@@ -122,13 +128,12 @@ export function SettingsFrame({ area, sectionId, sections, helpMaps, highlightRo
   const areaObj = found?.area ?? null
   const section = found?.section ?? null
   const isModuleArea = areaObj?.kind === 'module'
-  // Workspace and cross-module shared lists are for owners and admins; a member sees Personal only.
-  // (UX only — the backend enforces it.)
-  const canWorkspace = demoRole !== 'member'
+  const canWorkspace = canViewArea(actor, 'workspace')
 
   const centralAreas = useMemo(
-    () => (canWorkspace ? SETTINGS_AREAS : SETTINGS_AREAS.filter((a) => a.kind === 'personal')),
-    [canWorkspace],
+    () =>
+      SETTINGS_AREAS.filter((a) => canViewArea(actor, a.kind, a.kind === 'module' ? a.id : undefined)),
+    [actor],
   )
   const workspaceArea = useMemo(() => centralAreas.find((a) => a.kind === 'workspace') ?? null, [centralAreas])
   const moduleAreas = useMemo(() => centralAreas.filter((a) => a.kind === 'module'), [centralAreas])
@@ -292,8 +297,13 @@ export function SettingsFrame({ area, sectionId, sections, helpMaps, highlightRo
 
   const Body = sections[section.id]
   const currentPath = sectionPath(areaObj, section)
-  const blockedWorkspace = !canWorkspace && (areaObj.kind === 'workspace' || areaObj.kind === 'shared')
+  const blockedAccess = !access.isLoading && !access.canView
+  const personalFallbackArea = personalArea ?? findArea('personal')
   const personalFirst = firstSection('personal')
+  const blockedText =
+    areaObj.kind === 'module'
+      ? `You don’t have access to ${areaObj.label} settings.`
+      : 'Workspace settings are for owners and admins.'
   // "Not moved yet" points at a section that is ported: one in this area, else Business profile
   // (or Profile for a member) — never back at the page you are on.
   const portedHere = areaObj.sections.find((s) => s.id !== section.id && sections[s.id])
@@ -301,8 +311,8 @@ export function SettingsFrame({ area, sectionId, sections, helpMaps, highlightRo
     ? { area: areaObj, section: portedHere }
     : canWorkspace && workspaceArea
       ? { area: workspaceArea, section: firstSection(workspaceArea) }
-      : personalArea
-        ? { area: personalArea, section: personalFirst }
+      : personalFallbackArea
+        ? { area: personalFallbackArea, section: personalFirst }
         : null
 
   const onMobileChange = (nextPath: string) => {
@@ -555,12 +565,12 @@ export function SettingsFrame({ area, sectionId, sections, helpMaps, highlightRo
             </select>
           </div>
 
-          {blockedWorkspace && personalArea ? (
+          {access.isLoading ? null : blockedAccess && personalFallbackArea ? (
             <FrameMessage
               icon={<Lock className="size-7" strokeWidth={1.6} />}
               title={section.label}
-              text="Workspace settings are for owners and admins."
-              area={personalArea}
+              text={blockedText}
+              area={personalFallbackArea}
               section={personalFirst}
               toLabel="Go to Personal settings"
             />
@@ -568,6 +578,7 @@ export function SettingsFrame({ area, sectionId, sections, helpMaps, highlightRo
             <Body
               key={`${areaObj.id}:${section.id}`}
               module={areaObj.kind === 'module' ? (areaObj.id as SettingsModuleId) : undefined}
+              readOnly={!access.canEdit}
             />
           ) : (
             <FrameMessage

@@ -42,7 +42,7 @@ export interface EditableDrawerProps<T> {
   formError?: string
   onChange: (key: keyof T & string, value: unknown) => void
   onClose: () => void
-  footer: ReactNode
+  footer?: ReactNode
   children?: ReactNode
   /** Extra content shown below fields and facts while editing or creating. */
   editChildren?: ReactNode
@@ -155,9 +155,11 @@ export function EditableDrawer<T>({
         {editing ? editChildren : children}
       </div>
 
-      <div className="border-t border-border px-3 py-[10px]">
-        <div className="flex gap-2">{footer}</div>
-      </div>
+      {footer && (
+        <div className="border-t border-border px-3 py-[10px]">
+          <div className="flex gap-2">{footer}</div>
+        </div>
+      )}
     </aside>
   )
 }

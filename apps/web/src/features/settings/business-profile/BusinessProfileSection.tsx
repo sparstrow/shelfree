@@ -74,7 +74,7 @@ const GROUPS: readonly SettingsGroup<Workspace>[] = [
 ]
 
 /** Settings ▸ Workspace ▸ Business profile (`/settings/ws-profile`). */
-export function BusinessProfileSection() {
+export function BusinessProfileSection({ readOnly }: { readOnly?: boolean } = {}) {
   const workspace = useWorkspace()
   const update = useUpdateWorkspace()
   return (
@@ -88,6 +88,7 @@ export function BusinessProfileSection() {
       onRetry={() => void workspace.refetch()}
       onSave={(next) => update.mutateAsync({ ...next, pan: next.pan.trim().toUpperCase() })}
       groups={GROUPS}
+      readOnly={readOnly}
     />
   )
 }

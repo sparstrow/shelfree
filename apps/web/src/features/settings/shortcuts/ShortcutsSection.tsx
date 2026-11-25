@@ -10,8 +10,8 @@ const PAGE_HELP: HelpEntry = {
   body: 'Every shortcut in the app, grouped by where it applies. Single-key shortcuts work when you are not typing in a field. Ctrl is Cmd on a Mac.',
 }
 
-/** Settings ▸ Workspace ▸ Keyboard shortcuts (`/settings/shortcuts`). */
-export function ShortcutsSection() {
+/** Settings ▸ Personal ▸ Keyboard shortcuts (`/settings/shortcuts`). */
+export function ShortcutsSection({ readOnly }: { readOnly?: boolean } = {}) {
   const [query, setQuery] = useState('')
   const searchRef = useRef<HTMLInputElement>(null)
   const groups = useMemo(() => filterShortcuts(SHORTCUT_GROUPS, query), [query])
@@ -28,7 +28,7 @@ export function ShortcutsSection() {
   }, [])
 
   return (
-    <SettingsPage title="Keyboard shortcuts" help={PAGE_HELP} count={total} width="wide">
+    <SettingsPage title="Keyboard shortcuts" help={PAGE_HELP} count={total} width="wide" readOnly={readOnly}>
       <label className="relative flex h-9 w-full max-w-[420px] items-center">
         <Search className="pointer-events-none absolute left-3 size-[14px] text-muted-foreground" strokeWidth={2} />
         <input
