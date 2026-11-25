@@ -34,7 +34,7 @@ import {
   setDefaultNumberSequence,
   updateItemUnits,
 } from '@/data/api/commands'
-import type { NumberSequence } from '@/data/schemas'
+import type { NumberSequence, PurchaseReceipt } from '@/data/schemas'
 
 type RecordOf<K extends CollectionName> = Awaited<ReturnType<Api[K]['list']>>[number]
 
@@ -113,7 +113,7 @@ export function useCreatePurchaseReceipt() {
 export function usePostPurchaseReceipt() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: postPurchaseReceipt,
+    mutationFn: ({ draft, isNew }: { draft: PurchaseReceipt; isNew?: boolean }) => postPurchaseReceipt(draft, { isNew }),
     onSuccess: () =>
       Promise.all(
         (['purchaseReceipts', 'purchaseOrders', 'items', 'numberSequences'] as const).map((name) =>

@@ -25,7 +25,7 @@ reviews, fixes, runs every check and opens the PR (auto-merge on).
 
 ## Phase 1
 
-### Task 1 — Settings registry (pure data + helpers)
+### Task 1 — Settings registry (pure data + helpers) ✅ done 2026-11-25
 - **New** `components/settings/registry.ts`: replaces `nav.ts`. Types:
   `SettingsArea = { id: 'workspace' | ModuleId | 'shared' | 'personal'; label; kind: 'workspace' | 'module' | 'shared' | 'personal'; sections: SectionDef[] }`,
   `SectionDef = { id; label; type: 'form' | 'list' | 'custom'; shared?: SharedListId; legacyIds?: string[] }`.
@@ -38,7 +38,7 @@ reviews, fixes, runs every check and opens the PR (auto-merge on).
   every shared list appears in ≥ 1 module and in `shared`; paths are unique; legacy ids resolve; search ranks.
 - Keep `nav.ts` exports working as thin re-exports until Task 3 removes the callers.
 
-### Task 2 — Routes and redirects
+### Task 2 — Routes and redirects ✅ done 2026-11-25
 - **New** `routes/$module/settings/index.tsx` (redirect to the area's first section) and
   `routes/$module/settings/$section.tsx` (`beforeLoad`: unknown module / section → `notFound`; module off →
   redirect to `/settings`). They must win over the fallback `routes/$module/$page.tsx` — verify with
@@ -49,7 +49,7 @@ reviews, fixes, runs every check and opens the PR (auto-merge on).
   behaviour (Business profile, or Profile for a member).
 - Saved favourites / recents that point at old settings URLs keep working through the redirect.
 
-### Task 3 — Frame and navigation
+### Task 3 — Frame and navigation ✅ done 2026-11-25
 - Rework `components/settings/SettingsFrame.tsx` → props `{ area, sectionId, sections }`.
   - **Central** (`/settings/...`): left list grouped Workspace · Modules (one collapsible entry per enabled
     module, expanding to its sections; links go to the module URLs) · Shared lists · Personal. Member role
@@ -63,14 +63,14 @@ reviews, fixes, runs every check and opens the PR (auto-merge on).
 - Unported sections keep the "not moved yet" state.
 - Hover / focus / motion per CLAUDE.md; quiet page (no descriptions inline).
 
-### Task 4 — Sidebar and account menu entries
+### Task 4 — Sidebar and account menu entries ✅ done 2026-11-25
 - `app/shell/Sidebar.tsx`: each module section ends with a **Settings** item (gear icon) linking to
   `/<module>/settings`, generated from the registry; active state when the path starts with it; collapsed
   rail shows it in the module flyout. Not in Favorites' "add page" list twice (it is a page like others).
 - Top-bar gear → central `/settings`. Account menu → "My settings" → `/settings/<first personal section>`.
 - Departments directory (`/departments`) lists module Settings pages too.
 
-### Task 5 — Permissions
+### Task 5 — Permissions ✅ done 2026-11-25
 - `userSchema`: add `settings: z.record(z.string(), z.boolean()).default({})`; seed from role presets
   (Owner / Admin: all true; Manager: their modules; Viewer: none).
 - **New** `domain/settings-permissions.ts` + tests: `canEditArea(user, role, area)` — workspace: owner /
@@ -81,13 +81,13 @@ reviews, fixes, runs every check and opens the PR (auto-merge on).
 - A `useSettingsAccess(area)` hook (in `components/settings/`) returning `{ canView, canEdit }` from the
   signed-in demo user (`useUi().demoRole` + current user record). UX only; backend enforces (doc it).
 
-### Task 6 — Read-only mode in the section types
+### Task 6 — Read-only mode in the section types ✅ done 2026-11-25
 - `SettingsSection` (form): `readOnly` → every row renders its view text in the same box (edit in place:
   nothing moves), no Save bar, Ctrl+S inert; a quiet state line "View only — ask an admin" under the title.
 - `SettingsPage` (custom): passes `readOnly` to its body via context.
 - The frame sets `readOnly` from `useSettingsAccess`.
 
-### Task 7 — ListPage embedded mode + Units of measure moved
+### Task 7 — ListPage embedded mode + Units of measure moved ✅ done 2026-11-25
 - `ListPage` gets optional `embedded?: boolean` (no `TopBar`, no page-level New button in the top bar — the
   grid toolbar shows New instead, height fits the settings pane, keys scoped to the pane) and
   `readOnly?: boolean` (hides New / Edit / Duplicate / Delete, drawer view-only). Other pages unchanged.
@@ -95,7 +95,7 @@ reviews, fixes, runs every check and opens the PR (auto-merge on).
   `editor` (same fields, validation and delete rules as today); register it under Warehouse ▸ Settings.
 - Business profile → Workspace, Keyboard shortcuts → Personal (registry only).
 
-### Task 8 — Number sequences data and rules (first shared list)
+### Task 8 — Number sequences data and rules (first shared list) ✅ done 2026-11-25
 - `numberSequenceSchema`: `{ id, docType, module, name, prefix, digits, suffix?, next, resets: 'never' | 'yearly-apr' | 'yearly-jan', isDefault, active, issued: number, scope?: { warehouseId?; gstin? } }`.
   `modules` derives from `docType` (PO / receipt → purchasing, SO / invoice → sales, item → warehouse,
   BOM / AO → production, employee → people); store `module` on the row.
@@ -106,7 +106,7 @@ reviews, fixes, runs every check and opens the PR (auto-merge on).
   docType, digits 1–10), `canDelete(series)` (`issued === 0`), `setDefault(all, id)`, `takeNext(series)`.
 - Commands: `saveSeries`, `deleteSeries` (refuses when issued), `setDefaultSeries`.
 
-### Task 9 — Number sequences section + numbering wired
+### Task 9 — Number sequences section + numbering wired ✅ done 2026-11-25
 - `features/settings/number-sequences/NumberSequencesSection.tsx`: `ListPage embedded`, grouped by
   document type (group-by on `docType`, from the grid template), columns Series · Format · Next number
   (preview, Geist Mono) · Resets · Status pill; drawer editor; `module` filter when opened in a module area
@@ -115,7 +115,7 @@ reviews, fixes, runs every check and opens the PR (auto-merge on).
   (`issueNumber(docType)` increments `next` and `issued` in the same transaction as the document save),
   replacing `poNextNo` / receipt numbering. Existing tests for numbering keep passing.
 
-### Task 10 — Shortcuts, docs, security
+### Task 10 — Shortcuts, docs, security ✅ done 2026-11-25
 - `src/app/shortcuts.ts`: Settings group updated (`[` `]`, `/` find, `?`, Ctrl+S, Esc) — the frame's keys
   as data in `components/settings/shortcut-meta.ts`.
 - `docs/settings/README.md` rewritten for the new structure (areas, URLs, section types, permissions,
@@ -124,7 +124,7 @@ reviews, fixes, runs every check and opens the PR (auto-merge on).
   `docs/number-sequences/README.md`; `docs/security/README.md` (settings write permission + audit event per save);
   migration plan status table; spec status → Shipped (Phase 1).
 
-### Task 11 — Browser tests
+### Task 11 — Browser tests ✅ done 2026-11-25
 - `e2e/settings-redesign.spec.ts`: sidebar Purchasing ▸ Settings opens `/purchasing/settings/...` with only
   Purchasing sections; central Settings lists all areas and Find a setting jumps to a row; `[` `]` move
   between sections; `/settings/uom` redirects to `/warehouse/settings/uom`; a Viewer sees Purchasing

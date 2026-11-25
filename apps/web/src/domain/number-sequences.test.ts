@@ -381,9 +381,18 @@ describe('number sequences commands', () => {
 
     const freshToPost = receiptDraftFromOrder(po9, await api.purchaseReceipts.list(), '2026-11-25')
     freshToPost.lines = freshToPost.lines.map((l, idx) => ({ ...l, qtyReceived: idx === 0 ? 1 : 0 }))
-    const postedPr = await postPurchaseReceipt(freshToPost)
+    const postedPr = await postPurchaseReceipt(freshToPost, { isNew: true })
     expect(postedPr.no).toBe('GRN00007')
     expect(postedPr.status).toBe('Posted')
+
+    // A new receipt whose preview number collides with a stored one (stale `next`) gets a fresh
+    // number instead of overwriting the stored receipt.
+    const stale = receiptDraftFromOrder(po9, await api.purchaseReceipts.list(), '2026-11-25')
+    stale.no = 'GRN00006'
+    stale.lines = stale.lines.map((l, idx) => ({ ...l, qtyReceived: idx === 0 ? 1 : 0 }))
+    const postedStale = await postPurchaseReceipt(stale, { isNew: true })
+    expect(postedStale.no).toBe('GRN00008')
+    expect((await api.purchaseReceipts.list()).find((r) => r.no === 'GRN00006')?.status).not.toBe('Posted')
 
     // Missing active default throws a helpful CommandError
     await api.numberSequences.remove('SEQ00001')

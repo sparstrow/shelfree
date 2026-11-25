@@ -230,3 +230,28 @@ pure register and unit-set helpers in `apps/web/src/domain/units-of-measure.ts` 
   `saveItemWithUnits` are ready to wire into `ItemCard` when it lands.
 
 **Delete guard (2026-11-18):** Settings ▸ Units of measure blocks deleting a unit used by any item — as its base (`items.uom`) or anywhere in its unit set (`itemUnits.list`); `countByUnit(items, sets)`. The backend enforces the same with a foreign key from `item_units.unit_code`.
+
+
+## Update 2026-11-25 — Units of measure moved into Warehouse settings
+
+**Settings ▸ Units of measure** now lives at **`/warehouse/settings/uom`** (area Warehouse, type list,
+`UnitsOfMeasureSection` in `features/settings/units-of-measure/`). The old `/settings/uom` redirects there
+(`replace`), so saved links, favourites and recents keep working. It is also listed in central Settings under
+Modules ▸ Warehouse. Spec: `docs/superpowers/specs/2026-11-24-settings-redesign.md`; frame and URLs:
+`docs/settings/README.md`.
+
+- **Template:** `ListPage embedded` inside `SettingsPage flush`, replacing the earlier custom table and the
+  `UnitDialog`. The grid has no top bar of its own (the frame breadcrumb is the title) and New sits in the
+  grid toolbar. Editing is the standard drawer `editor` (view and edit show the same rows, keys N / E /
+  Ctrl+S / Esc, delete with undo). Dataset: `units-of-measure/dataset.ts`; help map `help.ts`.
+- **Same rules as before:** default units are locked (GST reporting); custom units editable; the code is fixed
+  once any item uses the unit; a unit used by any item cannot be deleted (`countByUnit`,
+  `deleteBlockReason`); delete has undo; conversion factor and GST UQC validation unchanged
+  (`domain/units-of-measure.ts`).
+- **Permission:** module settings. Owner and admin edit; a member needs `perms.warehouse` of read or write to
+  see it and `settings.warehouse` to edit. Without the right the section is **read-only** (no New, Edit,
+  Delete; drawer in view mode). UX only: the backend enforces the same on `POST/PUT/DELETE /units-of-measure`.
+- **Find a setting:** the section registers its help map, so its columns and fields are searchable.
+- **Backend:** no change to the endpoints or entities above. Every create, edit and delete of a unit
+  definition emits an audit event (actor, unit, before/after), and the write permission is the Warehouse
+  Manage settings right, not a separate right.

@@ -19,6 +19,7 @@ import { LINE_GRID_SHORTCUTS } from '@/components/document/shortcut-meta'
 import { LIST_EDITOR_SHORTCUTS, LIST_PAGE_SHORTCUTS } from '@/components/list-page/shortcut-meta'
 import { RECORD_PAGE_SHORTCUTS } from '@/components/record-page/shortcut-meta'
 import { FAVORITES_VIEWS_SHORTCUTS } from '@/components/saved-views/shortcut-meta'
+import { SETTINGS_FRAME_SHORTCUTS } from '@/components/settings/shortcut-meta'
 import { PO_RECEIVE_SHORTCUT } from '@/features/purchasing/purchase-orders/shortcuts'
 import { PRICE_CHANGE_SHORTCUT, PRICE_TIER_SHORTCUT } from '@/features/purchasing/purchase-prices/shortcuts'
 import { type ShortcutEntry, shortcutEntry } from '@/lib/shortcuts'
@@ -111,21 +112,18 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
   group('settings-every-page', 'Settings — every page', [
     { combo: 'Hover a title, section or setting', desc: 'After a moment, shows what it does. Descriptions live only here — pages show names and controls.' },
     { combo: 'Tab to ⓘ, Enter', desc: 'Focus an ⓘ to read its details; Enter or Space keeps them open, with “Use default” where there is one.' },
-    { combo: 'Esc / click outside', desc: 'Close an open description.' },
-    { combo: '?', desc: 'Show or hide every description inline. Off by default; remembered per user.' },
-    { combo: 'Ctrl/Cmd + S', desc: 'Save the unsaved changes on a settings page.' },
-    { combo: 'Esc', desc: 'Discard the unsaved changes (an open description closes first).' },
+    ...SETTINGS_FRAME_SHORTCUTS,
     { combo: 'Space (on a switch)', desc: 'Turn the focused switch on or off.' },
   ]),
   group('settings-uom', 'Settings › Units of measure', [
-    { combo: 'N', desc: 'New unit.' },
-    { combo: '/', desc: 'Focus the unit search.' },
-    { combo: '↑ / ↓', desc: 'Move the highlighted unit.' },
-    { combo: 'E / Enter / double-click', desc: 'Edit the highlighted unit (default units are locked).' },
-    { combo: 'Delete', desc: 'Delete the highlighted unit — blocked for default units and units an item uses.' },
-    { combo: 'Right-click a row', desc: 'Edit or delete.' },
-    { combo: 'Ctrl/Cmd + Enter or Ctrl/Cmd + S', desc: 'In the unit form: save the unit.' },
-    { combo: 'Esc', desc: 'Close an open description first, then the form.' },
+    ...LIST_EDITOR_SHORTCUTS.map((s) => (s.combo === 'N' ? { ...s, desc: 'New unit — the drawer opens with sensible defaults already filled in.' } : s)),
+    { combo: 'Delete', desc: 'Delete the active unit — blocked for default units and units an item uses.' },
+    ...LIST_PAGE_SHORTCUTS,
+  ]),
+  group('settings-number-sequences', 'Settings › Number sequences', [
+    ...LIST_EDITOR_SHORTCUTS.map((s) => (s.combo === 'N' ? { ...s, desc: 'New series — starts on this module’s first document type, default only if that type has none.' } : s)),
+    { combo: 'Delete', desc: 'Delete the active series — blocked once numbers were issued from it.' },
+    ...LIST_PAGE_SHORTCUTS,
   ]),
   group('settings-shortcuts', 'Settings › Keyboard shortcuts', [
     { combo: '/', desc: 'Focus the search box.' },
