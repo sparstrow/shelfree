@@ -748,7 +748,9 @@ export function ListPage<T>({
         key={gridKey}
         dataset={dataset}
         rows={rows}
-        isLoading={isLoading}
+        // No rows yet and no error means still loading — a page that derives rows from several
+        // queries can see every flag false for a moment before its rows exist (never flash "No …").
+        isLoading={isLoading || (rows === undefined && !error)}
         error={error}
         onRefresh={onRefresh}
         activeId={activeId}

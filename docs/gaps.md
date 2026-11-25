@@ -77,6 +77,15 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
   stores `roundOffAcct`, but Chart of accounts doesn't count it as usage (the default 6190 is a system account, so
   it is safe). *Fix by:* add the setting to `accountDeleteBlocked` and the deactivate check in
   `domain/chart-of-accounts.ts`.
+### Lists (template)
+
+- **G-037 · Some settings lists flash "No …" for a moment before their rows** — on a cold load, Locations & warehouses
+  (and Payment terms in run 2.1) show the empty-state text for ~100 ms, then the rows. The collection never returns an
+  empty seeded list and `ListPage` now treats `rows === undefined` as loading (run 2.5 review), so the grid is being
+  handed an empty array briefly — most likely from the query layer (`listOptions` / a dependent query resolving before
+  its sources). Seen only on a cold, throttled (hidden) tab. *Fix by:* a pass on `data/queries` that reproduces it with
+  a test (render the section, assert the skeleton shows until rows exist).
+
 ### Testing
 
 - **G-012 · Some browser tests fail under full-suite load** — assembly-order-document, customer-profile,
