@@ -336,3 +336,23 @@ screen for a moment while the router moves on, and must not take the new page's 
 hands the view to the grid through a short-lived store, because grid state is local today; when grid state
 moves into the URL this becomes a `?view=` link. Ctrl/Cmd+1...9 may be taken by the browser's own tab
 switching in some browsers. The Views menu closes after Delete because an open menu blocks the toast's Undo.
+
+## React app — workspace configuration (2026-11-25, run 2.5b)
+- **URL:** `/settings/cfg-favorites` (Workspace, **custom** built on `SettingsSection`; the per-person part `me-favorites`
+  is run 2.6). Code: `apps/web/src/features/settings/favorites-views/` (`FavoritesViewsSection.tsx`, `help.ts`),
+  rules in `domain/favorites.ts` (`FavoritesConfig`, `favoritesCapError`, `VIEW_SHARE_ROLES`), readers in
+  `data/queries/workspace-config.ts`.
+- **Settings (workspace settings document, block `favoritesConfig`):** `enabled` (default on), `cap` (whole number 3–30,
+  default 10), `shareRole` (`admin | owner | any`, default `admin`).
+- **Applied:** off removes the sidebar *Favorites* section, every star (sidebar rows, Departments page, the Views
+  menu's pin actions), Ctrl/Cmd+D on a grid, Shift+S on Departments and Ctrl+1…9 — for everyone; nobody's pins or saved
+  views are deleted. The cap replaces the `DEFAULT_FAVORITES_CAP` constant in the sidebar. `shareRole` is stored and
+  shown but inert until shared views ship (as in the prototype).
+- **Parity:** the three prototype options with the same copy and help. **Deliberate:** the *Growth* badge is gone (tiers
+  parked); the cap is validated on Save (the prototype clamped silently); the cap row is locked text while the section
+  is off.
+- **Backend:** part of `GET /workspace/settings`; `PUT /workspace/settings/favorites` `{ enabled, cap, shareRole }`
+  (owner / admin; 3 ≤ cap ≤ 30). Saved views gain `scope` (`private | shared | system`) when sharing ships and
+  `shareRole` becomes the `views.publish` permission rule. **Audit:** `workspace.favorites_config_changed`.
+- **Shortcuts:** group *Settings › Favorites & views*. **Security gate:** configuration only. **Tests:**
+  `domain/favorites.test.ts`; `e2e/settings-workspace-b.spec.ts` (cap validation + persistence, section and stars removed).

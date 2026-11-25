@@ -5,13 +5,13 @@ import { ModuleIcon, PathIcon } from '@/app/icons'
 import {
   ICON_STAR,
   ICON_VIEW,
-  MODULES,
   type ModuleDef,
   type ModuleId,
   type PageDef,
   findModule,
   findPage,
 } from '@/app/nav'
+import { useNavModules } from '@/app/shell/use-nav-modules'
 import { useGridViews } from '@/app/stores/grid-views'
 import { type DemoRole, useUi } from '@/app/stores/ui'
 import { useFavoriteActions } from '@/components/saved-views/use-favorite-actions'
@@ -37,8 +37,9 @@ import { useList } from '@/data/queries'
 import { useLocationTerm } from '@/data/queries/regional-terminology'
 import { pageDisplayLabel } from '@/domain/terminology'
 import type { Favorite } from '@/data/schemas'
-import { DEFAULT_FAVORITES_CAP, capFavorites, overflowLabel } from '@/domain/favorites'
+import { capFavorites, overflowLabel } from '@/domain/favorites'
 import { useMe, useWorkspace } from '@/data/queries/session'
+import { useFavoritesConfig, useNavigationSettings } from '@/data/queries/workspace-config'
 import { isTypingTarget } from '@/lib/keyboard'
 import { cn } from '@/lib/utils'
 import { useActivePage } from './use-active-page'
@@ -172,6 +173,7 @@ function PageLink({
   active,
   badge,
   fav,
+  favEnabled,
   onToggleFav,
   onOpenInTab,
 }: {
@@ -180,6 +182,8 @@ function PageLink({
   active: boolean
   badge?: string
   fav: boolean
+  /** Settings ▸ Favorites & views: off removes every star (workspace-wide). */
+  favEnabled: boolean
   onToggleFav: () => void
   onOpenInTab: () => void
 }) {
@@ -208,6 +212,7 @@ function PageLink({
             {/* room for the star, which sits beside the link (not inside it) */}
             <span className="w-[15px] flex-none" />
           </Link>
+          {favEnabled && (
           <button
             type="button"
             onClick={onStar}
@@ -223,13 +228,16 @@ function PageLink({
           >
             <StarGlyph on={fav} />
           </button>
+          )}
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent className="min-w-[196px]">
         <ContextMenuLabel className="truncate text-[11px] font-semibold text-muted-foreground">{label}</ContextMenuLabel>
-        <ContextMenuItem className={ctxItem} onSelect={onToggleFav}>
-          {fav ? 'Remove from favorites' : 'Add to favorites'}
-        </ContextMenuItem>
+        {favEnabled && (
+          <ContextMenuItem className={ctxItem} onSelect={onToggleFav}>
+            {fav ? 'Remove from favorites' : 'Add to favorites'}
+          </ContextMenuItem>
+        )}
         <ContextMenuItem className={ctxItem} onSelect={onOpenInTab}>
           Open in new tab
         </ContextMenuItem>
@@ -245,12 +253,15 @@ function ModuleSettingsLink({
   module,
   active,
   fav,
+  favEnabled,
   onToggleFav,
   onOpenInTab,
 }: {
   module: ModuleDef
   active: boolean
   fav: boolean
+  /** Settings ▸ Favorites & views: off removes every star (workspace-wide). */
+  favEnabled: boolean
   onToggleFav: () => void
   onOpenInTab: () => void
 }) {
@@ -276,6 +287,7 @@ function ModuleSettingsLink({
             <span className="min-w-0 flex-1 truncate text-left">Settings</span>
             <span className="w-[15px] flex-none" />
           </Link>
+          {favEnabled && (
           <button
             type="button"
             onClick={onStar}
@@ -291,13 +303,16 @@ function ModuleSettingsLink({
           >
             <StarGlyph on={fav} />
           </button>
+          )}
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent className="min-w-[196px]">
         <ContextMenuLabel className="truncate text-[11px] font-semibold text-muted-foreground">{label}</ContextMenuLabel>
-        <ContextMenuItem className={ctxItem} onSelect={onToggleFav}>
-          {fav ? 'Remove from favorites' : 'Add to favorites'}
-        </ContextMenuItem>
+        {favEnabled && (
+          <ContextMenuItem className={ctxItem} onSelect={onToggleFav}>
+            {fav ? 'Remove from favorites' : 'Add to favorites'}
+          </ContextMenuItem>
+        )}
         <ContextMenuItem className={ctxItem} onSelect={onOpenInTab}>
           Open in new tab
         </ContextMenuItem>
@@ -361,6 +376,9 @@ export function Sidebar() {
   const badges = useNavBadges()
   const workspace = useWorkspace().data
   const me = useMe().data
+  const navModules = useNavModules()
+  const navSettings = useNavigationSettings()
+  const favConfig = useFavoritesConfig()
 
   const collapsed = useUi((s) => s.navCollapsed)
   const setCollapsed = useUi((s) => s.setNavCollapsed)
@@ -460,8 +478,8 @@ export function Sidebar() {
       active: isActivePage(hit.module.id, hit.page.slug),
     })
   }
-  const { shown: favRows, overflow: favOverflow } = capFavorites(allFavRows, DEFAULT_FAVORITES_CAP, showAll)
-  const flyoutModule = flyout ? MODULES.find((m) => m.id === flyout.id) : undefined
+  const { shown: favRows, overflow: favOverflow } = capFavorites(allFavRows, favConfig.cap, showAll)
+  const flyoutModule = flyout ? navModules.find((m) => m.id === flyout.id) : undefined
   const roleLabel = ROLES.find((r) => r.id === demoRole)?.label ?? ''
 
   const openPageInTab = (moduleId: string, slug: string) => {
@@ -473,7 +491,7 @@ export function Sidebar() {
   // Ctrl+Alt+F focuses the first favourite; Ctrl+1…9 opens the Nth.
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || isTypingTarget(e.target)) return
+      if (!favConfig.enabled || !(e.ctrlKey || e.metaKey) || e.shiftKey || isTypingTarget(e.target)) return
       if (e.altKey && e.key.toLowerCase() === 'f') {
         e.preventDefault()
         setCollapsed(false)
@@ -570,6 +588,8 @@ export function Sidebar() {
         aria-label="Main"
         className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-auto px-[10px] pt-[10px] pb-1.5 *:shrink-0"
       >
+        {navSettings.departments && (
+          <>
         <Link
           to="/departments"
           title={collapsed ? 'Departments' : undefined}
@@ -581,8 +601,12 @@ export function Sidebar() {
           <span className={textClass(collapsed)}>Departments</span>
         </Link>
         <div className="mx-1 mt-[7px] mb-[5px] h-px bg-border" />
+          </>
+        )}
 
-        {/* Favorites */}
+        {/* Favorites — Settings ▸ Favorites & views can switch the whole section off. */}
+        {favConfig.enabled && (
+          <>
         <button
           type="button"
           onClick={toggleFavOpen}
@@ -699,8 +723,10 @@ export function Sidebar() {
             </button>
           )}
         </Collapsible>
+          </>
+        )}
 
-        {MODULES.map((module) => {
+        {navModules.map((module) => {
           const moduleActive = module.id === activeModuleId
           const hasSettings = isSettingsModule(module.id)
           const expandable = module.pages.length > 1 || hasSettings
@@ -731,6 +757,7 @@ export function Sidebar() {
                     active={isActivePage(module.id, page.slug)}
                     badge={badges[module.id + '/' + page.slug]}
                     fav={!!favoriteActions.pageFavorite(module.id, page.slug)}
+                    favEnabled={favConfig.enabled}
                     onToggleFav={() => favoriteActions.togglePage(module.id, page.slug, page.label)}
                     onOpenInTab={() => openPageInTab(module.id, page.slug)}
                   />
@@ -740,6 +767,7 @@ export function Sidebar() {
                     module={module}
                     active={moduleSettingsId === module.id}
                     fav={!!favoriteActions.pageFavorite(module.id, 'settings')}
+                    favEnabled={favConfig.enabled}
                     onToggleFav={() => favoriteActions.togglePage(module.id, 'settings', `${module.name} Settings`)}
                     onOpenInTab={() => openPageInTab(module.id, 'settings')}
                   />

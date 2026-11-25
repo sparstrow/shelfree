@@ -60,6 +60,8 @@ export function buildDepartmentBlocks(
   modules: readonly ModuleDef[],
   query: string,
   builtPages: ReadonlySet<string> = BUILT_REACT_PAGES,
+  /** Settings ▸ Navigation: false hides the pages that are not built yet instead of tagging them Coming soon. */
+  showUnbuilt = true,
 ): DepartmentBlock[] {
   const q = query.trim().toLowerCase()
   const blocks: DepartmentBlock[] = []
@@ -69,6 +71,7 @@ export function buildDepartmentBlocks(
     for (const page of mod.pages) {
       if (q && !page.label.toLowerCase().includes(q) && !mod.name.toLowerCase().includes(q)) continue
       const key = `${mod.id}/${page.slug}`
+      if (!showUnbuilt && !builtPages.has(key)) continue
       entries.push({
         key,
         moduleId: mod.id,

@@ -40,13 +40,13 @@ the new app yet" inside the frame, with a link to a ported section.
 |---|---|---|---|
 | Workspace | `/settings/ws-profile` Business profile | form | yes |
 | Workspace | `/settings/ws-gst` GST registrations | list | yes (run 2.5a) |
-| Workspace | `/settings/ws-plan` Plan & billing | custom | not moved yet |
-| Workspace | `/settings/ws-modules` Modules & capabilities | custom | not moved yet |
+| Workspace | `/settings/ws-plan` Plan & billing | custom | yes (run 2.5b, `docs/plan-billing/`) |
+| Workspace | `/settings/ws-modules` Modules & capabilities | custom | yes (run 2.5b, `docs/modules-capabilities/`) |
 | Workspace | `/settings/ws-regional` Regional & format | form | yes (run 2.5a) |
-| Workspace | `/settings/ws-team` Team & roles | list | not moved yet |
+| Workspace | `/settings/ws-team` Team & roles | list | yes (run 2.5b, `docs/team-roles/`) |
 | Workspace | `/settings/terminology` Terminology | list | yes (run 2.5a) |
-| Workspace | `/settings/cfg-nav` Navigation | custom | not moved yet |
-| Workspace | `/settings/cfg-favorites` Favorites & views (workspace part) | custom | not moved yet |
+| Workspace | `/settings/cfg-nav` Navigation | custom | yes (run 2.5b, `docs/navigation/`) |
+| Workspace | `/settings/cfg-favorites` Favorites & views (workspace part) | custom | yes (run 2.5b, `docs/favorites-views/`) |
 | Workspace | `/settings/cfg-states` States & territories | list | yes (read-only reference list + Check a GSTIN) |
 | Purchasing | `/purchasing/settings/carrier-types` Carrier types | list | yes |
 | Purchasing | `/purchasing/settings/sequences` Number sequences (slice) | list, shared | yes |
@@ -116,7 +116,9 @@ passes none and shows a Module column.
 - Every module's sidebar section ends with **Settings** (gear). It can be favourited and opened in a new tab.
 - The top-bar gear opens `/settings`; the account menu "My settings" opens `/settings/me-profile`.
 - Departments (`/departments`) lists each module's Settings page.
-- People ▸ Users has a "Manage roles" link to `/settings/ws-team` (Team & roles is Workspace only).
+- People ▸ Users has a "Manage roles" link to `/settings/ws-team` (Team & roles is Workspace only; ported in run 2.5b).
+- **Module on / off (run 2.5b):** a module switched off in Modules & capabilities has no settings area — the central list,
+  `/<module>/settings/…` URLs (redirect to `/settings`) and the sidebar entry follow `areasForModules()` (G-001 closed).
 
 ### Legacy ids redirect
 

@@ -132,3 +132,14 @@ Stored under `shelfree.v2.users` and `shelfree.v2.employees` via the versioned q
     [`dataset.ts`](../../apps/web/src/features/people/employees/dataset.ts) at `/people/employees`
 - End-to-end tests: [`apps/web/e2e/people.spec.ts`](../../apps/web/e2e/people.spec.ts) and
   [`apps/web/e2e/users-manage-settings.spec.ts`](../../apps/web/e2e/users-manage-settings.spec.ts).
+
+## React app — roles come from Settings ▸ Team & roles (2026-11-25, run 2.5b)
+- A role's default module access is no longer only the built-in constant: Users reads the workspace's `roleDefs`
+  collection (`useList('roleDefs')`, seeded from `ROLE_PRESETS`). A new user, a changed role on a new user and
+  **Apply <role> defaults** use that definition; an existing user's own `perms` / `settings` never change when a role is
+  edited. Rules: `roleDefaultPerms(role, defs)`, `roleDefaultSettings(role, perms, defs)`, `blankUser(users, role, defs)`
+  in `domain/people.ts`.
+- The module-permission editor is the shared `features/people/users/PermissionsEditor.tsx` (used by the Users drawer and
+  by Team & roles), so both show the same rows.
+- **Manage roles** (top bar) opens `/settings/ws-team` — now ported; see [`docs/team-roles/README.md`](../team-roles/README.md).
+- **Backend:** `users.role` references the `roles` table; role defaults copy into the user's stored matrix at assignment.

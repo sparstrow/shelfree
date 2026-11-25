@@ -11,11 +11,6 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
 
 ### Settings
 
-- **G-001 · Module on/off is not applied to settings areas** — `components/settings/registry.ts`
-  `areasForModules()` exists but the frame and routes don't use it, so every module's settings area is
-  listed even when the module is switched off. The spec says an off module's area is hidden and its URLs
-  redirect to `/settings`. Left because Modules & capabilities wasn't ported yet. *Fix by:* Phase 2 run 2.5
-  (Workspace ▸ Modules & capabilities).
 - **G-002 · Find a setting can't highlight rows inside list sections** — only `SettingsRows` sets
   `data-setting-row`; a hit inside Units of measure or Number sequences opens the section but doesn't
   highlight a grid row (the watcher gives up after 3 s). *Fix by:* a Phase 2 run that touches `DataGrid`
@@ -23,9 +18,9 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
 - **G-003 · Finance ▸ Number sequences is always empty** — no document type belongs to Finance yet, so the
   section shows an empty, New-disabled list. *Fix by:* stage 2 (finance for purchase — vendor bills / payments
   add finance document types).
-- **G-005 · Links to settings that are not moved yet** — People ▸ Users "Manage roles" goes to
-  `/settings/ws-team`, and a member's `/settings` lands on `me-profile`; both show "not moved yet".
-  *Fix by:* Phase 2 runs 2.5 (Team & roles) and 2.6 (Personal).
+- **G-005 · Links to settings that are not moved yet** — a member’s `/settings` lands on `me-profile`, which still shows
+  "not moved yet" (the Team & roles half — People ▸ Users "Manage roles" → `/settings/ws-team` — was closed in run 2.5b).
+  *Fix by:* Phase 2 run 2.6 (Personal).
 
 ### Number sequences and numbering
 
@@ -109,11 +104,6 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
   (item usage rows, `itemCategoryParent(it.category)`) groups by the built-in tree, so a user-created group shows as
   its own root there. Sales prices were fixed under G-020; this is the remaining reader. *Fix by:* pass
   `categoryParentNames(cats)` into the UoM usage dataset (as `itemDataset` and the sales-price grid do).
-- **G-027 · Sales pricing's capability switch and Assembly's work-in-progress site have no owner yet** — the stored
-  `salesPricing.enabled` flag has no row (the prototype ties it to the *customer pricing* capability in Modules &
-  capabilities), and *Work-in-progress location* is always shown (the prototype hides it unless the Production
-  capability is on) and is not read by anything in the React app (new BOMs still start at `WH-ASSY`). *Fix by:* Phase 2
-  run 2.5 (Modules & capabilities), then read `production.wipLoc` in `newBom`.
 - **G-028 · Customer pricing switches save outside the section's Save / Discard** — on Settings ▸ Sales pricing the
   per-customer switches write `customer.pricingEligible` straight away, while the rule above them is a draft until
   Save. Flipping a switch and then discarding the rule leaves the switch changed. *Fix by:* backend (a bulk
@@ -121,41 +111,69 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
 
 ### Settings ▸ Workspace part A (run 2.5a)
 
-- **G-030 · Regional & format isn't applied to the app's display** — currency, number format, date format, time zone and week
+- **G-029 · Regional & format isn't applied to the app's display** — currency, number format, date format, time zone and week
   start are saved (`settings.regional`), but `money()`, `int()` and `fmtDate()` in `src/lib/format.ts` still print en-IN, ₹ and
   `Jul 12, 2026`; `todayLocal()` uses the browser's zone. The prototype's default date format (`DD/MM/YYYY`) is not the app's
   current output, so wiring would change every date on screen. Pure formatters (`formatMoneyAs`, `formatNumberAs`,
   `formatDateAs`) exist and are tested. *Fix by:* a task that decides the visible default, reads the block through one
   provider in `lib/format.ts` and re-renders on change; `docs/regional/README.md`.
-- **G-031 · Most terminology renames aren't read by screens** — only the Location wording (Locations section, Stock by Location
+- **G-030 · Most terminology renames aren't read by screens** — only the Location wording (Locations section, Stock by Location
   page, item card and Items drawer headings) reads `terms`. Modules, the other records, Favorites and field labels have rows in
   Settings ▸ Terminology but the UI keeps its fixed wording; the *Lot/Batch* row stays hidden until Modules & capabilities
   provides the capability flag. *Fix by:* each page as it touches its labels (use `useTerm` / `recordTerm`); Phase 2 run 2.5b
   for module names and Favorites; `docs/terminology/README.md`.
-- **G-032 · GST registrations: card extras not ported** — the per-location rows on a registration (open location, mark as
+- **G-031 · GST registrations: card extras not ported** — the per-location rows on a registration (open location, mark as
   declared, make principal), the "Add a registration in another state" tile and the Business profile PAN warning reading *all*
   registrations; Locations has no *Add registration* button or GSTIN chip (the drawer shows the registration and a warning
   only). The link is derived by state, not stored (`locations.registrationId` of the prototype's later model).
   *Fix by:* the run that adds the Structure Designer / site wizard (G-016), or a polish pass.
-- **G-033 · Settings navigation and Find a setting still say "Locations & warehouses"** — the registry label is static, so after
+- **G-032 · Settings navigation and Find a setting still say "Locations & warehouses"** — the registry label is static, so after
   a Location → Store rename the nav entry, breadcrumb and search hit keep the old name while the section's own title reads the
   term. *Fix by:* let `SettingsFrame` pass section labels through `useTerm` (registry label → term key) when Navigation (run 2.5b)
   settles the nav model.
-- **G-034 · The workspace record still carries the regional fields** — `workspaceSchema` (`data/api/session.ts`) has `currency,
+- **G-033 · The workspace record still carries the regional fields** — `workspaceSchema` (`data/api/session.ts`) has `currency,
   timezone, dateFmt, numFmt, fiscalStart, weekStart` which nothing reads now that Regional & format owns them in
   `settings.regional`. *Fix by:* drop them from `workspaceSchema` when the backend splits workspace identity from settings.
+
+### Workspace settings, part B (run 2.5b)
+
+- **G-034 · Ten capabilities are switches nothing reads** — Settings ▸ Modules & capabilities stores all twelve scale
+  capabilities, but only *Production orders & routing* (Production Orders page, BOM kind, WIP row) and *Customer-specific
+  pricing* (`salesPricing.enabled`) have a reader in the React app. Multiple warehouses, zones, lot / batch, expiry,
+  barcodes, serial numbers, advanced reporting, purchase approvals, multi-currency and integrations are saved only (their
+  help says so). *Fix by:* each feature as it ships (item card tracking rows, locations, approvals…);
+  `docs/modules-capabilities/README.md`.
+- **G-035 · Roles are fixed to the seven built-in names** — Team & roles edits a role’s default access and description, but
+  cannot add or delete roles: People ▸ Users, its filters and `validateUser` use the fixed `USER_ROLES`, and the prototype
+  made *New role* a Growth feature. Editing a role never rewrites people who already hold it. *Fix by:* when custom roles
+  are wanted: store role names in `roleDefs` only, make the Users role picker and filters read them, and add a "re-apply to
+  everyone" action; `docs/team-roles/README.md`.
+- **G-036 · A module that is off still opens by direct link** — switching a module off hides it from the sidebar, Departments,
+  search and Settings and redirects its settings URLs, but `/<module>/<page>` URLs (and favourites / saved views pointing
+  there) still open. The data is meant to stay reachable. *Fix by:* decide with the backend whether an off module should
+  404 its pages; if yes, a `beforeLoad` check on `$module/$page` using `isModuleEnabledNow`.
 
 ## Closed
 
 - **G-017 · Locations didn't read GST registrations** (closed 2026-11-25, run 2.5a) — `validateLocation` refuses *Active* (and moving an
   Active site to another state) while the state has no active Normal registration; the Locations list and drawer show the
-  registration the site files under (`registrationForSite`, derived by state). Extras left over are G-032.
+  registration the site files under (`registrationForSite`, derived by state). Extras left over are G-031.
 - **G-018 · Location terminology was fixed to "Locations"** (closed 2026-11-25, run 2.5a) — Terminology is ported; the Locations
   section, its grid / drawer nouns, the Warehouse sidebar page, the item card and Items drawer headings read `object.location`
-  (`useLocationTerm`). The settings navigation still uses the registry label (G-033).
+  (`useLocationTerm`). The settings navigation still uses the registry label (G-032).
 - **G-025 · The GSTIN check compared against the workspace address state** (closed 2026-11-25, run 2.5a) — it reads the GST
   registrations (same state as one of them is CGST + SGST, otherwise IGST against the primary); States & territories also has
   the *Registered* badge, *Locations* column and the *Registered* view.
+- **G-001 · Module on/off is not applied to settings areas** (closed 2026-11-25, run 2.5b) — Settings ▸ Modules & capabilities stores
+  the module switches; the frame lists `areasForModules(enabled)`, `/<module>/settings` and `/<module>/settings/<section>`
+  redirect to `/settings` when the module is off, and the sidebar, Departments and page search follow
+  (`e2e/settings-workspace-b.spec.ts`).
+- **G-027 · Sales pricing’s capability switch and Assembly’s work-in-progress site had no owner** (closed 2026-11-25, run 2.5b) — the
+  *Customer-specific pricing* capability in Modules & capabilities IS `salesPricing.enabled` (one source, block-level save);
+  *Work-in-progress location* shows only while *Production orders & routing* is on (as in the prototype) and new BOMs start at
+  `production.wipLoc` instead of the hard-coded `WH-ASSY`.
+- **G-005 (Team & roles half) · People ▸ Users "Manage roles" pointed at an unported page** (closed 2026-11-25, run 2.5b) —
+  `/settings/ws-team` is ported; the Personal half stays open.
 - **G-004 · Form sections' read-only mode is untested in the UI** (closed 2026-11-25, runs 2.3 and 2.4) — Tax settings, Sales pricing and Assembly & production are module
   form sections; `e2e/settings-finance.spec.ts` and `e2e/settings-sales-production.spec.ts` switch to the Member (Kavitha: reads Finance, Sales and Production, no Manage settings right)
   and check the values show as text in the same rows with the "View only" line, no inputs and no Save bar.

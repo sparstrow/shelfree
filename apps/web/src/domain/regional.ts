@@ -3,7 +3,7 @@
  * format, time zone, financial year and week start. Pure rules and formatters; the backend
  * stores the same values. See docs/regional/README.md.
  *
- * The app's own display helpers (`lib/format.ts`) don't read these yet (gap G-030); the
+ * The app's own display helpers (`lib/format.ts`) don't read these yet (gap G-029); the
  * formatters here are the pure versions they will call, and `fiscalYearLabel` already feeds
  * the GST invoice-number preview.
  */

@@ -15,6 +15,8 @@ import {
 import { NotesBlock } from '@/components/notes/NotesBlock'
 import { useList, useUpsert } from '@/data/queries'
 import { useMe } from '@/data/queries/session'
+import { useSettings } from '@/data/queries/settings'
+import { useCapability } from '@/data/queries/workspace-config'
 import type { Bom, BomKind, BomStatus, Employee, Item, Warehouse } from '@/data/schemas'
 import {
   type BomEditableField,
@@ -52,13 +54,15 @@ interface Loaded {
   warehouses: Warehouse[]
   employees: Employee[]
   meName: string
+  /** The configured work-in-progress site (Settings ▸ Assembly & production). */
+  wipLoc: string
 }
 
 /** Production ▸ Bills of Materials ▸ document. `routeNo` is a BOM number or `new`. */
 export function BomEditor({
   routeNo,
   parentItem,
-  showProductionAxis = false,
+  showProductionAxis: showProductionAxisProp,
 }: {
   routeNo: string
   parentItem?: string
@@ -69,7 +73,11 @@ export function BomEditor({
   const warehouses = useList('warehouses')
   const employees = useList('employees')
   const me = useMe()
-  const queries = [boms, items, warehouses, employees, me]
+  const settings = useSettings()
+  const queries = [boms, items, warehouses, employees, me, settings]
+  // Production orders & routing (Settings ▸ Modules & capabilities) shows the BOM kind; a caller may force it.
+  const productionCapability = useCapability('production')
+  const showProductionAxis = showProductionAxisProp ?? productionCapability
 
   const isNew = routeNo === 'new'
   const allBoms = useMemo(() => boms.data ?? [], [boms.data])
@@ -107,6 +115,7 @@ export function BomEditor({
     warehouses: warehouses.data ?? [],
     employees: employees.data ?? [],
     meName: me.data?.name ?? '',
+    wipLoc: settings.data?.production.wipLoc ?? 'WH-ASSY',
   }
 
   return (
@@ -145,7 +154,8 @@ function Editor({
     return newBom(bomNextNo(data.boms), today, {
       parentItem,
       items: data.items,
-      wipLocation: 'WH-ASSY',
+      // Settings ▸ Assembly & production ▸ Work-in-progress location (G-027).
+      wipLocation: data.wipLoc,
       createdBy: myEmpId,
     })
   })

@@ -677,6 +677,7 @@ export function DataGrid<T>({
     const key = e.key.toLowerCase()
     if (key !== 's' && key !== 'd') return
     if (readOnly && key === 's') return
+    if (key === 'd' && !favoriteActions.enabled) return // Favorites switched off for the workspace
     if (embedded && !inEmbeddedScope(e.target, innerSectionRef.current)) return
     if (isTypingTarget(e.target) || document.querySelector('[role="alertdialog"]')) return
     e.preventDefault()
@@ -1477,6 +1478,7 @@ export function DataGrid<T>({
             dirty={dirty}
             saveSignal={saveSignal}
             isFavorite={(view) => !!favoriteActions.viewFavorite(view.id)}
+            pinsEnabled={favoriteActions.enabled}
             onApplyBuiltIn={applyView}
             onApplySaved={applySaved}
             onSaveAs={saveAs}

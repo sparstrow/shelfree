@@ -281,7 +281,7 @@ ungated, on by default (multi-state or 3PL sites would likely be Growth).
   stock, open documents) with views All / Active / each type; drawer fields name, code, type, status, country,
   state (GST state dropdown for India, free-text region elsewhere), address, city, PIN, area, GST certificate
   status (India only), site manager (employee), 3PL operator vendor (3PL only); the rules below.
-- **Not ported (G-016, G-032):** the Structure Designer (floors, zones, aisles, bins, 2D/3D) and the 4-step
+- **Not ported (G-016, G-031):** the Structure Designer (floors, zones, aisles, bins, 2D/3D) and the 4-step
   creation wizard, and the registration extras — *Add registration* from the drawer, the GSTIN chip, *Mark as declared*
   (the *Active needs a registration* rule and the registration line were ported in run 2.5a, see the update below). Creation is the plain
   drawer; sites carry no floors or layouts yet.
@@ -340,4 +340,4 @@ fixed code, blocked delete, last active location, help, member read-only).
 - **G-018 — terminology.** The section title (`<plural> & warehouses`), the grid and drawer nouns (*New store*, *Store TVM-MAIN*,
   "No stores match"), the Warehouse sidebar page *Stock by Location*, the item card's *Stock by location* card and the Items
   drawer's *STOCK BY LOCATION* heading read the workspace's `object.location` wording (`useLocationTerm()`); unchanged
-  by default. Settings navigation, breadcrumb and Find a setting still use the registry label (G-033).
+  by default. Settings navigation, breadcrumb and Find a setting still use the registry label (G-032).

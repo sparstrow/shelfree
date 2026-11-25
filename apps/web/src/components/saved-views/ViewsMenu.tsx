@@ -48,6 +48,8 @@ export interface ViewsMenuProps {
   onDelete: (view: SavedView) => void
   /** Pin a built-in view (makes a private copy that the favourite points at). */
   onPinBuiltIn: (view: GridView) => void
+  /** Settings ▸ Favorites & views off: no pin / star actions (default on). */
+  pinsEnabled?: boolean
   /** Optional controlled open state (used by DataGrid to coordinate popovers and side panels). */
   open?: boolean
   onOpenChange?: (open: boolean) => void
@@ -223,14 +225,16 @@ export function ViewsMenu(p: ViewsMenuProps) {
               <span className="min-w-0 flex-1 truncate">{view.name}</span>
               {view.id === p.activeId && <Check className="size-[13px] flex-none text-primary" strokeWidth={2.6} />}
             </DropdownMenuItem>
-            <RowAction
-              label="Pin to favorites"
-              title="Pin to favorites"
-              className={quiet}
-              onRun={() => p.onPinBuiltIn(view)}
-            >
-              <Star className="size-3" strokeWidth={2} />
-            </RowAction>
+            {p.pinsEnabled !== false && (
+              <RowAction
+                label="Pin to favorites"
+                title="Pin to favorites"
+                className={quiet}
+                onRun={() => p.onPinBuiltIn(view)}
+              >
+                <Star className="size-3" strokeWidth={2} />
+              </RowAction>
+            )}
           </div>
         ))}
 
@@ -268,6 +272,7 @@ export function ViewsMenu(p: ViewsMenuProps) {
               >
                 <Check className="size-3" strokeWidth={2.4} />
               </RowAction>
+              {p.pinsEnabled !== false && (
               <RowAction
                 label={fav ? 'Unpin from favorites' : 'Pin to favorites'}
                 title={fav ? 'Unpin from favorites' : 'Pin to favorites'}
@@ -277,6 +282,7 @@ export function ViewsMenu(p: ViewsMenuProps) {
               >
                 <Star className="size-3" strokeWidth={fav ? 1.4 : 2} fill={fav ? 'currentColor' : 'none'} />
               </RowAction>
+              )}
               <RowAction
                 label="Rename"
                 title="Rename view"

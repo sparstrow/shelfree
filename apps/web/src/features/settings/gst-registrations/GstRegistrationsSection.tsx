@@ -61,7 +61,7 @@ type Pending = { kind: 'cancel'; row: GstRegistrationRow } | null
  *
  * Parity note: the prototype drew a card per registration with a per-location row list (mark as
  * declared, make principal); here the registration is a list row and the location facts live in
- * Locations & warehouses (gap G-032).
+ * Locations & warehouses (gap G-031).
  */
 export function GstRegistrationsSection({ readOnly = false }: { readOnly?: boolean } = {}) {
   const regs = useList('gstRegistrations')

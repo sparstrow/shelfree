@@ -124,11 +124,6 @@ export interface ListEditor<T> {
   view: (record: T) => EditorView
   /** A new, empty record. */
   blank: (rows: readonly T[]) => T
-  /**
-   * The rows are a fixed set the app defines (e.g. Terminology's renamable labels): they can be
-   * edited but not created — no New button, no N key. Omit for ordinary lists.
-   */
-  fixedRows?: boolean
   /** A copy of `row` as a new record (omit to hide Duplicate). */
   duplicate?: (row: T, rows: readonly T[]) => T
   /** Dependent-field adjustments after a change (e.g. clear an account when direction changes). */
@@ -204,6 +199,11 @@ export interface ListPageProps<T> {
   preview?: (row: T) => ListPreview
   /** Edit records in the drawer instead of a read-only preview. */
   editor?: ListEditor<T>
+  /**
+   * A fixed list: its rows can be edited but not added (no New button, no `N` key). For lists the app
+   * defines, like the built-in roles in Settings ▸ Team & roles.
+   */
+  noCreate?: boolean
 
   /** Row whose preview is open on arrival (`?sel=` deep links). */
   initialActiveId?: string | null
@@ -272,6 +272,7 @@ export function ListPage<T>({
   shortcuts = [],
   preview,
   editor,
+  noCreate = false,
   initialActiveId = null,
   initialDraft,
   topBarExtra,
@@ -436,7 +437,7 @@ export function ListPage<T>({
 
   // ── editor (reference lists) ────────────────────────────────────────────────
   const startNew = (draft?: T) => {
-    if (readOnly || !editor || editor.fixedRows) return
+    if (readOnly || !editor || noCreate) return
     setActiveId(null)
     setEditing({ mode: 'new', draft: draft ?? editor.blank(rows ?? []), orig: null, errors: {}, formError: '' })
   }
@@ -507,7 +508,7 @@ export function ListPage<T>({
       if (isTypingTarget(e.target) || e.metaKey || e.ctrlKey || e.altKey || document.querySelector(OPEN_LAYER)) return
       if (embedded && !inEmbeddedScope(e.target, hostRef.current)) return
       const key = e.key.toLowerCase()
-      if (editor && !editor.fixedRows && key === 'n') {
+      if (editor && !noCreate && key === 'n') {
         e.preventDefault()
         startNew()
       } else if (editor && key === 'e' && active) {
@@ -726,7 +727,7 @@ export function ListPage<T>({
     )
   }
 
-  const newAction = readOnly || editor?.fixedRows
+  const newAction = readOnly || noCreate
     ? undefined
     : effectiveCreate ?? (editor ? { label: `New ${noun}`, run: () => startNew() } : undefined)
 

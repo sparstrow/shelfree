@@ -16,6 +16,9 @@ import { DEFAULT_PRODUCTION_SETTINGS } from '@/domain/assembly-order'
 import { REGIONAL_DEFAULTS, type RegionalSettings, normalizeRegional } from '@/domain/regional'
 import { type TermMap, applyTermPatch, knownTermKeys } from '@/domain/terminology'
 import { CUSTOMER_PRICING_MODES, DEFAULT_SALES_PRICING_SETTINGS } from '@/domain/sales-prices'
+import { DEFAULT_FAVORITES_CONFIG, FAVORITES_CAP_MAX, FAVORITES_CAP_MIN, VIEW_SHARE_ROLES } from '@/domain/favorites'
+import { DEFAULT_CAPABILITIES, DEFAULT_MODULES, normalizeModules } from '@/domain/modules-capabilities'
+import { DEFAULT_NAVIGATION_SETTINGS } from '@/domain/navigation-settings'
 
 // Run 2.4 block (Sales pricing, Assembly & production) — kept apart from the other sections.
 /** Who may have their own customer price, and what a sales line does without one. */
@@ -53,6 +56,23 @@ export const regionalSchema = z.object({
 })
 /** Renamed labels: key → text (see `domain/terminology`). Only keys with text are stored. */
 export const termsSchema = z.record(z.string(), z.string())
+// Run 2.5b block (Modules & capabilities, Navigation, Favorites & views).
+/** Module on / off (missing = on). Home and Warehouse are always on. */
+export const modulesSchema = z.record(z.string(), z.boolean())
+/** Scale capabilities on / off. Customer pricing is not here: its switch is `salesPricing.enabled`. */
+export const capabilitiesSchema = z.record(z.string(), z.boolean())
+export const navigationSchema = z.object({
+  departments: z.boolean(),
+  jumpBackIn: z.boolean(),
+  showUnbuilt: z.boolean(),
+})
+export type NavigationConfig = z.infer<typeof navigationSchema>
+export const favoritesConfigSchema = z.object({
+  enabled: z.boolean(),
+  cap: z.number().int().min(FAVORITES_CAP_MIN).max(FAVORITES_CAP_MAX),
+  shareRole: z.enum(VIEW_SHARE_ROLES),
+})
+export type FavoritesConfigBlock = z.infer<typeof favoritesConfigSchema>
 
 export const settingsSchema = z.object({
   purchasing: z.object({
@@ -89,6 +109,11 @@ export const settingsSchema = z.object({
   // Run 2.5a block — Settings ▸ Regional & format and Settings ▸ Terminology.
   regional: regionalSchema,
   terms: termsSchema,
+  // Run 2.5b block — Settings ▸ Modules & capabilities, Navigation, Favorites & views.
+  modules: modulesSchema,
+  capabilities: capabilitiesSchema,
+  navigation: navigationSchema,
+  favoritesConfig: favoritesConfigSchema,
 })
 export type Settings = z.infer<typeof settingsSchema>
 
@@ -99,6 +124,10 @@ export const DEFAULT_SETTINGS: Settings = {
   production: { ...DEFAULT_PRODUCTION_SETTINGS },
   regional: { ...REGIONAL_DEFAULTS },
   terms: {},
+  modules: { ...DEFAULT_MODULES },
+  capabilities: { ...DEFAULT_CAPABILITIES },
+  navigation: { ...DEFAULT_NAVIGATION_SETTINGS },
+  favoritesConfig: { ...DEFAULT_FAVORITES_CONFIG },
 }
 
 const KEY = 'shelfree.v2.settings'
@@ -127,6 +156,10 @@ function read(): Settings {
         production: { ...DEFAULT_SETTINGS.production, ...stored.production },
         regional: normalizeRegional({ ...DEFAULT_SETTINGS.regional, ...stored.regional }),
         terms: readTerms(stored.terms),
+        modules: { ...DEFAULT_SETTINGS.modules, ...stored.modules },
+        capabilities: { ...DEFAULT_SETTINGS.capabilities, ...stored.capabilities },
+        navigation: { ...DEFAULT_SETTINGS.navigation, ...stored.navigation },
+        favoritesConfig: { ...DEFAULT_SETTINGS.favoritesConfig, ...stored.favoritesConfig },
       })
     }
   } catch {
@@ -158,5 +191,26 @@ export const settingsApi = {
   patchTerms: (patch: Readonly<Record<string, string | null>>): Promise<Settings> =>
     settingsApi.update({ ...read(), terms: applyTermPatch(read().terms as TermMap, patch) }),
   resetTerms: (): Promise<Settings> => settingsApi.update({ ...read(), terms: {} }),
+  /**
+   * Save modules, capabilities and the customer-pricing switch together (one block-level save): the
+   * switch lives in `salesPricing.enabled`, so there is one source and a stale tab cannot split them.
+   */
+  updateModulesCapabilities: (next: {
+    modules: Record<string, boolean>
+    capabilities: Record<string, boolean>
+    customerPricing: boolean
+  }): Promise<Settings> => {
+    const cur = read()
+    return settingsApi.update({
+      ...cur,
+      modules: modulesSchema.parse(normalizeModules(next.modules)),
+      capabilities: capabilitiesSchema.parse(next.capabilities),
+      salesPricing: { ...cur.salesPricing, enabled: next.customerPricing },
+    })
+  },
+  updateNavigation: (next: NavigationConfig): Promise<Settings> =>
+    settingsApi.update({ ...read(), navigation: navigationSchema.parse(next) }),
+  updateFavoritesConfig: (next: FavoritesConfigBlock): Promise<Settings> =>
+    settingsApi.update({ ...read(), favoritesConfig: favoritesConfigSchema.parse(next) }),
   updateTax: (next: Settings['tax']): Promise<Settings> => settingsApi.update({ ...read(), tax: next }),
 }

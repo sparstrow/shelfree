@@ -47,7 +47,8 @@ export const ROLE_HUE: Record<string, number | null> = {
   Viewer: null,
 }
 
-const ROLE_PRESETS: Record<UserRole, Record<PeopleModuleKey, PermLevel>> = {
+/** Built-in role presets: the seed of the role definitions in Settings ▸ Team & roles. */
+export const ROLE_PRESETS: Record<UserRole, Record<PeopleModuleKey, PermLevel>> = {
   Admin: {
     home: 'write',
     finance: 'write',
@@ -134,7 +135,30 @@ export function normalizePerms(perms: Record<string, string> | undefined): Recor
   return out
 }
 
-export function roleDefaultPerms(role: string): Record<PeopleModuleKey, PermLevel> {
+/** A role's default module access, as edited in Settings ▸ Team & roles. */
+export interface RoleDefinitionLike {
+  id: string
+  perms: Record<string, string>
+  settings?: Record<string, boolean>
+}
+
+/** Modules that have a settings area (spec 2026-11-24); Home and Notes have none. */
+export const SETTINGS_AREA_MODULES: ReadonlySet<string> = new Set([
+  'finance',
+  'sales',
+  'purchasing',
+  'warehouse',
+  'production',
+  'people',
+])
+
+/** Default module access for a role: the workspace's role definition when there is one, else the built-in preset. */
+export function roleDefaultPerms(
+  role: string,
+  defs?: readonly RoleDefinitionLike[],
+): Record<PeopleModuleKey, PermLevel> {
+  const def = defs?.find((d) => d.id === role)
+  if (def) return normalizePerms(def.perms)
   const preset = ROLE_PRESETS[role as UserRole] ?? ROLE_PRESETS.Viewer
   return { ...preset }
 }
@@ -148,8 +172,18 @@ export function normalizeSettings(settings: Record<string, boolean> | undefined)
 export function roleDefaultSettings(
   role: string,
   perms?: Record<string, string>,
+  defs?: readonly RoleDefinitionLike[],
 ): Record<PeopleModuleKey, boolean> {
   const out = {} as Record<PeopleModuleKey, boolean>
+  const def = defs?.find((d) => d.id === role)
+  if (def) {
+    const resolved = perms ?? def.perms
+    for (const mod of PEOPLE_MODULES) {
+      out[mod.key] =
+        SETTINGS_AREA_MODULES.has(mod.key) && permLevel(resolved, mod.key) !== 'none' && def.settings?.[mod.key] === true
+    }
+    return out
+  }
   const resolvedPerms = perms ?? roleDefaultPerms(role)
   for (const mod of PEOPLE_MODULES) {
     if (role === 'Owner' || role === 'Admin') {
@@ -241,8 +275,8 @@ export const nextUserId = (users: readonly User[]): string => nextSequentialId('
 export const nextEmployeeId = (employees: readonly Employee[]): string =>
   nextSequentialId('EMP', employees.map((e) => e.id))
 
-export function blankUser(users: readonly User[], role: UserRole = 'Sales'): User {
-  const perms = roleDefaultPerms(role)
+export function blankUser(users: readonly User[], role: UserRole = 'Sales', defs?: readonly RoleDefinitionLike[]): User {
+  const perms = roleDefaultPerms(role, defs)
   return {
     id: nextUserId(users),
     empId: null,
@@ -253,7 +287,7 @@ export function blankUser(users: readonly User[], role: UserRole = 'Sales'): Use
     twoFA: false,
     lastActive: null,
     perms,
-    settings: roleDefaultSettings(role, perms),
+    settings: roleDefaultSettings(role, perms, defs),
   }
 }
 

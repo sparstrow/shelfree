@@ -49,7 +49,7 @@ const GROUPS: readonly SettingsGroup<RegionalSettings>[] = [
  *
  * Parity note: the prototype's Multi-currency row (a locked upgrade prompt) is not shown — tiers are
  * parked, and the capability belongs to Modules & capabilities. The display helpers in `lib/format.ts`
- * don't read these values yet (gap G-030).
+ * don't read these values yet (gap G-029).
  */
 export function RegionalSection({ readOnly = false }: { readOnly?: boolean } = {}) {
   const settings = useSettings()

@@ -30,6 +30,7 @@ import {
   purchaseOrderSchema,
   purchasePriceSchema,
   purchaseReceiptSchema,
+  roleDefSchema,
   salesInvoiceSchema,
   salesOrderSchema,
   savedViewSchema,
@@ -51,6 +52,7 @@ import { seedGstRegistrations } from '@/data/seed/settings-workspace'
 import { seedItemUnits } from '@/data/seed/item-units'
 import { seedNumberSequences } from '@/data/seed/number-sequences'
 import { seedPurchasePrices } from '@/data/seed/purchase-prices'
+import { seedRoleDefs } from '@/data/seed/roles'
 import { seedUnitsOfMeasure } from '@/data/seed/units-of-measure'
 import * as seed from '@/data/seed/seed-data.js'
 import { createCollection } from '@/data/store/collection'
@@ -257,6 +259,11 @@ export const api = {
     key: 'gstRegistrations',
     schema: gstRegistrationSchema,
     seed: seedGstRegistrations,
+  /** Settings ▸ Team & roles: each role's default module access (`shelfree.v2.roleDefs`). */
+  roleDefs: createCollection({
+    key: 'roleDefs',
+    schema: roleDefSchema,
+    seed: seedRoleDefs,
     idOf: (r) => r.id,
   }),
 } as const
