@@ -259,6 +259,8 @@ export const api = {
     key: 'gstRegistrations',
     schema: gstRegistrationSchema,
     seed: seedGstRegistrations,
+    idOf: (r) => r.id,
+  }),
   /** Settings ▸ Team & roles: each role's default module access (`shelfree.v2.roleDefs`). */
   roleDefs: createCollection({
     key: 'roleDefs',
