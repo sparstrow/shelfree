@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Employee, User } from '@/data/schemas'
+import { type Employee, type User, userSchema } from '@/data/schemas'
 import {
   type EmployeeDeleteRefs,
   accessSummary,
@@ -12,10 +12,12 @@ import {
   nextUserId,
   normalizeEmployee,
   normalizePerms,
+  normalizeSettings,
   normalizeUser,
   personAvatarStyle,
   personInitials,
   roleDefaultPerms,
+  roleDefaultSettings,
   userDeleteBlocked,
   userStatusTransitionError,
   validateEmployee,
@@ -32,6 +34,7 @@ const makeUser = (over: Partial<User> = {}): User => ({
   twoFA: true,
   lastActive: '2026-10-16T08:00:00Z',
   perms: roleDefaultPerms('Admin'),
+  settings: roleDefaultSettings('Admin'),
   ...over,
 })
 
@@ -81,7 +84,7 @@ describe('people domain rules', () => {
     expect(accessSummary(roleDefaultPerms('Sales'))).toBe('1 write · 3 read')
   })
 
-  it('normalizes missing module permission keys safely', () => {
+  it('normalizes missing module permission and settings keys safely', () => {
     expect(normalizePerms({ home: 'write', finance: 'read' })).toEqual({
       home: 'write',
       finance: 'read',
@@ -92,6 +95,60 @@ describe('people domain rules', () => {
       production: 'none',
       people: 'none',
     })
+    expect(normalizeSettings({ purchasing: true })).toEqual({
+      home: false,
+      finance: false,
+      notes: false,
+      sales: false,
+      purchasing: true,
+      warehouse: false,
+      production: false,
+      people: false,
+    })
+    expect(roleDefaultSettings('Admin')).toEqual({
+      home: true,
+      finance: true,
+      notes: true,
+      sales: true,
+      purchasing: true,
+      warehouse: true,
+      production: true,
+      people: true,
+    })
+    expect(roleDefaultSettings('Manager')).toEqual({
+      home: false,
+      finance: false,
+      notes: false,
+      sales: false,
+      purchasing: false,
+      warehouse: true,
+      production: true,
+      people: false,
+    })
+    expect(roleDefaultSettings('Sales')).toEqual({
+      home: false,
+      finance: false,
+      notes: false,
+      sales: false,
+      purchasing: false,
+      warehouse: false,
+      production: false,
+      people: false,
+    })
+
+    // Existing stored user rows without `settings` still parse via userSchema default.
+    const legacyParsed = userSchema.parse({
+      id: 'USR00099',
+      empId: null,
+      name: 'Legacy User',
+      email: 'legacy@kanalora.example',
+      role: 'Viewer',
+      status: 'Active',
+      twoFA: false,
+      lastActive: null,
+      perms: { home: 'read' },
+    })
+    expect(legacyParsed.settings).toEqual({})
   })
 
   it('formats relative last-active timestamps and tenure deterministically', () => {

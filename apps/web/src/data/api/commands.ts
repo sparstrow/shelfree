@@ -10,16 +10,19 @@ import {
   type Favorite,
   type Item,
   type ItemUnitSet,
+  type NumberSequence,
   type PurchaseOrder,
   type PurchaseReceipt,
   type SavedView,
   type Vendor,
   itemSchema,
   itemUnitSetSchema,
+  numberSequenceSchema,
 } from '@/data/schemas'
 import { DEFAULT_PRODUCTION_SETTINGS, aoFinish } from '@/domain/assembly-order'
 import { nextDupNo } from '@/domain/bulk-actions'
 import { dropFavorite, favoritesOfView, nextFavoriteOrder, renumberFavorites, sortFavorites } from '@/domain/favorites'
+import { canDeleteSeries, moduleOfDocType, setDefault, validateSeries } from '@/domain/number-sequences'
 import {
   duplicatePurchaseOrder,
   poCanCancel,
@@ -869,4 +872,55 @@ export async function duplicateVendors(nos: readonly string[]): Promise<{ create
 
   if (created.length > 0) await api.vendors.upsertMany(created)
   return { created }
+}
+
+// ── Settings ▸ Number sequences ──────────────────────────────────────────────
+// Backend: `/number-sequences` endpoints enforce all invariants inside one
+// transaction; document creates take the next number atomically in the same TX.
+
+/** Create or update a number sequence (`POST /number-sequences`, `PUT /number-sequences/{id}`). */
+export async function saveNumberSequence(input: NumberSequence): Promise<NumberSequence> {
+  if (!input.id.trim()) throw new CommandError('Series ID is required.')
+  const trimmedSuffix = input.suffix?.trim()
+  const candidate: NumberSequence = {
+    ...input,
+    id: input.id.trim(),
+    module: moduleOfDocType(input.docType),
+    name: input.name.trim(),
+    prefix: input.prefix.trim(),
+  }
+  if (trimmedSuffix) candidate.suffix = trimmedSuffix
+  else delete candidate.suffix
+
+  const all = await api.numberSequences.list()
+  const errors = validateSeries(candidate, all)
+  const problem = Object.values(errors)[0]
+  if (problem) throw new CommandError(problem)
+
+  return api.numberSequences.upsert(numberSequenceSchema.parse(candidate))
+}
+
+/** Delete an unused number sequence (`DELETE /number-sequences/{id}`). Refuses when `issued > 0`. */
+export async function deleteNumberSequence(id: string): Promise<void> {
+  const series = await api.numberSequences.get(id)
+  if (!series) throw new CommandError(`Number sequence ${id} not found.`)
+  if (!canDeleteSeries(series)) {
+    throw new CommandError(
+      'Cannot delete a series that has already issued numbers — deactivate it instead.',
+    )
+  }
+  await api.numberSequences.remove(id)
+}
+
+/** Make `id` the sole default active series for its document type (`POST /number-sequences/{id}/default`). */
+export async function setDefaultNumberSequence(id: string): Promise<NumberSequence[]> {
+  const all = await api.numberSequences.list()
+  const target = all.find((s) => s.id === id)
+  if (!target) throw new CommandError(`Number sequence ${id} not found.`)
+  if (!target.active) throw new CommandError('Only an active series can be set as the default.')
+
+  const next = setDefault(all, id)
+  const changed = next.filter((s, index) => s.isDefault !== all[index].isDefault)
+  if (changed.length > 0) await api.numberSequences.upsertMany(changed)
+  return next
 }

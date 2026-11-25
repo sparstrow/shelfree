@@ -18,6 +18,7 @@ import {
   bulkPurchaseOrderStatus,
   bulkRemoveItemUnits,
   bulkUpsertCollection,
+  deleteNumberSequence,
   duplicateCustomers,
   duplicateItems,
   duplicatePurchaseOrders,
@@ -27,8 +28,11 @@ import {
   postPurchaseReceipt,
   restoreItemUnits,
   saveItemWithUnits,
+  saveNumberSequence,
+  setDefaultNumberSequence,
   updateItemUnits,
 } from '@/data/api/commands'
+import type { NumberSequence } from '@/data/schemas'
 
 type RecordOf<K extends CollectionName> = Awaited<ReturnType<Api[K]['list']>>[number]
 
@@ -286,5 +290,37 @@ export function useDuplicateVendors() {
   return useMutation({
     mutationFn: (nos: readonly string[]) => duplicateVendors(nos),
     onSuccess: () => client.invalidateQueries({ queryKey: ['vendors'] }),
+  })
+}
+
+/** All number sequences (`Settings ▸ Shared lists ▸ Number sequences` and module slices). */
+export function useNumberSequences() {
+  return useList('numberSequences')
+}
+
+/** Create or update a number sequence, enforcing all domain invariants. */
+export function useSaveNumberSequence() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (series: NumberSequence) => saveNumberSequence(series),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['numberSequences'] }),
+  })
+}
+
+/** Delete an unused number sequence (`issued === 0`). */
+export function useDeleteNumberSequence() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteNumberSequence(id),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['numberSequences'] }),
+  })
+}
+
+/** Set one active series as the sole default for its document type. */
+export function useSetDefaultNumberSequence() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => setDefaultNumberSequence(id),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['numberSequences'] }),
   })
 }

@@ -139,6 +139,30 @@ export function roleDefaultPerms(role: string): Record<PeopleModuleKey, PermLeve
   return { ...preset }
 }
 
+export function normalizeSettings(settings: Record<string, boolean> | undefined): Record<PeopleModuleKey, boolean> {
+  const out = {} as Record<PeopleModuleKey, boolean>
+  for (const mod of PEOPLE_MODULES) out[mod.key] = settings?.[mod.key] === true
+  return out
+}
+
+export function roleDefaultSettings(
+  role: string,
+  perms?: Record<string, string>,
+): Record<PeopleModuleKey, boolean> {
+  const out = {} as Record<PeopleModuleKey, boolean>
+  const resolvedPerms = perms ?? roleDefaultPerms(role)
+  for (const mod of PEOPLE_MODULES) {
+    if (role === 'Owner' || role === 'Admin') {
+      out[mod.key] = true
+    } else if (role === 'Manager') {
+      out[mod.key] = permLevel(resolvedPerms, mod.key) === 'write'
+    } else {
+      out[mod.key] = false
+    }
+  }
+  return out
+}
+
 /** Human summary matching the prototype (`Full access`, `No access`, `5 read-only`, `2 write · 3 read`). */
 export function accessSummary(perms: Record<string, string> | undefined): string {
   let write = 0
@@ -218,6 +242,7 @@ export const nextEmployeeId = (employees: readonly Employee[]): string =>
   nextSequentialId('EMP', employees.map((e) => e.id))
 
 export function blankUser(users: readonly User[], role: UserRole = 'Sales'): User {
+  const perms = roleDefaultPerms(role)
   return {
     id: nextUserId(users),
     empId: null,
@@ -227,7 +252,8 @@ export function blankUser(users: readonly User[], role: UserRole = 'Sales'): Use
     status: 'Pending',
     twoFA: false,
     lastActive: null,
-    perms: roleDefaultPerms(role),
+    perms,
+    settings: roleDefaultSettings(role, perms),
   }
 }
 
@@ -257,6 +283,7 @@ export function normalizeUser(u: User): User {
     status: u.status.trim(),
     empId: u.empId?.trim() ? u.empId.trim() : null,
     perms: normalizePerms(u.perms),
+    settings: normalizeSettings(u.settings),
   }
 }
 

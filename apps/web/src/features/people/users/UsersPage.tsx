@@ -1,10 +1,11 @@
-import { getRouteApi } from '@tanstack/react-router'
+import { Link, getRouteApi } from '@tanstack/react-router'
 import { Ban, CheckCircle2, Mail, ShieldCheck, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { type ListAction, type ListBulkAction, ListPage } from '@/components/list-page/ListPage'
 import type { EditorField } from '@/components/record-fields/model'
+import { Switch } from '@/components/ui/switch'
 import { useList, useRemove, useUpsert } from '@/data/queries'
 import { useMe } from '@/data/queries/session'
 import type { User } from '@/data/schemas'
@@ -19,13 +20,16 @@ import {
   blankUser,
   formatLastActive,
   normalizePerms,
+  normalizeSettings,
   normalizeUser,
   permLevel,
   roleDefaultPerms,
+  roleDefaultSettings,
   userDeleteBlocked,
   userStatusTransitionError,
   validateUser,
 } from '@/domain/people'
+import { EM_DASH } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { makeUsersDataset } from './dataset'
 
@@ -37,6 +41,9 @@ const PERM_LABEL: Record<PermLevel, string> = {
 
 const route = getRouteApi('/people/users/')
 
+/** Modules that have a settings area (spec 2026-11-24); Home and Notes have none. */
+const SETTINGS_AREA_MODULES: ReadonlySet<string> = new Set(['finance', 'sales', 'purchasing', 'warehouse', 'production', 'people'])
+
 function UserPermissionsSection({
   user,
   editing,
@@ -47,6 +54,7 @@ function UserPermissionsSection({
   onChange?: (key: keyof User & string, value: unknown) => void
 }) {
   const perms = normalizePerms(user.perms)
+  const settings = normalizeSettings(user.settings)
   return (
     <div className="mt-4">
       <div className="mb-1.5 flex items-center justify-between">
@@ -54,22 +62,35 @@ function UserPermissionsSection({
         {editing && onChange && (
           <button
             type="button"
-            onClick={() => onChange('perms', roleDefaultPerms(user.role))}
+            onClick={() => {
+              const nextPerms = roleDefaultPerms(user.role)
+              onChange('perms', nextPerms)
+              onChange('settings', roleDefaultSettings(user.role, nextPerms))
+            }}
             className="border-0 bg-transparent p-0 text-[11.5px] font-medium text-primary hover:underline"
           >
             Apply {user.role} defaults
           </button>
         )}
       </div>
+      <div className="grid grid-cols-[84px_minmax(0,1fr)_64px] items-end gap-x-2 border-b border-border pb-1 text-[10.5px] font-semibold tracking-[0.04em] text-muted-foreground">
+        <span>Module</span>
+        <span>Access</span>
+        <span className="text-center leading-tight">Manage settings</span>
+      </div>
       <div className="flex flex-col">
         {PEOPLE_MODULES.map((mod) => {
           const current = permLevel(perms, mod.key)
+          // Only modules with a settings area get the right, and it needs access to the module.
+          const hasSettingsArea = SETTINGS_AREA_MODULES.has(mod.key)
+          const canManageSettings = hasSettingsArea && current !== 'none' && settings[mod.key] === true
           return (
             <div
               key={mod.key}
-              className="grid grid-cols-[110px_1fr] items-center gap-x-2 border-b border-dashed border-border py-1.5"
+              data-module={mod.key}
+              className="grid grid-cols-[84px_minmax(0,1fr)_64px] items-center gap-x-2 border-b border-dashed border-border py-1.5"
             >
-              <span className="text-[12.5px] text-muted-foreground">{mod.label}</span>
+              <span className="truncate text-[12.5px] text-muted-foreground">{mod.label}</span>
               <div
                 role="radiogroup"
                 aria-label={`${mod.label} permission`}
@@ -84,9 +105,12 @@ function UserPermissionsSection({
                       role="radio"
                       aria-checked={selected}
                       disabled={!editing}
-                      onClick={() => onChange?.('perms', { ...perms, [mod.key]: level })}
+                      onClick={() => {
+                        onChange?.('perms', { ...perms, [mod.key]: level })
+                        if (level === 'none' && settings[mod.key]) onChange?.('settings', { ...settings, [mod.key]: false })
+                      }}
                       className={cn(
-                        'h-6 rounded-md border-0 px-2 text-[11.5px] transition-colors duration-[120ms]',
+                        'h-6 rounded-md border-0 px-1.5 text-[11.5px] transition-colors duration-[120ms]',
                         selected
                           ? 'bg-primary font-semibold text-primary-foreground shadow-xs'
                           : 'bg-transparent font-medium text-muted-foreground',
@@ -98,6 +122,25 @@ function UserPermissionsSection({
                     </button>
                   )
                 })}
+              </div>
+              <div className="flex h-[28px] items-center justify-center">
+                {editing && hasSettingsArea ? (
+                  <Switch
+                    disabled={current === 'none'}
+                    aria-label={`${mod.label} manage settings`}
+                    checked={canManageSettings}
+                    onCheckedChange={(checked) => onChange?.('settings', { ...settings, [mod.key]: checked })}
+                  />
+                ) : (
+                  <span
+                    className={cn(
+                      'text-[12.5px] font-medium',
+                      canManageSettings ? 'text-foreground' : 'text-muted-foreground',
+                    )}
+                  >
+                    {canManageSettings ? 'Yes' : EM_DASH}
+                  </span>
+                )}
               </div>
             </div>
           )
@@ -314,6 +357,15 @@ export function UsersPage({ initialActiveId = null }: { initialActiveId?: string
         error={users.error}
         onRefresh={() => users.refetch()}
         initialActiveId={initialActiveId ?? sel ?? null}
+        topBarExtra={
+          <Link
+            to="/settings/$section"
+            params={{ section: 'ws-team' }}
+            className="hover-lift inline-flex h-[30px] flex-none items-center rounded-lg border border-border bg-transparent px-2.5 text-xs font-medium whitespace-nowrap text-muted-foreground no-underline transition-colors duration-[140ms] hover:bg-tint-12 hover:text-foreground"
+          >
+            Manage roles
+          </Link>
+        }
         actions={actions}
         bulkActions={bulkActions}
         remove={{
@@ -327,7 +379,8 @@ export function UsersPage({ initialActiveId = null }: { initialActiveId?: string
           blank: (rows) => blankUser(rows),
           onChange: (draft, key, mode) => {
             if (key === 'role' && mode === 'new') {
-              return { ...draft, perms: roleDefaultPerms(draft.role) }
+              const perms = roleDefaultPerms(draft.role)
+              return { ...draft, perms, settings: roleDefaultSettings(draft.role, perms) }
             }
             return draft
           },

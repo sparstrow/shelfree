@@ -22,9 +22,10 @@ headcount at Kanalora:
   and KPI strip (`Role`, `2FA`, `Last active`); notice banner when `Suspended` or `Pending`; in-place
   `DETAILS` rows (`User ID`, `Full name`, `Email`, `Role`, `Status`, `Two-factor auth`,
   `Linked employee`) + read-only facts (`Department`, `Last active`, `Module access`); interactive
-  `MODULE PERMISSIONS` 8-row `None / Read / Write` segmented radiogroup (read-only in view mode,
-  with an `"Apply <role> defaults"` helper while editing/creating). View footer includes `Edit`,
-  contextual `Suspend user` / `Reactivate` / `Resend invite`, and `Delete`.
+  `MODULE PERMISSIONS` 8-row matrix with `None / Read / Write` access radios and a **Manage settings**
+  column (`Yes` / `—` text in view mode, in-place switch in edit mode, plus `"Apply <role> defaults"`).
+  View footer includes `Edit`, contextual `Suspend user` / `Reactivate` / `Resend invite`, and `Delete`.
+  Top bar includes a quiet `"Manage roles"` link to `/settings/ws-team`.
 - **Employees grid:** Emp ID (frozen, mono) · Name · Title · Department · Manager · Type pill ·
   Status pill (`Active` ok, `On leave` warn, `Terminated` neutral, `Contractor` info) · Location
   (mono) · Email (masked) · Phone (mono, masked `•••• 0001`) · Joined date.
@@ -38,13 +39,19 @@ headcount at Kanalora:
   includes `Edit`, contextual `Set on leave` / `Mark active` / `Reinstate`, and `Delete`.
 
 ## Data model
-- `User { id: 'USR00001'+, empId: string | null, name, email, role, status, twoFA, lastActive: ISO | null, perms: Record<PeopleModuleKey, 'none' | 'read' | 'write'> }`
+- `User { id: 'USR00001'+, empId: string | null, name, email, role, status, twoFA, lastActive: ISO | null, perms: Record<PeopleModuleKey, 'none' | 'read' | 'write'>, settings: Record<string, boolean> }`
+  (`settings` defaults to `{}` when parsing older stored records; seeded as all `true` for Owner/Admin, `true` where `perms[m] === 'write'` for Manager, and `false` for other roles).
 - `Employee { id: 'EMP00001'+, name, title, dept, managerId: string | null, status, type, email, phone, location, joinDate: YYYY-MM-DD }`
 
 ## Interactions & business rules
-- **Role presets & module permissions:** changing `Role` in New mode initializes `perms` to that
-  role's preset (`roleDefaultPerms`); editing `Role` on an existing user leaves customized module
-  permissions intact unless `"Apply <role> defaults"` is clicked.
+- **Role presets & module permissions:** changing `Role` in New mode initializes `perms` (`roleDefaultPerms`)
+  and `settings` (`roleDefaultSettings`) to that role's preset; editing `Role` on an existing user leaves
+  customized module permissions and settings rights intact unless `"Apply <role> defaults"` is clicked.
+- **Manage settings rights (`domain/settings-permissions.ts`):**
+  - `canViewArea({ role, user }, kind, moduleId?)` / `canEditArea(...)` for `'workspace' | 'module' | 'shared' | 'personal'`:
+    - `workspace` / `shared`: `owner` or `admin` only.
+    - `module`: `owner` / `admin`, or (`user.perms[moduleId]` is `'read'` / `'write'` to view, plus `user.settings[moduleId] === true` to edit).
+    - `personal`: always allowed.
 - **Validation:**
   - Users: `Full name` required; valid email required and unique (case-insensitive); valid role and
     status. Demoting or suspending the last active `Admin`, or suspending your own signed-in user
@@ -67,8 +74,12 @@ Stored under `shelfree.v2.users` and `shelfree.v2.employees` via the versioned q
 
 ## Backend-build notes
 - Server must enforce tenant isolation and RBAC (`people.write` / `Admin` required for user role,
-  permission, suspension, invite, and employee mutations; non-admins cannot escalate their own role
-  or grant themselves module `write` permissions).
+  permission, `settings` flag, suspension, invite, and employee mutations; non-admins cannot escalate
+  their own role, grant themselves module `write` permissions, or grant themselves `Manage settings`).
+- **Settings write enforcement:** `canEditArea` / `canViewArea` in the React app are UX-only; the
+  backend must enforce `settings[module] === true` (with `perms[module] !== 'none'`) on every
+  module-settings write endpoint and owner/admin role on workspace/shared-list settings writes,
+  returning `403 Forbidden` otherwise.
 - Server enforces uniqueness on `(tenant_id, lower(email))` for users (and optionally employees),
   blocks deleting or suspending/demoting the last active owner/`Admin` in an atomic transaction,
   blocks deleting an employee referenced by operational documents or active links, and blocks
@@ -80,17 +91,18 @@ Stored under `shelfree.v2.users` and `shelfree.v2.employees` via the versioned q
 - **PII masking:** User `email` and Employee `email` and `phone` are masked via `maskEmail` and
   `maskPhone` in grid cells, grid `searchBlob`, filterable raw values, and CSV exports; full
   values are displayed only inside the preview/edit drawer for authorised viewers.
-- **Least privilege & lockouts:** Role/permission mutations require admin authorization in
-  production; UI protects against accidental lockout by refusing deletion, suspension, or
-  demotion of the last active `Admin` or current signed-in user.
+- **Least privilege & lockouts:** Role/permission/`Manage settings` mutations require admin
+  authorization in production; UI protects against accidental lockout by refusing deletion,
+  suspension, or demotion of the last active `Admin` or current signed-in user.
 - **Audit events (required on backend):** record actor, timestamp, and before/after diffs on user
-  invite, resend invite, role change, per-module permission change, status transition
-  (`Suspended` / `Reactivate`), user delete, and employee create / edit / status change / delete.
+  invite, resend invite, role change, per-module permission change, per-module `Manage settings`
+  toggle (`user.settings[module]`), status transition (`Suspended` / `Reactivate`), user delete,
+  and employee create / edit / status change / delete.
 
 ### Decisions & deferred-to-backend
-- Prototype stores per-module permissions (`none | read | write`) on the `User` record directly so
-  admins can customize individual module access without a separate custom-role builder; backend
-  can introduce named permission groups alongside per-user overrides if needed.
+- Prototype stores per-module permissions (`none | read | write`) and `settings` (`boolean` per module)
+  on the `User` record directly so admins can customize individual module access without a separate
+  custom-role builder; backend can introduce named permission groups alongside per-user overrides if needed.
 - `Resend invite` triggers a confirmation toast in the browser prototype; backend dispatches the
   transactional email and rotates any prior pending token with rate limiting.
 - Self-identification in the prototype checks `me.email` (`Kavitha Elumalai`, `USR00007`) because
@@ -98,7 +110,9 @@ Stored under `shelfree.v2.users` and `shelfree.v2.employees` via the versioned q
 
 ## React app (2026-11-17)
 - Domain rules & tests: [`apps/web/src/domain/people.ts`](../../apps/web/src/domain/people.ts)
-  and [`apps/web/src/domain/people.test.ts`](../../apps/web/src/domain/people.test.ts).
+  and [`apps/web/src/domain/people.test.ts`](../../apps/web/src/domain/people.test.ts), plus
+  settings permissions [`apps/web/src/domain/settings-permissions.ts`](../../apps/web/src/domain/settings-permissions.ts)
+  and [`settings-permissions.test.ts`](../../apps/web/src/domain/settings-permissions.test.ts).
 - Status tones added in [`apps/web/src/domain/status.ts`](../../apps/web/src/domain/status.ts)
   (`Pending`, `Suspended`, `On leave`, `Terminated`, `Contractor`).
 - Template extensions (backward-compatible): optional `bulkActions` on `DataGrid`/`ListPage`,
@@ -109,4 +123,5 @@ Stored under `shelfree.v2.users` and `shelfree.v2.employees` via the versioned q
     [`dataset.ts`](../../apps/web/src/features/people/users/dataset.ts) at `/people/users`
   - [`EmployeesPage`](../../apps/web/src/features/people/employees/EmployeesPage.tsx) +
     [`dataset.ts`](../../apps/web/src/features/people/employees/dataset.ts) at `/people/employees`
-- End-to-end tests: [`apps/web/e2e/people.spec.ts`](../../apps/web/e2e/people.spec.ts).
+- End-to-end tests: [`apps/web/e2e/people.spec.ts`](../../apps/web/e2e/people.spec.ts) and
+  [`apps/web/e2e/users-manage-settings.spec.ts`](../../apps/web/e2e/users-manage-settings.spec.ts).
