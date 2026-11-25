@@ -50,9 +50,22 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
 - **G-010 · Only purchase orders and receipts use number sequences** — BOMs, assembly orders, items,
   employees, sales orders and invoices still number themselves with `nextNo()`; their series exist but are
   not used. *Fix by:* each stage as it touches that document (production, sales).
-- **G-011 · Shared records carry one `module`, the spec says `modules[]`** — a number series belongs to
-  exactly one module (from its document type). Fine for sequences; statuses / custom fields / terms may need
-  several. *Fix by:* Phase 2 run 2.1 when the next shared lists are built — decide per list.
+
+### Purchasing settings (run 2.1)
+
+- **G-013 · Documents don't read Statuses & stages** — `StatusDef` rows (system + custom) are listed in
+  Settings, but purchase orders, receipts, sales orders / invoices, BOMs and assembly orders still use their
+  hard-coded status enums (`PO_STATUSES`, `SALES_ORDER_STATUSES`, …), so a custom stage such as *Packed* can't
+  be chosen on a document and delete is never blocked by use. Left because each document's transitions are
+  business rules in `domain/`. *Fix by:* each stage as it touches that document (purchase now, sales,
+  production); `docs/statuses/README.md`.
+- **G-014 · Custom field values are not captured or shown** — definitions exist (`customFields`), but no
+  record page or drawer renders or stores values, so *Required* isn't enforced. *Fix by:* a "Custom fields"
+  card on record pages / drawers (via `FieldRows`) plus a values store; `docs/custom-fields/README.md`.
+- **G-015 · Vendor and customer payment terms are free text** — the vendor `paymentTerms` and customer `terms`
+  fields don't pick from Settings ▸ Payment terms, so "in use" (delete block, code lock) matches by text
+  (`NET 30` = `NET30`) and a typo isn't counted. *Fix by:* convert both editors to a picker that stores the
+  term code; `docs/payment-terms/README.md`.
 
 ### Testing
 
@@ -63,4 +76,7 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
 
 ## Closed
 
-- *(none yet — move an entry here with the date and the PR that fixed it)*
+- **G-011 · Shared records carry one `module`, the spec says `modules[]`** (closed 2026-11-25, run 2.1) — decided
+  per list: number sequences, statuses and custom fields have one `module` (derived from document type /
+  flow / entity, which each belong to exactly one module); payment terms carry `modules: string[]` and the
+  slice filters by inclusion. Recorded in `docs/settings/README.md` and each list's doc.

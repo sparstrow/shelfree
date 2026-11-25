@@ -46,6 +46,12 @@ behavior, data-model, or screen change (see root `CLAUDE.md`).
   module, Shared lists, Personal), one URL per section (`/settings/<id>`, `/<module>/settings/<id>`,
   `/settings/shared/<list>`), Find a setting, per-module Manage settings right and read-only mode, legacy
   redirects, quiet help. Also keeps the prototype reference for sections not moved yet.
+- [`statuses/`](statuses/README.md) — **Statuses & stages** (Settings, module slices and shared list): status
+  list per document flow, system (locked) vs custom stages, Open / Closed, colour, order.
+- [`custom-fields/`](custom-fields/README.md) — **Custom fields** (Settings, module slices and shared list):
+  definitions of extra fields per record type (text, number, date, list, yes / no).
+- [`payment-terms/`](payment-terms/README.md) — **Payment terms** (Settings, Purchasing and Sales slices and
+  shared list): terms offered to vendors and customers; a term can serve several modules.
 - [`number-sequences/`](number-sequences/README.md) — **Number sequences** (Settings, module slice and shared
   list): per-document-type numbering series (`PO`, `GRN`, `SO`, `INV`, `ITM`, `BOM`, `AO`, `EMP`), default
   series, never-reuse issuing for purchase orders and receipts, GST-audit uniqueness / gapless rules and

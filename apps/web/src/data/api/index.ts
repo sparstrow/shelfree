@@ -32,6 +32,18 @@ import {
   vendorSchema,
   warehouseSchema,
 } from '@/data/schemas'
+import {
+  carrierTypeSchema,
+  customFieldSchema,
+  paymentTermSchema,
+  statusDefSchema,
+} from '@/data/schemas'
+import {
+  seedCarrierTypes,
+  seedCustomFields,
+  seedPaymentTerms,
+  seedStatuses,
+} from '@/data/seed/settings-purchasing'
 import { seedItemUnits } from '@/data/seed/item-units'
 import { seedNumberSequences } from '@/data/seed/number-sequences'
 import { seedPurchasePrices } from '@/data/seed/purchase-prices'
@@ -186,6 +198,34 @@ export const api = {
     schema: numberSequenceSchema,
     seed: seedNumberSequences,
     idOf: (r) => r.id,
+  }),
+  /** Settings ▸ Purchasing: the user-maintained list behind Carriers ▸ Type. */
+  carrierTypes: createCollection({
+    key: 'carrierTypes',
+    schema: carrierTypeSchema,
+    seed: seedCarrierTypes,
+    idOf: (r) => r.code,
+  }),
+  /** Shared list: statuses per document flow (`shelfree.v2.statuses`). */
+  statuses: createCollection({
+    key: 'statuses',
+    schema: statusDefSchema,
+    seed: seedStatuses,
+    idOf: (r) => r.id,
+  }),
+  /** Shared list: custom field definitions (`shelfree.v2.customFields`). */
+  customFields: createCollection({
+    key: 'customFields',
+    schema: customFieldSchema,
+    seed: seedCustomFields,
+    idOf: (r) => r.id,
+  }),
+  /** Shared list: payment terms (`shelfree.v2.paymentTerms`). */
+  paymentTerms: createCollection({
+    key: 'paymentTerms',
+    schema: paymentTermSchema,
+    seed: seedPaymentTerms,
+    idOf: (r) => r.code,
   }),
 } as const
 

@@ -699,3 +699,81 @@ export const numberSequenceSchema = z.object({
   scope: numberSequenceScopeSchema.optional(),
 })
 export type NumberSequence = z.infer<typeof numberSequenceSchema>
+
+// ── Settings ▸ Purchasing (run 2.1): carrier types, statuses, custom fields, payment terms ──
+export const CARRIER_BEHAVIOR_IDS = ['courier', 'gta', 'own'] as const
+export const carrierTypeSchema = z.object({
+  /** 2–12 chars A–Z 0–9 -, immutable (carriers reference it). */
+  code: z.string(),
+  name: z.string(),
+  behavior: z.enum(CARRIER_BEHAVIOR_IDS),
+  /** Label of the tracking reference ("AWB", "LR no."); blank shows "Tracking no.". */
+  refLabel: z.string(),
+  desc: z.string(),
+  active: z.boolean(),
+  system: z.boolean(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+})
+export type CarrierTypeRecord = z.infer<typeof carrierTypeSchema>
+
+export const STATUS_FLOWS = [
+  'purchase-order',
+  'purchase-receipt',
+  'sales-order',
+  'sales-invoice',
+  'bom',
+  'assembly-order',
+] as const
+export const STATUS_CATEGORIES = ['open', 'closed'] as const
+export const STATUS_TONES = ['neutral', 'info', 'warn', 'ok', 'bad'] as const
+export const statusDefSchema = z.object({
+  id: z.string(),
+  flow: z.enum(STATUS_FLOWS),
+  /** The one module that owns the flow (decided from the flow, never chosen). */
+  module: z.string(),
+  name: z.string(),
+  category: z.enum(STATUS_CATEGORIES),
+  tone: z.enum(STATUS_TONES),
+  order: z.number().int().min(1),
+  /** System statuses are used by the app's own rules and are locked. */
+  system: z.boolean(),
+})
+export type StatusDef = z.infer<typeof statusDefSchema>
+
+export const CUSTOM_FIELD_ENTITIES = [
+  'item',
+  'vendor',
+  'purchase-order',
+  'customer',
+  'sales-order',
+  'bom',
+  'assembly-order',
+  'employee',
+] as const
+export const CUSTOM_FIELD_TYPES = ['text', 'number', 'date', 'list', 'yesno'] as const
+export const customFieldSchema = z.object({
+  id: z.string(),
+  entity: z.enum(CUSTOM_FIELD_ENTITIES),
+  /** The one module that owns the entity (decided from the entity, never chosen). */
+  module: z.string(),
+  label: z.string(),
+  type: z.enum(CUSTOM_FIELD_TYPES),
+  /** Choices of a `list` field, in display order; empty for other types. */
+  options: z.array(z.string()),
+  required: z.boolean(),
+  active: z.boolean(),
+})
+export type CustomField = z.infer<typeof customFieldSchema>
+
+export const paymentTermSchema = z.object({
+  /** Short code, immutable once a vendor or customer uses it. */
+  code: z.string(),
+  name: z.string(),
+  /** Days until due; null for "end of month" style terms. */
+  days: z.number().int().min(0).nullable(),
+  /** Modules that offer this term (a term can serve Purchasing and Sales). */
+  modules: z.array(z.string()).min(1),
+  active: z.boolean(),
+})
+export type PaymentTerm = z.infer<typeof paymentTermSchema>

@@ -96,5 +96,6 @@ same turn a page is ported.**
 | Settings ▸ Units of measure | ported (`/warehouse/settings/uom` on `ListPage embedded`, old `/settings/uom` redirects; custom units collection, rules in `domain/units-of-measure.ts`) |
 | Settings ▸ Keyboard shortcuts | ported (`/settings/shortcuts`, Personal area; catalogue `src/app/shortcuts.ts`) |
 | Settings ▸ Number sequences | ported (`/<module>/settings/sequences` slices + `/settings/shared/sequences`; PO and receipt numbers issued from the default series; `docs/number-sequences/README.md`) |
+| Settings ▸ Carrier types, Statuses & stages, Custom fields, Payment terms | ported (run 2.1: `/purchasing/settings/carrier-types`; statuses, fields and terms as module slices + `/settings/shared/<list>`; `ListPage embedded` + `editor`; Carriers now reads types from `carrierTypes`; docs `carrier-types`, `statuses`, `custom-fields`, `payment-terms`) |
 | Settings ▸ every other section | frame + navigation live at the new URLs; body shows "not moved yet" until ported in Phase 2 (add one line to `features/settings/sections.ts`) |
 | Every other prototype page | pending |
