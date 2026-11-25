@@ -94,3 +94,60 @@ codes are merged back on read; deleted non-system seeds stay deleted.
 
 ## Update 2026-10-15 — inline descriptions retired
 The `?` "show every description inline" mode is removed from this page: no description text renders under the page title, section titles, settings/fields or options under any setting — the ⓘ + hover popover is the only place descriptions live. The `?` shortcut no longer applies here and is removed from Keyboard shortcuts. (Tax codes also drops the inline "Ctrl/Cmd + Enter to save · Esc to close" hint in the edit popup — it stays listed in Keyboard shortcuts.)
+
+## React app (2026-11-25)
+
+**Settings ▸ Finance ▸ Tax codes** is ported as a list section (Phase 2 run 2.3): **`/finance/settings/tax-codes`** and
+**`/settings/shared/tax-codes`** (legacy `/settings/cfg-tax` redirects). `TaxCodesSection` in
+`apps/web/src/features/settings/tax-codes/` is a `ListPage embedded` with an `editor` inside `SettingsPage flush`: list + drawer,
+view and edit show the same rows (N / E / Ctrl+S / Esc, delete with undo). The **rate history** is the drawer's `extra` /
+`extraEdit` (`RateHistory.tsx`: Rate · Effective from · Current / Past / Scheduled / New · lock or remove, *Add rate change*).
+Rules: `apps/web/src/domain/tax-codes.ts` (Vitest). Tier: Starter base, ungated, on by default.
+
+### One module or many (follows G-011)
+**Finance only, no `module` field.** A tax code is a national rate used by charges, items and documents in every module, so the
+Finance slice and Shared lists ▸ Tax codes are the **same rows** (no Module column to filter by). Number sequences, statuses and
+custom fields carry one `module`; payment terms carry `modules[]`; tax codes carry none.
+
+### What reads tax codes today (and what doesn't)
+GST rates lived only on **charges** (`charge.gst` = `Goods rate` / `0%` / `5%` / `12%` / `18%` / `28%`, `CHARGE_GST_RATES` in
+`domain/charges.ts`) — items, price lists and document lines carry no GST rate in the app yet. This run introduces the `taxCodes`
+collection **seeded with the same rates** and leaves every calculation and the charge editor's list untouched (a test proves every
+charge rate maps to a seeded code with that rate). "Charges" counts charges whose `gst` maps to the code (`chargeTaxCode`: `Goods
+rate` → GOODS, `5%` → GST5). Delete and deactivate are blocked on that count. **Gap G-023:** charges, items and document lines
+should store a tax-code reference (and the charge editor should offer the active codes), so "used by" also covers items, prices
+and documents and rate lookup uses the document date.
+
+### Parity and deliberate changes
+- **Ported:** the eight seeded codes (GST0, GST5, GST18, GST40, GOODS built-in; GST3, GST12, GST28 inactive); columns Code · Name ·
+  Rate (current, or `5% → 18% from …`, `Follows the goods`, `Starts …`) · Effective from · Applies to · Source · Charges · Status;
+  views All / Active / Inactive; create / edit / delete; every rule below.
+- **Changed:** Applies to is a select (was a segmented control); the *Built-in* tag is a Source column and a drawer tag; the "How
+  GST splits" explainer, the "Rate change scheduled …" toast and Alt+R are not ported (the generic save toast is used; the button
+  is in the drawer). Inactive codes sort after active ones but are not dimmed. Missing built-in codes are not merged back on read
+  (built-in codes can't be deleted, so they can't go missing).
+
+### Data model
+Collection `taxCodes` (`shelfree.v2.taxCodes`, key `code`), schema `taxCodeSchema`: `code (2–12, A–Z 0–9 -), name, kind
+'rate'|'goods', appliesTo 'Goods'|'Services'|'Both', rates [{ rate 0–100, from ISO date }], desc, active, system, createdAt,
+updatedAt` — the prototype's `TaxCode`.
+
+### Rules (`domain/tax-codes.ts`; the backend enforces the same)
+- Code 2–12 chars, unique, fixed after create; name required, unique (case-insensitive).
+- Rates 0–100, up to 2 decimals, one per date. **Editing a saved code:** rows that started before today are locked (shown, not
+  editable); a row starting today stays editable; new rows must start today or later and after the last locked row. **A new code**
+  may enter any dates (its history).
+- Built-in codes can't be deleted (code and kind fixed; name, description, applies-to, future rates and status editable).
+- **Delete** is blocked for built-in codes and any code a charge uses; **deactivate** is blocked while an *active* charge uses it.
+- `taxRateOn(code, date)` = latest row with `from ≤ date`; GOODS has none.
+
+### Backend-build notes
+As above (tables `tax_codes` and `tax_code_rates`, endpoints, immutability of started rates, documents store the resolved rate and
+code at posting). **Permissions:** Finance *Manage settings* to write; Finance read access to view (read-only mode: no New / Edit /
+Delete). **Audit:** code create / edit (field diff) / activate / deactivate / delete and every rate-row append / remove with old →
+new and the date. No personal data. Referential integrity must cover charges, items, price lists and document lines (G-023).
+
+### Tests
+Vitest `domain/tax-codes.test.ts` (seed, charge-rate mapping, rate lookup and status, usage and blocks, validation of code / name /
+rate rows / locks / deactivate, drafts and the stored record). Playwright `e2e/settings-finance.spec.ts` (list, shared copy, create /
+edit in place / scheduled rate / delete + undo, validation, locked history, blocks, help, view-only member).

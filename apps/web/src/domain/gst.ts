@@ -4,33 +4,49 @@
  */
 import type { TaxCalc, Vendor, VendorGstRegType } from '@/data/schemas'
 
+/** `ut-leg` = UT with a legislature (CGST + SGST), `ut` / `other` = CGST + UTGST, `foreign` = IGST only. */
+export type GstStateType = 'state' | 'ut-leg' | 'ut' | 'other' | 'foreign'
+
 export interface GstState {
   /** Two-digit GST state code, e.g. `33`. */
   code: string
   name: string
   abbr: string
+  type: GstStateType
+  /** Union territory without a legislature: same-state tax is CGST + UTGST. */
+  ut: boolean
   /** Retired codes stay resolvable but are not offered for new records. */
   legacy: boolean
+  /** Why a code is retired; '' for current codes. */
+  note: string
 }
 
-const S = (code: string, name: string, abbr: string, legacy = false): GstState => ({ code, name, abbr, legacy })
+const S = (code: string, name: string, abbr: string, type: GstStateType, note = ''): GstState => ({
+  code,
+  name,
+  abbr,
+  type,
+  ut: type === 'ut' || type === 'other',
+  legacy: !!note,
+  note,
+})
 
 export const GST_STATES: readonly GstState[] = [
-  S('01', 'Jammu and Kashmir', 'JK'), S('02', 'Himachal Pradesh', 'HP'), S('03', 'Punjab', 'PB'),
-  S('04', 'Chandigarh', 'CH'), S('05', 'Uttarakhand', 'UK'), S('06', 'Haryana', 'HR'),
-  S('07', 'Delhi', 'DL'), S('08', 'Rajasthan', 'RJ'), S('09', 'Uttar Pradesh', 'UP'),
-  S('10', 'Bihar', 'BR'), S('11', 'Sikkim', 'SK'), S('12', 'Arunachal Pradesh', 'AR'),
-  S('13', 'Nagaland', 'NL'), S('14', 'Manipur', 'MN'), S('15', 'Mizoram', 'MZ'),
-  S('16', 'Tripura', 'TR'), S('17', 'Meghalaya', 'ML'), S('18', 'Assam', 'AS'),
-  S('19', 'West Bengal', 'WB'), S('20', 'Jharkhand', 'JH'), S('21', 'Odisha', 'OD'),
-  S('22', 'Chhattisgarh', 'CG'), S('23', 'Madhya Pradesh', 'MP'), S('24', 'Gujarat', 'GJ'),
-  S('25', 'Daman and Diu', 'DD', true),
-  S('26', 'Dadra and Nagar Haveli and Daman and Diu', 'DN'), S('27', 'Maharashtra', 'MH'),
-  S('28', 'Andhra Pradesh (old)', 'AP', true),
-  S('29', 'Karnataka', 'KA'), S('30', 'Goa', 'GA'), S('31', 'Lakshadweep', 'LD'),
-  S('32', 'Kerala', 'KL'), S('33', 'Tamil Nadu', 'TN'), S('34', 'Puducherry', 'PY'),
-  S('35', 'Andaman and Nicobar Islands', 'AN'), S('36', 'Telangana', 'TS'), S('37', 'Andhra Pradesh', 'AD'),
-  S('38', 'Ladakh', 'LA'), S('97', 'Other territory', 'OT'), S('96', 'Foreign country', 'FC'),
+  S('01', 'Jammu and Kashmir', 'JK', 'ut-leg'), S('02', 'Himachal Pradesh', 'HP', 'state'), S('03', 'Punjab', 'PB', 'state'),
+  S('04', 'Chandigarh', 'CH', 'ut'), S('05', 'Uttarakhand', 'UK', 'state'), S('06', 'Haryana', 'HR', 'state'),
+  S('07', 'Delhi', 'DL', 'ut-leg'), S('08', 'Rajasthan', 'RJ', 'state'), S('09', 'Uttar Pradesh', 'UP', 'state'),
+  S('10', 'Bihar', 'BR', 'state'), S('11', 'Sikkim', 'SK', 'state'), S('12', 'Arunachal Pradesh', 'AR', 'state'),
+  S('13', 'Nagaland', 'NL', 'state'), S('14', 'Manipur', 'MN', 'state'), S('15', 'Mizoram', 'MZ', 'state'),
+  S('16', 'Tripura', 'TR', 'state'), S('17', 'Meghalaya', 'ML', 'state'), S('18', 'Assam', 'AS', 'state'),
+  S('19', 'West Bengal', 'WB', 'state'), S('20', 'Jharkhand', 'JH', 'state'), S('21', 'Odisha', 'OD', 'state'),
+  S('22', 'Chhattisgarh', 'CG', 'state'), S('23', 'Madhya Pradesh', 'MP', 'state'), S('24', 'Gujarat', 'GJ', 'state'),
+  S('25', 'Daman and Diu', 'DD', 'ut', 'Retired — merged into 26 on 26 Jan 2020'),
+  S('26', 'Dadra and Nagar Haveli and Daman and Diu', 'DN', 'ut'), S('27', 'Maharashtra', 'MH', 'state'),
+  S('28', 'Andhra Pradesh (old)', 'AP', 'state', 'Retired — Andhra Pradesh registrations use 37'),
+  S('29', 'Karnataka', 'KA', 'state'), S('30', 'Goa', 'GA', 'state'), S('31', 'Lakshadweep', 'LD', 'ut'),
+  S('32', 'Kerala', 'KL', 'state'), S('33', 'Tamil Nadu', 'TN', 'state'), S('34', 'Puducherry', 'PY', 'ut-leg'),
+  S('35', 'Andaman and Nicobar Islands', 'AN', 'ut'), S('36', 'Telangana', 'TS', 'state'), S('37', 'Andhra Pradesh', 'AD', 'state'),
+  S('38', 'Ladakh', 'LA', 'ut'), S('97', 'Other territory', 'OT', 'other'), S('96', 'Foreign country', 'FC', 'foreign'),
 ]
 
 export function gstStateByCode(code: string | number | null | undefined): GstState | null {

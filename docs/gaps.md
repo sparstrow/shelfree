@@ -23,9 +23,6 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
 - **G-003 · Finance ▸ Number sequences is always empty** — no document type belongs to Finance yet, so the
   section shows an empty, New-disabled list. *Fix by:* stage 2 (finance for purchase — vendor bills / payments
   add finance document types).
-- **G-004 · Form sections' read-only mode is untested in the UI** — `SettingsSection readOnly` works by
-  reading, but the only ported form section (Business profile) is workspace-only, which a member can't open.
-  *Fix by:* the first Phase 2 run that ports a module form section (2.3 Tax settings or 2.4) — add an e2e.
 - **G-005 · Links to settings that are not moved yet** — People ▸ Users "Manage roles" goes to
   `/settings/ws-team`, and a member's `/settings` lands on `me-profile`; both show "not moved yet".
   *Fix by:* Phase 2 runs 2.5 (Team & roles) and 2.6 (Personal).
@@ -67,6 +64,28 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
   (`NET 30` = `NET30`) and a typo isn't counted. *Fix by:* convert both editors to a picker that stores the
   term code; `docs/payment-terms/README.md`.
 
+### Settings ▸ Finance (run 2.3)
+
+- **G-022 · Tax settings: no mixed-rate preview and no change history** — the prototype showed a live preview of
+  both calculation methods on mixed-rate lines under *Calculate tax*, and a *Change history* (last saves, who /
+  when / note, each field old → new) fed by a review-before-save dialog. The React section uses the template's
+  Save / Discard bar, so none of the three exist. *Fix by:* the preview is a small optional `preview` slot on
+  `SettingsSection`; the history needs the audit-event feed (`tax_settings.updated`) from the backend.
+  `docs/tax-settings/README.md`.
+- **G-023 · Charges, items and document lines don't reference a tax code** — GST is still text on charges
+  (`5%`, `Goods rate`, mapped to a code by `chargeTaxCode`); items, price lists and document lines carry no GST
+  rate, and the charge editor's list is the fixed `CHARGE_GST_RATES`, not the active tax codes. So a code's
+  *Charges* count and the delete / deactivate blocks cover charges only, and a rate change on a code reaches no
+  calculation. *Fix by:* the stage that adds the tax engine (store the code + resolved rate on each line at
+  posting; offer active codes in pickers; extend `taxCodeUsage`). `docs/tax-codes/README.md`.
+- **G-024 · A custom account chosen as the round-off account can still be deleted or deactivated** — Tax settings
+  stores `roundOffAcct`, but Chart of accounts doesn't count it as usage (the default 6190 is a system account, so
+  it is safe). *Fix by:* add the setting to `accountDeleteBlocked` and the deactivate check in
+  `domain/chart-of-accounts.ts`.
+- **G-025 · The GSTIN check compares against the workspace address state** — States & territories has no
+  registrations to compare with, and no *Registered* badge or *Locations* count (same dependency as G-017).
+  *Fix by:* the run that ports Workspace ▸ GST registrations.
+
 ### Testing
 
 - **G-012 · Some browser tests fail under full-suite load** — assembly-order-document, customer-profile,
@@ -102,6 +121,9 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
 
 ## Closed
 
+- **G-004 · Form sections' read-only mode is untested in the UI** (closed 2026-11-25, run 2.3) — Tax settings is a module
+  form section; `e2e/settings-finance.spec.ts` switches to the Member (Kavitha: Finance *write*, no Manage settings right)
+  and checks the values show as text in the same rows with the "View only" line, no inputs and no Save bar.
 - **G-011 · Shared records carry one `module`, the spec says `modules[]`** (closed 2026-11-25, run 2.1) — decided
   per list: number sequences, statuses and custom fields have one `module` (derived from document type /
   flow / entity, which each belong to exactly one module); payment terms carry `modules: string[]` and the

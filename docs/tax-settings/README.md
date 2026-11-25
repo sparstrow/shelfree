@@ -198,3 +198,53 @@ Live in `Shelfree App.dc.html` (Tax settings). Goal: cut settings-page text nois
 
 ## Update 2026-10-15 — inline descriptions retired
 The `?` "show every description inline" mode is removed from this page: no description text renders under the page title, section titles, settings/fields or options under any setting — the ⓘ + hover popover is the only place descriptions live. The `?` shortcut no longer applies here and is removed from Keyboard shortcuts. (Tax codes also drops the inline "Ctrl/Cmd + Enter to save · Esc to close" hint in the edit popup — it stays listed in Keyboard shortcuts.)
+
+## React app (2026-11-25)
+
+**Settings ▸ Finance ▸ Tax settings** is ported as a form section (Phase 2 run 2.3): **`/finance/settings/cfg-taxset`**
+(area Finance, type form; legacy `/settings/cfg-taxset` redirects). `TaxSettingsSection` in
+`apps/web/src/features/settings/tax-settings/` describes label | control rows and hands them to `SettingsSection`
+(`components/settings/`), which owns dirty tracking (a dot beside a changed label), Save / Discard, Ctrl/Cmd+S, Esc and the
+unsaved-changes guard. The help map (`help.ts`) is the prototype's `tsHelpText()` + `tsOpts()`: page, five section titles, every
+row, and each option's explanation with the current one marked and the default tagged. Rules and option lists:
+`apps/web/src/domain/tax-settings.ts` (Vitest). Tier: Starter base, ungated, on by default.
+
+### Parity and deliberate changes
+- **Ported (10 settings, 5 groups):** *Tax calculation* — Calculate tax; *Rounding* — Round totals to the rupee, Round-off
+  account (shown as text while rounding is off, so the row never moves); *Document checks* — Composition vendor in another
+  state, Tax override on a line, GSTIN state mismatch warning, Bill-to and ship-to in different states; *Input tax credit* —
+  Book input tax credit; *Branch transfers* — Transfer value, Share of selling price (the row exists only for *A share of selling
+  price*; 1–100, two decimals). Defaults = prototype (`line`, on, `6190`, on, on, `warn`, `warn`, `onBill`, `landed`, 90).
+- **Replaced by the template (deliberate):** the prototype's draft → *Review and save* dialog (per-change impact with live
+  counts) is the template's plain Save / Discard bar; the leave guard is the template's. The "(default)" suffix on option
+  labels is not added — the ⓘ popover tags the default and offers *Use default*. "Confirm with CA" chips are a note in the ⓘ.
+- **Not ported (G-022):** the mixed-rate *Preview* under Calculate tax and the *Change history* section (who changed what,
+  with an optional note). Both need an audit-event feed; the history is a view of the backend's `tax_settings.updated` events.
+- The composition-vendor row is always shown (the prototype hid it until a composition vendor or a second registration existed).
+- Category tax codes, *New items start with* and *New vendors start as* stay retired (see above).
+
+### Data model and persistence
+The existing workspace settings document `shelfree.v2.settings` (`apps/web/src/data/api/settings.ts`), object `tax`:
+`taxCalc 'line'|'rate'`, `roundTotal`, `compInterState 'warn'|'block'` (stored before this run) plus new `roundOffAcct`
+(chart-of-accounts number), `lineOverride`, `mismatchWarn`, `paperTransfer 'warn'|'block'`, `itcBooking 'onBill'|'on2bMatch'`,
+`branchValue 'landed'|'purchase'|'pctSell'`, `branchPct` (1–100). Stored data from before keeps parsing: the stored `tax` is
+merged over the defaults. **Read today:** `taxCalc` and `roundTotal` (vendor tax method on purchase orders, `vendorTaxCalc`) and
+`compInterState` (issuing a PO). The other seven are stored and shown; the tax engine, postings and branch transfers read them
+when those stages are built (as in the prototype).
+
+### Rules (`domain/tax-settings.ts`)
+The round-off account must be an **active income or expense** account while rounding is on (the select lists only those; a saved
+account that is no longer offered stays visible as "(not available)" / "(missing)"). The share of selling price is checked only
+for *A share of selling price*: 1–100, at most two decimals. Enums are zod-checked on save.
+
+### Backend-build notes
+Table, endpoints, concurrency, exact-decimal maths and "documents snapshot the settings at posting" are as in the Backend-build
+notes above. Also: `PATCH /settings/tax` rejects a round-off account that isn't an active income / expense account, and `branchPct`
+outside 1–100. **Audit:** one `tax_settings.updated` event per save with every field old → new. **Permissions:** the Finance
+*Manage settings* right edits; Finance read access views it **read-only** — values as text in the same rows, no Save bar, the
+"View only" line (end-to-end tested with the Member role, which closes G-004).
+
+### Tests
+Vitest `domain/tax-settings.test.ts` (defaults = stored document, an older document still parses, round-off options and errors,
+branch share). Playwright `e2e/settings-finance.spec.ts` (defaults, save / reload / Discard, round-off text while off, share
+validation, help, **view-only for a member**).

@@ -155,6 +155,20 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
     { combo: 'Delete', desc: 'Delete the active location — blocked while it holds stock, has open documents or is the principal place.' },
     ...LIST_PAGE_SHORTCUTS,
   ]),
+  group('settings-tax-settings', 'Settings › Tax settings', [
+    { combo: 'Ctrl/Cmd + S', desc: 'Save the changed tax settings. A change shows a dot beside its label until saved.' },
+    { combo: 'Esc', desc: 'Discard the unsaved changes (when no description is open).' },
+    { combo: 'Space (on a switch)', desc: 'Turn the focused switch on or off.' },
+  ]),
+  group('settings-tax-codes', 'Settings › Tax codes', [
+    ...LIST_EDITOR_SHORTCUTS.map((s) => (s.combo === 'N' ? { ...s, desc: 'New tax code — starts active, applies to Both, with one rate starting today.' } : s)),
+    { combo: 'Delete', desc: 'Delete the active code — blocked for built-in codes and codes a charge uses.' },
+    ...LIST_PAGE_SHORTCUTS,
+  ]),
+  group('settings-states', 'Settings › States & territories', [
+    { combo: 'Type in Check a GSTIN', desc: 'Shows the state, PAN and the tax split against your state as you type. Nothing is saved.' },
+    ...LIST_PAGE_SHORTCUTS,
+  ]),
   group('settings-shortcuts', 'Settings › Keyboard shortcuts', [
     { combo: '/', desc: 'Focus the search box.' },
     { combo: 'Esc', desc: 'Clear the search.' },

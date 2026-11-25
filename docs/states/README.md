@@ -86,3 +86,36 @@ Address State values persist wherever their record already does.
 
 ## Update 2026-09-26 — task 4
 The **Locations** column now counts real locations from Locations & warehouses (`locDefs()`), by `state`.
+
+## React app (2026-11-25)
+
+**Settings ▸ Workspace ▸ States & territories** is ported as a list section (Phase 2 run 2.3): **`/settings/cfg-states`** (area
+Workspace, type list). `StatesSection` in `apps/web/src/features/settings/states/` is a `ListPage embedded` (read-only for
+everyone — no New, Edit or Delete) under a **Check a GSTIN** card, inside `SettingsPage flush`. Rules:
+`apps/web/src/domain/gst-states.ts` (Vitest); the table is `GST_STATES` in `apps/web/src/domain/gst.ts`. Tier: Starter base, ungated.
+
+### Data and the table
+`GST_STATES` (domain) is the single table and also the **seed of the `gstStates` collection** (`shelfree.v2.gstStates`, key `code`,
+`gstStateSchema`: `code, name, abbr, type 'state'|'ut-leg'|'ut'|'other'|'foreign', ut, legacy, note`). The pure domain functions
+that read it — `gstStateByCode`, `gstStateByName`, `vendorTaxState` and the address pickers — are **unchanged** (a test pins their
+results); the table only gained `type`, `ut` and `note` (the prototype's fields). The list reads the collection through the data
+seam; the domain stays free of storage. Nothing is editable, so only the seed ever writes the collection.
+
+### Parity and deliberate changes
+- **Ported:** the 38 state / UT codes + 96 Foreign country + 97 Other territory; columns Code · Name · Short · Type · Same-state
+  tax · Parties (vendors + customers whose address state is here) · Status (Retired pill on 25 and 28); views All / States / Union
+  territories; search over code, name, short code, type; retired rows last; a row drawer; right-click *Copy name* (*Copy number*
+  copies the code); the **Check a GSTIN** card (empty, partial "Keep typing — n of 15", bad state code, bad pattern, valid with
+  PAN, split vs your state, check-character and retired-code warnings; nothing stored).
+- **Changed:** the split compares against the **workspace address state** (the GST registrations list isn't ported, G-017 — the
+  prototype compares against the primary registration). The *Locations* count column (needs locations by state) and the
+  *Registered* badge (needs registrations) are not ported. The prototype's `/ G 1 2 3 ↑ ↓ C` keys are replaced by the list
+  template's keys.
+
+### Backend-build notes
+As above (global `gst_states` table, `GET /reference/gst-states`, `POST /gstin/validate`). **Permissions:** read for everyone who
+can open Settings ▸ Workspace; nobody writes (migration only). **Audit:** none (reference data; the typed GSTIN is not logged).
+
+### Tests
+Vitest `domain/gst-states.test.ts` (table and lookups unchanged, split by type, sort, party counts, GSTIN check and split).
+Playwright `e2e/settings-finance.spec.ts` (list and view, read-only, GSTIN check, help).
