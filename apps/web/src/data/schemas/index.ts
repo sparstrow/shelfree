@@ -322,6 +322,7 @@ export const userSchema = z.object({
   twoFA: z.boolean(),
   lastActive: isoDateTime.nullable(),
   perms: z.record(z.string(), z.string()),
+  settings: z.record(z.string(), z.boolean()).default({}),
 })
 export type User = z.infer<typeof userSchema>
 
@@ -657,3 +658,44 @@ export const itemUnitSetSchema = z.object({
   qty: z.record(z.string(), z.number()),
 })
 export type ItemUnitSet = z.infer<typeof itemUnitSetSchema>
+
+// ── Settings ▸ Number sequences (shared list across modules) ─────────────────
+export const NUMBER_SEQUENCE_DOC_TYPES = [
+  'purchase-order',
+  'purchase-receipt',
+  'sales-order',
+  'sales-invoice',
+  'item',
+  'bom',
+  'assembly-order',
+  'employee',
+] as const
+export const numberSequenceDocTypeSchema = z.enum(NUMBER_SEQUENCE_DOC_TYPES)
+export type NumberSequenceDocType = z.infer<typeof numberSequenceDocTypeSchema>
+
+export const NUMBER_SEQUENCE_RESETS = ['never', 'yearly-apr', 'yearly-jan'] as const
+export const numberSequenceResetSchema = z.enum(NUMBER_SEQUENCE_RESETS)
+export type NumberSequenceReset = z.infer<typeof numberSequenceResetSchema>
+
+export const numberSequenceScopeSchema = z.object({
+  warehouseId: z.string().optional(),
+  gstin: z.string().optional(),
+})
+export type NumberSequenceScope = z.infer<typeof numberSequenceScopeSchema>
+
+export const numberSequenceSchema = z.object({
+  id: z.string(),
+  docType: numberSequenceDocTypeSchema,
+  module: z.string(),
+  name: z.string(),
+  prefix: z.string(),
+  digits: z.number().int().min(1).max(10),
+  suffix: z.string().optional(),
+  next: z.number().int().min(1),
+  resets: numberSequenceResetSchema,
+  isDefault: z.boolean(),
+  active: z.boolean(),
+  issued: z.number().int().min(0),
+  scope: numberSequenceScopeSchema.optional(),
+})
+export type NumberSequence = z.infer<typeof numberSequenceSchema>

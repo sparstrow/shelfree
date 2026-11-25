@@ -44,6 +44,10 @@ behavior, data-model, or screen change (see root `CLAUDE.md`).
   **Settings** (Workspace / Configuration / Terminology) and **My settings**
   (avatar menu). Plan-tier gating, locked/upgrade states, and the live
   terminology (rename-labels) layer.
+- [`number-sequences/`](number-sequences/README.md) — **Number sequences**, shared
+  per-document-type numbering series (`PO`, `GRN`, `SO`, `INV`, `ITM`, `BOM`,
+  `AO`, `EMP`) with GST-audit uniqueness/monotonicity rules and atomic
+  server-side issuance.
 - [`item-page/`](item-page/README.md) — the full-page **Item detail** screen
   (also part of `Shelfree App.dc.html`): opens in its own workspace tab from the
   Items grid; Overview / Stock & locations / Purchasing sub-tabs, with
