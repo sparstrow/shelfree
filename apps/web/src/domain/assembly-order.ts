@@ -79,7 +79,7 @@ export function aoNextNo(orders: readonly Pick<AssemblyOrder, 'no'>[]): string {
 export function newAssemblyOrder(
   orders: readonly Pick<AssemblyOrder, 'no'>[],
   today: string,
-  opts?: { defaultLoc?: string; createdAt?: string },
+  opts?: { defaultLoc?: string; defaultQty?: number; createdAt?: string },
 ): AssemblyOrder {
   return {
     no: aoNextNo(orders),
@@ -88,7 +88,7 @@ export function newAssemblyOrder(
     uom: 'EA',
     bomId: '',
     bomVersion: '',
-    qty: 1,
+    qty: opts?.defaultQty && opts.defaultQty >= 1 ? opts.defaultQty : 1,
     qtyFinished: 0,
     location: opts?.defaultLoc || DEFAULT_PRODUCTION_SETTINGS.outputLoc,
     dueDate: addDaysIso(today, 7),

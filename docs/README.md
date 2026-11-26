@@ -49,6 +49,9 @@ behavior, data-model, or screen change (see root `CLAUDE.md`).
   module, Shared lists, Personal), one URL per section (`/settings/<id>`, `/<module>/settings/<id>`,
   `/settings/shared/<list>`), Find a setting, per-module Manage settings right and read-only mode, legacy
   redirects, quiet help. Also keeps the prototype reference for sections not moved yet.
+- [`personal-settings/`](personal-settings/README.md) — **Personal settings** (Settings ▸ Personal, run 2.6): Profile, Appearance
+  (theme dark / light / system), Notifications, Language & region, Personal defaults, Favorites & views and Security
+  (UI only). One per-user record, editable by every user; profile mirrors the People ▸ Users record.
 - [`statuses/`](statuses/README.md) — **Statuses & stages** (Settings, module slices and shared list): status
   list per document flow, system (locked) vs custom stages, Open / Closed, colour, order.
 - [`custom-fields/`](custom-fields/README.md) — **Custom fields** (Settings, module slices and shared list):

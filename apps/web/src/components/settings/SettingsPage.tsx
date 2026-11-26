@@ -77,7 +77,7 @@ export function SettingsPage({
       }
       if (e.key === '?' && !mod && !e.altKey && me && !isTypingTarget(e.target) && !document.querySelector(OPEN_LAYER)) {
         e.preventDefault()
-        updateMe.mutate({ ...me, showSetHelp: !me.showSetHelp })
+        updateMe.mutate({ showSetHelp: !me.showSetHelp })
       }
     }
     window.addEventListener('keydown', onKey)

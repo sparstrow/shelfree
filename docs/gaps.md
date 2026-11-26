@@ -18,9 +18,6 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
 - **G-003 · Finance ▸ Number sequences is always empty** — no document type belongs to Finance yet, so the
   section shows an empty, New-disabled list. *Fix by:* stage 2 (finance for purchase — vendor bills / payments
   add finance document types).
-- **G-005 · Links to settings that are not moved yet** — a member’s `/settings` lands on `me-profile`, which still shows
-  "not moved yet" (the Team & roles half — People ▸ Users "Manage roles" → `/settings/ws-team` — was closed in run 2.5b).
-  *Fix by:* Phase 2 run 2.6 (Personal).
 
 ### Number sequences and numbering
 
@@ -162,6 +159,27 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
   there) still open. The data is meant to stay reachable. *Fix by:* decide with the backend whether an off module should
   404 its pages; if yes, a `beforeLoad` check on `$module/$page` using `isModuleEnabledNow`.
 
+### Personal settings (run 2.6)
+
+- **G-038 · The tax-split switch is stored and nothing reads it** — Personal defaults ▸ *Show tax split columns on
+  document lines* saves `me.showTaxSplit`, but the purchase document lines always show one compact tax tag (no CGST /
+  SGST / IGST amount columns exist). *Fix by:* the finance-for-purchase stage, when lines get the split columns.
+  `docs/personal-settings/README.md`.
+- **G-039 · Personal language, locale and formats are saved, not applied** — Language & region stores `language`,
+  `locale`, `dateFmt`, `numFmt`; the app is English only and `lib/format.ts` still prints one format (see G-029).
+  `resolveRegional(workspace, me)` is the one resolver (tested) and the section shows what "Workspace default" resolves
+  to; the display helpers have to call it when G-029 is fixed. *Fix by:* the G-029 task (read the resolved block through
+  one provider), then translation work for language.
+- **G-040 · Notifications, two-factor and sessions have no backend** — `notify*` flags and `twoFA` are stored on the
+  user's record only; nothing sends an alert, enforces a second factor at sign-in, or lists real sessions (the two
+  sessions are demo rows, "Sign out others" only hides them). The People ▸ Users `twoFA` column is a separate flag and is
+  not synced. *Fix by:* backend (notifier, auth service, `GET/DELETE /me/sessions`); contract in
+  `docs/personal-settings/README.md`.
+- **G-041 · No profile photo, and the Employee record isn't mirrored** — Profile has no *Change photo* (no file
+  storage yet; the avatar is the initials). Saving the profile mirrors name and email to the People ▸ Users record but
+  not to the linked Employee (`empId`), whose phone / title stay as they were. *Fix by:* backend (single person record
+  behind user and employee; avatar upload).
+
 ## Closed
 
 - **G-017 · Locations didn't read GST registrations** (closed 2026-11-25, run 2.5a) — `validateLocation` refuses *Active* (and moving an
@@ -181,6 +199,8 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
   *Customer-specific pricing* capability in Modules & capabilities IS `salesPricing.enabled` (one source, block-level save);
   *Work-in-progress location* shows only while *Production orders & routing* is on (as in the prototype) and new BOMs start at
   `production.wipLoc` instead of the hard-coded `WH-ASSY`.
+- **G-005 · Links to settings that were not moved yet** (closed 2026-11-26, run 2.6) — a member's `/settings` lands on a working
+  Profile (`e2e/settings-personal.spec.ts` signs in as Member and edits it); the Team & roles half closed in run 2.5b.
 - **G-005 (Team & roles half) · People ▸ Users "Manage roles" pointed at an unported page** (closed 2026-11-25, run 2.5b) —
   `/settings/ws-team` is ported; the Personal half stays open.
 - **G-004 · Form sections' read-only mode is untested in the UI** (closed 2026-11-25, runs 2.3 and 2.4) — Tax settings, Sales pricing and Assembly & production are module

@@ -30,6 +30,8 @@ import {
 import { CommandError } from '@/data/api/commands'
 import { useFinishAssemblyOrder, useList, useUpsert } from '@/data/queries'
 import { useSettings } from '@/data/queries/settings'
+import { useMe } from '@/data/queries/session'
+import { resolveAssemblyDefaults } from '@/domain/personal-preferences'
 import type { AoStatus, AssemblyOrder, AssemblyOrderLine, Bom, Employee, Item, Warehouse } from '@/data/schemas'
 import {
   DEFAULT_PRODUCTION_SETTINGS,
@@ -91,8 +93,11 @@ export function AssemblyOrderEditor({ routeNo, initialItemNo }: { routeNo: strin
   const employees = useList('employees')
   const settings = useSettings()
   const production = settings.data?.production ?? DEFAULT_PRODUCTION_SETTINGS
+  const me = useMe()
+  const myLoc = me.data?.defAssemblyLoc
+  const myQty = me.data?.defAssemblyQty
 
-  const queries = [orders, items, boms, warehouses, employees, settings]
+  const queries = [orders, items, boms, warehouses, employees, settings, me]
   const failed = queries.find((q) => q.isError)
   const loading = queries.some((q) => q.isLoading)
 
@@ -109,13 +114,16 @@ export function AssemblyOrderEditor({ routeNo, initialItemNo }: { routeNo: strin
   const initialDraft = useMemo(() => {
     if (state.kind !== 'ready') return null
     if (!isNew) return saved ?? null
+    // Personal defaults (Settings ▸ Personal defaults ▸ Assembly orders) win over the workspace's output location.
+    const mine = resolveAssemblyDefaults({ defAssemblyLoc: myLoc, defAssemblyQty: myQty }, production.outputLoc)
     const base = newAssemblyOrder(orders.data ?? [], todayLocal(), {
-      defaultLoc: production.outputLoc,
+      defaultLoc: mine.location,
+      defaultQty: mine.qty,
     })
     if (!initialItemNo) return base
     const foundItem = (items.data ?? []).find((it) => it.no === initialItemNo)
     return foundItem ? aoApplyItem(base, foundItem, boms.data ?? [], base.orderDate) : base
-  }, [state.kind, isNew, saved, orders.data, initialItemNo, items.data, boms.data, production.outputLoc])
+  }, [state.kind, isNew, saved, orders.data, initialItemNo, items.data, boms.data, production.outputLoc, myLoc, myQty])
 
   if (state.kind !== 'ready') {
     return (

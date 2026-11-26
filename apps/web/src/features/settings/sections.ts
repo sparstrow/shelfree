@@ -47,6 +47,23 @@ import { RegionalSection } from './regional/RegionalSection'
 import { REGIONAL_HELP } from './regional/help'
 import { TerminologySection } from './terminology/TerminologySection'
 import { TERMINOLOGY_HELP } from './terminology/help'
+// Run 2.6 — Personal.
+import { AppearanceSection } from './personal/AppearanceSection'
+import { DefaultsSection } from './personal/DefaultsSection'
+import { FavoritesSection } from './personal/FavoritesSection'
+import { LanguageSection } from './personal/LanguageSection'
+import { NotificationsSection } from './personal/NotificationsSection'
+import { ProfileSection } from './personal/ProfileSection'
+import { SecuritySection } from './personal/SecuritySection'
+import {
+  APPEARANCE_HELP,
+  DEFAULTS_HELP,
+  FAVORITES_PERSONAL_HELP,
+  LANGUAGE_HELP,
+  NOTIFICATIONS_HELP,
+  PROFILE_HELP,
+  SECURITY_HELP,
+} from './personal/help'
 
 /**
  * Sections already moved to the React app, by id (see `components/settings/registry.ts`
@@ -78,6 +95,14 @@ export const SETTINGS_SECTIONS: Readonly<Record<string, SettingsSectionComponent
   'ws-team': TeamRolesSection,
   'cfg-nav': NavigationSection,
   'cfg-favorites': FavoritesViewsSection,
+  // Run 2.6 — Personal (editable by every user: the frame never passes these a read-only state)
+  'me-profile': ProfileSection,
+  'me-appearance': AppearanceSection,
+  'me-notifications': NotificationsSection,
+  'me-language': LanguageSection,
+  'me-defaults': DefaultsSection,
+  'me-favorites': FavoritesSection,
+  'me-security': SecuritySection,
 }
 
 /** Quiet-help maps keyed by section id, used by central Settings "Find a setting". */
@@ -105,4 +130,12 @@ export const SETTINGS_HELP_MAPS: Readonly<Record<string, HelpMap>> = {
   'ws-team': TEAM_ROLES_HELP,
   'cfg-nav': NAVIGATION_HELP,
   'cfg-favorites': FAVORITES_VIEWS_HELP,
+  // Run 2.6 — Personal
+  'me-profile': PROFILE_HELP,
+  'me-appearance': APPEARANCE_HELP,
+  'me-notifications': NOTIFICATIONS_HELP,
+  'me-language': LANGUAGE_HELP,
+  'me-defaults': DEFAULTS_HELP,
+  'me-favorites': FAVORITES_PERSONAL_HELP,
+  'me-security': SECURITY_HELP,
 }

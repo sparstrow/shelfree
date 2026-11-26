@@ -6,10 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Shelfree</title>
       <script>
-      // Apply the saved theme before first paint (no flash).
+      // Apply the saved theme before first paint (no flash). Personal setting: shelfree.v2.me ▸ theme
+      // (dark | light | system); the first build kept it in shelfree.v2.ui, read until one is saved.
       try {
-        var t = JSON.parse(localStorage.getItem("shelfree.v2.ui") || "{}");
-        if (t.state && t.state.theme) document.documentElement.dataset.theme = t.state.theme;
+        var me = JSON.parse(localStorage.getItem("shelfree.v2.me") || "{}");
+        var t = me.theme;
+        if (!t) {
+          var ui = JSON.parse(localStorage.getItem("shelfree.v2.ui") || "{}");
+          t = ui.state && ui.state.theme;
+        }
+        if (t === "system") t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
       } catch (e) {}
     </script>
   </head>

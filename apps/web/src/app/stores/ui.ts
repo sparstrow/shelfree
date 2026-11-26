@@ -1,6 +1,6 @@
 /**
- * UI-only state that should survive a reload: theme, sidebar, workspace tabs,
- * recent pages. This is per-browser preference data, not business data —
+ * UI-only state that should survive a reload: sidebar, workspace tabs,
+ * recent pages. The theme is not here any more: it is a personal setting (`me.theme`, Settings ▸ Appearance). This is per-browser preference data, not business data —
  * business records live behind `data/api`. Favourites and saved views are
  * per-user data, not UI flags: they live in the `favorites` / `savedViews`
  * collections (`data/queries/favorites.ts`).
@@ -8,7 +8,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export type Theme = 'dark' | 'light'
 export type DemoRole = 'owner' | 'admin' | 'member'
 
 export interface WorkspaceTab {
@@ -18,7 +17,6 @@ export interface WorkspaceTab {
 }
 
 interface UiState {
-  theme: Theme
   navCollapsed: boolean
   /** Accordion state per module id (`settings` included). Unset = follow the active module. */
   navExpanded: Record<string, boolean>
@@ -33,7 +31,6 @@ interface UiState {
   /** User-resized column widths, per grid id. */
   columnWidths: Record<string, Record<string, number>>
 
-  setTheme: (theme: Theme) => void
   setNavCollapsed: (collapsed: boolean) => void
   setNavExpanded: (id: string, open: boolean) => void
   toggleFavOpen: () => void
@@ -54,7 +51,6 @@ interface UiState {
 export const useUi = create<UiState>()(
   persist(
     (set, get) => ({
-      theme: 'dark',
       navCollapsed: false,
       navExpanded: {},
       favOpen: true,
@@ -65,7 +61,6 @@ export const useUi = create<UiState>()(
       demoRole: 'owner',
       columnWidths: {},
 
-      setTheme: (theme) => set({ theme }),
       setNavCollapsed: (navCollapsed) => set({ navCollapsed }),
       setNavExpanded: (id, open) => set((s) => ({ navExpanded: { ...s.navExpanded, [id]: open } })),
       toggleFavOpen: () => set((s) => ({ favOpen: !s.favOpen })),
@@ -109,7 +104,8 @@ export const useUi = create<UiState>()(
       // (`data/api/favorites.ts`); never carry the old list into memory, or it would be
       // written back and moved a second time.
       merge: (persisted, current) => {
-        const { favorites: _moved, ...rest } = (persisted ?? {}) as Partial<UiState> & { favorites?: unknown }
+        // `theme` also left (it is `me.theme` now); an old value is read once by `data/api/session.ts`.
+        const { favorites: _moved, theme: _theme, ...rest } = (persisted ?? {}) as Partial<UiState> & { favorites?: unknown; theme?: unknown }
         return { ...current, ...rest }
       },
     },

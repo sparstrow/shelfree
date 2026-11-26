@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import type { HelpMap } from '@/components/help/types'
 import type { SettingsGroup } from './rows'
 import { SettingsPage } from './SettingsPage'
@@ -24,6 +25,12 @@ export interface SettingsSectionProps<V extends Json> {
   validate?: (values: V) => Record<string, string>
   /** View-only mode: values render as text in the same row box, no Save bar, Ctrl+S inert. */
   readOnly?: boolean
+  /**
+   * Show a draft live before it is saved (e.g. Appearance switches the theme as you pick it). Called with the
+   * draft whenever it changes, and with the saved value when the draft is discarded, saved over or the section
+   * closes, so an unsaved preview never outlives the section. Optional; no section needs it by default.
+   */
+  preview?: (values: V) => void
 }
 
 /**
@@ -42,6 +49,7 @@ export function SettingsSection<V extends Json>({
   groups,
   validate,
   readOnly = false,
+  preview,
 }: SettingsSectionProps<V>) {
   const form = useSettingsForm<V>({
     saved,
@@ -58,6 +66,16 @@ export function SettingsSection<V extends Json>({
       return errors
     },
   })
+  const draft = form.values
+  useEffect(() => {
+    if (!preview || !draft || readOnly) return
+    preview(draft)
+    return () => {
+      if (saved) preview(saved)
+    }
+    // `preview` is expected to be stable or cheap; re-running on it would re-apply the same draft.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, saved, readOnly])
   return (
     <SettingsPage
       title={title}
