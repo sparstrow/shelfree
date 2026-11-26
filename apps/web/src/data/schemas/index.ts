@@ -873,3 +873,18 @@ export const gstRegistrationSchema = z.object({
   updatedAt: z.string().optional(),
 })
 export type GstRegistration = z.infer<typeof gstRegistrationSchema>
+// ── Settings ▸ Team & roles (Phase 2 run 2.5b) ───────────────────────────────
+/**
+ * A role's default module access — what People ▸ Users starts a person with when the role is chosen.
+ * `id` is the role name users carry (`User.role`). Built-in roles are seeded from `ROLE_PRESETS`.
+ */
+export const roleDefSchema = z.object({
+  id: z.string(),
+  desc: z.string(),
+  /** Module key → `none | read | write`. */
+  perms: z.record(z.string(), z.string()),
+  /** Module key → may manage that module's settings by default. */
+  settings: z.record(z.string(), z.boolean()).default({}),
+  updatedAt: isoDateTime.optional(),
+})
+export type RoleDef = z.infer<typeof roleDefSchema>

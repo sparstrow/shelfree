@@ -98,6 +98,12 @@ behavior, data-model, or screen change (see root `CLAUDE.md`).
   `Shelfree App.dc.html`): sign-in accounts with 8-module `None / Read / Write` permissions,
   invite lifecycle, last-Admin / self-delete guards, employee directory, masked grid & export PII,
   and reference-safe deletion.
+- [`modules-capabilities/`](modules-capabilities/README.md) — Settings ▸ Workspace ▸ **Modules & capabilities**: module
+  on / off (applied to the sidebar, Departments, search and Settings) and the twelve scale capabilities.
+- [`plan-billing/`](plan-billing/README.md) — Settings ▸ Workspace ▸ **Plan & billing**: information only, no billing.
+- [`team-roles/`](team-roles/README.md) — Settings ▸ Workspace ▸ **Team & roles**: role definitions (default module access)
+  and who holds each role, shared with People ▸ Users.
+- [`navigation/`](navigation/README.md) — Settings ▸ Workspace ▸ **Navigation**: the Departments page options.
 - [`tax-codes/`](tax-codes/README.md) — Settings ▸ Configuration ▸ **Tax codes**: national GST
   rate codes with dated rate history, Goods-rate system code, retired 12%/28% kept inactive.
   Tax codes & GST plan task 1.

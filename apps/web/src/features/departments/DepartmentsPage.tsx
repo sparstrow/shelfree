@@ -2,9 +2,10 @@ import { useRouter } from '@tanstack/react-router'
 import { ExternalLink, Search, Star } from 'lucide-react'
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { ModuleIcon, PathIcon } from '@/app/icons'
-import { ICON_STAR, MODULES } from '@/app/nav'
+import { ICON_STAR } from '@/app/nav'
 import { TopBar } from '@/app/shell/TopBar'
 import { describePath } from '@/app/shell/use-active-page'
+import { useNavModules } from '@/app/shell/use-nav-modules'
 import { useUi } from '@/app/stores/ui'
 import { useFavoriteActions } from '@/components/saved-views/use-favorite-actions'
 import {
@@ -17,6 +18,7 @@ import {
 import { HelpTarget } from '@/components/help/HelpTarget'
 import { isSettingsModule } from '@/components/settings/registry'
 import { useWorkspace } from '@/data/queries/session'
+import { useNavigationSettings } from '@/data/queries/workspace-config'
 import {
   type DepartmentBlock,
   type DepartmentPageEntry,
@@ -62,6 +64,8 @@ export function DepartmentsPage() {
   const router = useRouter()
   const workspace = useWorkspace().data
   const favoriteActions = useFavoriteActions()
+  const navModules = useNavModules()
+  const navSettings = useNavigationSettings()
   const recents = useUi((s) => s.recents)
   const openTab = useUi((s) => s.openTab)
 
@@ -71,10 +75,10 @@ export function DepartmentsPage() {
   const rowRefs = useRef(new Map<string, HTMLButtonElement>())
 
   const blocks = useMemo<DepartmentBlock[]>(() => {
-    const base = new Map(buildDepartmentBlocks(MODULES, query).map((b) => [b.id, b]))
+    const base = new Map(buildDepartmentBlocks(navModules, query, undefined, navSettings.showUnbuilt).map((b) => [b.id, b]))
     const q = query.trim().toLowerCase()
     const out: DepartmentBlock[] = []
-    for (const mod of MODULES) {
+    for (const mod of navModules) {
       const existing = base.get(mod.id)
       const includeSettings =
         isSettingsModule(mod.id) && (!q || 'settings'.includes(q) || mod.name.toLowerCase().includes(q))
@@ -110,13 +114,14 @@ export function DepartmentsPage() {
       })
     }
     return out
-  }, [query])
+  }, [query, navModules, navSettings.showUnbuilt])
   const flat = useMemo(() => flattenDepartmentBlocks(blocks), [blocks])
   const activeFocusIdx = clampDepartmentFocus(focusIdx, flat.length)
   const focusedKey = activeFocusIdx >= 0 ? flat[activeFocusIdx].key : ''
 
   const recentChips = useMemo<RecentPageChip[]>(() => {
     const out: RecentPageChip[] = []
+    if (!navSettings.jumpBackIn) return out
     for (const path of recents) {
       const at = describePath(path)
       if (at.kind === 'page' && at.rest.length === 0) {
@@ -125,7 +130,7 @@ export function DepartmentsPage() {
       }
     }
     return out
-  }, [recents])
+  }, [recents, navSettings.jumpBackIn])
 
   const openEntry = (entry: DepartmentPageEntry, newTab = false) => {
     if (newTab) openTab(entry.path)
@@ -169,7 +174,7 @@ export function DepartmentsPage() {
       openEntry(target, mod)
       return
     }
-    if (!inFilterInput && !mod && !e.altKey && e.shiftKey && e.key.toLowerCase() === 's') {
+    if (favoriteActions.enabled && !inFilterInput && !mod && !e.altKey && e.shiftKey && e.key.toLowerCase() === 's') {
       const target = flat[activeFocusIdx]
       if (!target) return
       e.preventDefault()
@@ -244,6 +249,7 @@ export function DepartmentsPage() {
               )}
               <span className="w-[15px] flex-none" />
             </button>
+            {favoriteActions.enabled && (
             <button
               type="button"
               onClick={onStar}
@@ -262,6 +268,7 @@ export function DepartmentsPage() {
             >
               <StarGlyph on={fav} />
             </button>
+            )}
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent className="w-[212px] rounded-[10px] p-1.5">
@@ -273,14 +280,18 @@ export function DepartmentsPage() {
             <ExternalLink className="size-[14px]" strokeWidth={2} />
             Open in new tab
           </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem
-            className="gap-[9px] text-[12.5px]"
-            onSelect={() => favoriteActions.togglePage(entry.moduleId, entry.slug, favLabel)}
-          >
-            <Star className="size-[14px]" strokeWidth={2} />
-            {fav ? 'Remove from favorites' : 'Add to favorites'}
-          </ContextMenuItem>
+          {favoriteActions.enabled && (
+            <>
+              <ContextMenuSeparator />
+              <ContextMenuItem
+                className="gap-[9px] text-[12.5px]"
+                onSelect={() => favoriteActions.togglePage(entry.moduleId, entry.slug, favLabel)}
+              >
+                <Star className="size-[14px]" strokeWidth={2} />
+                {fav ? 'Remove from favorites' : 'Add to favorites'}
+              </ContextMenuItem>
+            </>
+          )}
         </ContextMenuContent>
       </ContextMenu>
     )

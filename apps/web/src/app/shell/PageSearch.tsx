@@ -1,7 +1,8 @@
 import { useRouter } from '@tanstack/react-router'
 import { FileText, Search } from 'lucide-react'
 import { type KeyboardEvent, useMemo, useRef, useState } from 'react'
-import { allNavPages, pagePath } from '@/app/nav'
+import { pagePath } from '@/app/nav'
+import { useNavPages } from '@/app/shell/use-nav-modules'
 import { useUi } from '@/app/stores/ui'
 import { cn } from '@/lib/utils'
 import { describePath } from './use-active-page'
@@ -23,6 +24,7 @@ export function PageSearch() {
   const inputRef = useRef<HTMLInputElement>(null)
 
   const q = query.trim().toLowerCase()
+  const navPages = useNavPages()
   const results = useMemo<Result[]>(() => {
     if (!q) {
       return recents
@@ -35,11 +37,11 @@ export function PageSearch() {
         .filter((r): r is Result => !!r)
         .slice(0, 5)
     }
-    return allNavPages()
+    return navPages
       .filter((p) => p.label.toLowerCase().includes(q) || p.moduleName.toLowerCase().includes(q))
       .slice(0, 8)
       .map((p) => ({ path: pagePath(p.moduleId, p.slug), label: p.label, moduleName: p.moduleName }))
-  }, [q, recents])
+  }, [q, recents, navPages])
 
   const showPanel = open && (!!q || results.length > 0)
 

@@ -36,7 +36,7 @@ the defaults on read (`normalizeRegional`).
 
 ## Persistence
 `localStorage['shelfree.v2.settings'].regional` (see `data/api/settings.ts`). The Business profile's workspace record
-also still carries `currency … weekStart` fields — duplicates nobody reads (G-034).
+also still carries `currency … weekStart` fields — duplicates nobody reads (G-033).
 
 ## Backend-build notes
 - `GET /workspace/settings`, `PATCH /workspace/regional` (owner / admin). One row per workspace: `currency` (ISO 4217),
@@ -48,7 +48,7 @@ also still carries `currency … weekStart` fields — duplicates nobody reads (
 - **Audit event:** `workspace.regional.updated` (field diff). **Permission:** workspace settings (owner / admin). No PII.
 
 ### Decisions & deferred-to-backend
-- **Not applied to the app's display yet (G-030):** `money()`, `int()` and `fmtDate()` in `src/lib/format.ts` still print
+- **Not applied to the app's display yet (G-029):** `money()`, `int()` and `fmtDate()` in `src/lib/format.ts` still print
   en-IN, ₹ and `Jul 12, 2026`. The prototype's default date format `DD/MM/YYYY` is not the app's current output, so wiring
   the formatters would change every date on screen; do it as its own task with the visible default decided.
 - Time zone only affects "today" once the formatters are wired; `todayLocal()` still uses the browser's zone.

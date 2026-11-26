@@ -10,12 +10,14 @@ import { ArrowLeft, ArrowRight, ChevronRight, Lock, Search, Settings2 } from 'lu
 import { type ComponentType, type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { TopBar } from '@/app/shell/TopBar'
 import type { HelpMap } from '@/components/help/types'
+import { useEnabledModules } from '@/data/queries/workspace-config'
 import { canViewArea } from '@/domain/settings-permissions'
 import { isTypingTarget } from '@/lib/keyboard'
 import { useLatestCallback } from '@/lib/use-latest-callback'
 import { cn } from '@/lib/utils'
 import {
   SETTINGS_AREAS,
+  areasForModules,
   type SectionDef,
   type SettingsArea,
   type SettingsAreaId,
@@ -130,10 +132,15 @@ export function SettingsFrame({ area, sectionId, sections, helpMaps, highlightRo
   const isModuleArea = areaObj?.kind === 'module'
   const canWorkspace = canViewArea(actor, 'workspace')
 
+  // A module that is switched off (Settings ▸ Modules & capabilities) has no settings area (G-001).
+  const enabledModules = useEnabledModules()
+  const enabledKey = [...enabledModules].join(',')
   const centralAreas = useMemo(
     () =>
-      SETTINGS_AREAS.filter((a) => canViewArea(actor, a.kind, a.kind === 'module' ? a.id : undefined)),
-    [actor],
+      areasForModules(new Set(enabledKey.split(',').filter(Boolean))).filter((a) =>
+        canViewArea(actor, a.kind, a.kind === 'module' ? a.id : undefined),
+      ),
+    [actor, enabledKey],
   )
   const workspaceArea = useMemo(() => centralAreas.find((a) => a.kind === 'workspace') ?? null, [centralAreas])
   const moduleAreas = useMemo(() => centralAreas.filter((a) => a.kind === 'module'), [centralAreas])

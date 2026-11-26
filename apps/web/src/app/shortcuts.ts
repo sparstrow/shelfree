@@ -195,6 +195,31 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
     ...LIST_EDITOR_SHORTCUTS.filter((s) => s.combo !== 'N'),
     ...LIST_PAGE_SHORTCUTS,
   ]),
+  // Run 2.5b — Workspace (part B)
+  group('settings-modules', 'Settings › Modules & capabilities', [
+    { combo: 'Ctrl/Cmd + S', desc: 'Save the module and capability switches. A module that is off disappears for everyone.' },
+    { combo: 'Esc', desc: 'Discard unsaved changes.' },
+    { combo: 'Space (on a switch)', desc: 'Turn the focused module or capability on or off.' },
+  ]),
+  group('settings-plan', 'Settings › Plan & billing', [
+    { combo: '?', desc: 'Show or hide the descriptions inline. This page is information only.' },
+  ]),
+  group('settings-team-roles', 'Settings › Team & roles', [
+    { combo: 'E', desc: 'Edit the active role — its description and the module access it starts people with.' },
+    { combo: 'Ctrl/Cmd + Enter or Ctrl/Cmd + S', desc: 'Save the role you are editing.' },
+    { combo: 'Esc', desc: 'Cancel the edit, then close the drawer.' },
+    ...LIST_PAGE_SHORTCUTS,
+  ]),
+  group('settings-navigation', 'Settings › Navigation', [
+    { combo: 'Ctrl/Cmd + S', desc: 'Save the navigation options.' },
+    { combo: 'Esc', desc: 'Discard unsaved changes.' },
+    { combo: 'Space (on a switch)', desc: 'Turn the focused option on or off.' },
+  ]),
+  group('settings-favorites-views', 'Settings › Favorites & views', [
+    { combo: 'Ctrl/Cmd + S', desc: 'Save the pin and sharing rules.' },
+    { combo: 'Esc', desc: 'Discard unsaved changes.' },
+    { combo: 'Space (on a switch)', desc: 'Turn the pinned sidebar section on or off for everyone.' },
+  ]),
   group('settings-shortcuts', 'Settings › Keyboard shortcuts', [
     { combo: '/', desc: 'Focus the search box.' },
     { combo: 'Esc', desc: 'Clear the search.' },

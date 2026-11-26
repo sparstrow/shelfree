@@ -13,6 +13,7 @@ import {
   useRenameSavedView,
   useRestoreFavorite,
 } from '@/data/queries/favorites'
+import { useFavoritesConfig } from '@/data/queries/workspace-config'
 import type { Favorite, SavedView } from '@/data/schemas'
 import { moveFavorite, sortFavorites } from '@/domain/favorites'
 
@@ -38,6 +39,8 @@ export function useFavoriteActions() {
   const reorder = useReorderFavorites()
   const drop = useDropFavorite()
   const rename = useRenameSavedView()
+  // Settings ▸ Favorites & views: off removes the section and every star for everyone.
+  const { enabled } = useFavoritesConfig()
 
   const all = favorites.data ?? []
   const viewById = (id: string | undefined): SavedView | undefined => (views.data ?? []).find((v) => v.id === id)
@@ -48,6 +51,7 @@ export function useFavoriteActions() {
   }
 
   return {
+    enabled,
     /** Favourites in their order, without pointers to views that no longer exist. */
     list: sortFavorites(all).filter((f) => f.kind !== 'view' || viewById(f.viewId)),
     isLoading: favorites.isLoading || views.isLoading,
@@ -57,6 +61,7 @@ export function useFavoriteActions() {
 
     /** Star / unstar a page. `label` is the page's name, for the toast. */
     togglePage: (module: string, page: string, label: string) => {
+      if (!enabled) return
       const found = all.find((f) => f.kind === 'page' && f.module === module && f.page === page)
       if (found) return removeFavorite(found, label)
       addPage.mutate({ module, page })
@@ -65,6 +70,7 @@ export function useFavoriteActions() {
     },
     /** Pin / unpin a saved view. */
     toggleView: (view: SavedView) => {
+      if (!enabled) return
       const found = all.find((f) => f.kind === 'view' && f.viewId === view.id)
       if (found) return removeFavorite(found, view.name)
       addView.mutate(view.id)

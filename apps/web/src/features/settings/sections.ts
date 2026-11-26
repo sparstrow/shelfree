@@ -27,6 +27,17 @@ import { TaxCodesSection } from './tax-codes/TaxCodesSection'
 import { TAX_CODES_HELP } from './tax-codes/help'
 import { TaxSettingsSection } from './tax-settings/TaxSettingsSection'
 import { TAX_SETTINGS_HELP } from './tax-settings/help'
+// Run 2.5b — Workspace (part B)
+import { FavoritesViewsSection } from './favorites-views/FavoritesViewsSection'
+import { FAVORITES_VIEWS_HELP } from './favorites-views/help'
+import { MODULES_HELP } from './modules/help'
+import { ModulesCapabilitiesSection } from './modules/ModulesCapabilitiesSection'
+import { NAVIGATION_HELP } from './navigation/help'
+import { NavigationSection } from './navigation/NavigationSection'
+import { PLAN_HELP } from './plan/help'
+import { PlanBillingSection } from './plan/PlanBillingSection'
+import { TEAM_ROLES_HELP } from './team-roles/help'
+import { TeamRolesSection } from './team-roles/TeamRolesSection'
 import { UnitsOfMeasureSection } from './units-of-measure/UnitsOfMeasureSection'
 import { UOM_HELP } from './units-of-measure/help'
 // Run 2.5a — Workspace (part A): GST registrations, Regional & format, Terminology.
@@ -61,6 +72,12 @@ export const SETTINGS_SECTIONS: Readonly<Record<string, SettingsSectionComponent
   'ws-gst': GstRegistrationsSection,
   'ws-regional': RegionalSection,
   terminology: TerminologySection,
+  // Run 2.5b — Workspace (part B)
+  'ws-modules': ModulesCapabilitiesSection,
+  'ws-plan': PlanBillingSection,
+  'ws-team': TeamRolesSection,
+  'cfg-nav': NavigationSection,
+  'cfg-favorites': FavoritesViewsSection,
 }
 
 /** Quiet-help maps keyed by section id, used by central Settings "Find a setting". */
@@ -82,4 +99,10 @@ export const SETTINGS_HELP_MAPS: Readonly<Record<string, HelpMap>> = {
   'ws-gst': GST_REGISTRATIONS_HELP,
   'ws-regional': REGIONAL_HELP,
   terminology: TERMINOLOGY_HELP,
+  // Run 2.5b — Workspace (part B)
+  'ws-modules': MODULES_HELP,
+  'ws-plan': PLAN_HELP,
+  'ws-team': TEAM_ROLES_HELP,
+  'cfg-nav': NAVIGATION_HELP,
+  'cfg-favorites': FAVORITES_VIEWS_HELP,
 }

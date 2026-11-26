@@ -5,12 +5,17 @@ import type { ProductionConfig } from '@/data/api/settings'
 import { useList } from '@/data/queries'
 import { useUpdateProduction } from '@/data/queries/sales-production-settings'
 import { useSettings } from '@/data/queries/settings'
+import { useCapability } from '@/data/queries/workspace-config'
 import { DEFAULT_PRODUCTION_SETTINGS, defaultScrapError, productionLocationError } from '@/domain/assembly-order'
 import { ASSEMBLY_PRODUCTION_HELP } from './help'
 
 const D = DEFAULT_PRODUCTION_SETTINGS
 
-function groups(sites: readonly { value: string; label: string }[]): readonly SettingsGroup<ProductionConfig>[] {
+function groups(
+  sites: readonly { value: string; label: string }[],
+  /** The Production orders & routing capability (Modules & capabilities) is on. */
+  routed: boolean,
+): readonly SettingsGroup<ProductionConfig>[] {
   return [
     {
       id: 'defaults',
@@ -36,6 +41,8 @@ function groups(sites: readonly { value: string; label: string }[]): readonly Se
           control: { type: 'select', options: sites },
           default: D.wipLoc,
           validate: (v) => productionLocationError(String(v), 'the work-in-progress location'),
+          // WIP only means something with routed production; shown while that capability is on (G-027).
+          hidden: () => !routed,
         },
       ],
     },
@@ -69,7 +76,8 @@ export function AssemblyProductionSection({ readOnly }: { readOnly?: boolean } =
     const extra = [saved?.outputLoc, saved?.wipLoc].filter((v): v is string => !!v && !known.has(v))
     return [...new Set(extra)].map((value) => ({ value, label: value })).concat(sites)
   }, [sites, saved?.outputLoc, saved?.wipLoc])
-  const rows = useMemo(() => groups(withStored), [withStored])
+  const routed = useCapability('production')
+  const rows = useMemo(() => groups(withStored, routed), [withStored, routed])
 
   return (
     <SettingsSection<ProductionConfig>

@@ -105,3 +105,13 @@ describe('keyboard focus navigation', () => {
     expect(stepDepartmentFocus(flat, flat.length - 1, 'ArrowRight')).toBe(0)
   })
 })
+
+describe('pages that are not built yet (Settings ▸ Navigation)', () => {
+  it('leaves them out when the option is off, and keeps them tagged when it is on', () => {
+    const on = flattenDepartmentBlocks(buildDepartmentBlocks(MODULES, ''))
+    const off = flattenDepartmentBlocks(buildDepartmentBlocks(MODULES, '', undefined, false))
+    expect(on.some((p) => !p.built)).toBe(true)
+    expect(off.length).toBeLessThan(on.length)
+    expect(off.every((p) => p.built)).toBe(true)
+  })
+})

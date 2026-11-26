@@ -206,3 +206,28 @@ export function allNavPages(): NavPageRow[] {
 
 /** Where the app opens: Purchasing ▸ Purchase Orders, as in the prototype. */
 export const DEFAULT_LANDING = { module: 'purchasing' as ModuleId, slug: 'purchase-orders' }
+
+/**
+ * Pages that exist only while a scale capability is on (Settings ▸ Modules & capabilities):
+ * `<moduleId>/<slug>` → capability key. Production Orders is routed manufacturing, beyond assembly.
+ */
+export const PAGE_CAPABILITY: Readonly<Record<string, string>> = {
+  'production/production-orders': 'production',
+}
+
+/**
+ * The modules the workspace has switched on, each with the pages whose capability is on.
+ * `moduleOn` / `capabilityOn` come from the workspace settings (see `app/shell/use-nav-modules.ts`).
+ */
+export function visibleModules(
+  moduleOn: (id: string) => boolean,
+  capabilityOn: (key: string) => boolean,
+): ModuleDef[] {
+  return MODULES.filter((m) => moduleOn(m.id)).map((m) => {
+    const pages = m.pages.filter((p) => {
+      const cap = PAGE_CAPABILITY[`${m.id}/${p.slug}`]
+      return !cap || capabilityOn(cap)
+    })
+    return pages.length === m.pages.length ? m : { ...m, pages }
+  })
+}

@@ -63,3 +63,40 @@ export const overflowLabel = (total: number, showAll: boolean) => (showAll ? 'Sh
 export function favoritesOfView<F extends FavoriteLike & { viewId?: string | null }>(list: readonly F[], viewId: string): F[] {
   return list.filter((f) => f.kind === 'view' && f.viewId === viewId)
 }
+
+// ── Workspace configuration (Settings ▸ Favorites & views) ───────────────────
+
+export const FAVORITES_CAP_MIN = 3
+export const FAVORITES_CAP_MAX = 30
+
+/** Who may share a saved view with the team (specified now; inert until shared views ship). */
+export const VIEW_SHARE_ROLES = ['admin', 'owner', 'any'] as const
+export type ViewShareRole = (typeof VIEW_SHARE_ROLES)[number]
+
+export const VIEW_SHARE_ROLE_LABELS: Readonly<Record<ViewShareRole, string>> = {
+  admin: 'Owner & admins',
+  owner: 'Owner only',
+  any: 'Anyone on the team',
+}
+
+export interface FavoritesConfig {
+  /** Off removes the sidebar section and every star button for everyone. */
+  enabled: boolean
+  /** Pins shown before "Show all". */
+  cap: number
+  shareRole: ViewShareRole
+}
+
+export const DEFAULT_FAVORITES_CONFIG: FavoritesConfig = {
+  enabled: true,
+  cap: DEFAULT_FAVORITES_CAP,
+  shareRole: 'admin',
+}
+
+/** Blocking message for the cap, or null. A whole number from 3 to 30. */
+export function favoritesCapError(cap: number): string | null {
+  if (!Number.isInteger(cap) || cap < FAVORITES_CAP_MIN || cap > FAVORITES_CAP_MAX) {
+    return `Enter a whole number from ${FAVORITES_CAP_MIN} to ${FAVORITES_CAP_MAX}.`
+  }
+  return null
+}

@@ -20,9 +20,9 @@ import { TERMINOLOGY_HELP as HELP } from './help'
 
 /**
  * Settings ▸ Workspace ▸ Terminology (`/settings/terminology`) — a list of the renamable labels,
- * edited in the drawer. The set of labels is fixed by the app (`fixedRows`: no New). Parity note:
+ * edited in the drawer. The set of labels is fixed by the app (`noCreate`: no New). Parity note:
  * the prototype showed Fields rows only while their capability was on; here Customer price follows
- * the Sales pricing switch and Lot/Batch stays hidden until Modules & capabilities exists (gap G-031).
+ * the Sales pricing switch and Lot/Batch stays hidden until Modules & capabilities exists (gap G-030).
  */
 export function TerminologySection({ readOnly = false }: { readOnly?: boolean } = {}) {
   const settings = useSettings()
@@ -47,7 +47,6 @@ export function TerminologySection({ readOnly = false }: { readOnly?: boolean } 
   }
 
   const editor: ListEditor<TermRow> = {
-    fixedRows: true,
     fields: (d) => [
       { key: 'origSingular', label: 'Original', type: 'text', locked: true, hint: HELP.origSingular.body },
       { key: 'singular', label: 'Singular', type: 'text', maxLength: 40, placeholder: d.origSingular, hint: HELP.singular.body },
@@ -111,6 +110,8 @@ export function TerminologySection({ readOnly = false }: { readOnly?: boolean } 
         error={settings.error}
         onRefresh={() => settings.refetch()}
         editor={editor}
+        // Exception: the labels are a fixed set the app defines — edit only, no New / N.
+        noCreate
         actions={[restore]}
         emptyText="No label matches."
       />

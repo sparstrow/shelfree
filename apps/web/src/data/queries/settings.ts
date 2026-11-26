@@ -24,3 +24,6 @@ export function useUpdateTaxSettings() {
     onSuccess: (data) => client.setQueryData(KEY, data),
   })
 }
+
+/** Query options for the workspace settings — usable in route `beforeLoad` (`context.queryClient`). */
+export const settingsQueryOptions = { queryKey: KEY, queryFn: settingsApi.get, staleTime: Infinity } as const

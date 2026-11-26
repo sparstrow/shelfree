@@ -30,9 +30,9 @@ what differs from the original, tidied), `termResetPatch`, `applyTermPatch`, `va
 - Saving a row patches **only its keys** on top of the latest stored map (`settingsApi.patchTerms`; `null` deletes); *Reset all*
   stores `{}`.
 - *Fields* rows follow their capability: **Customer price** appears while Sales pricing's customer-pricing switch is on;
-  **Lot/Batch** stays hidden until Modules & capabilities exists (G-031).
+  **Lot/Batch** stays hidden until Modules & capabilities exists (G-030).
 - Read by screens today (closes G-018): the Locations section, the Warehouse sidebar page *Stock by Location*, the item card's
-  *Stock by location* card and the Items drawer heading. Everything else reads its own fixed wording (G-031).
+  *Stock by location* card and the Items drawer heading. Everything else reads its own fixed wording (G-030).
 
 ## Persistence
 `localStorage['shelfree.v2.settings'].terms`.

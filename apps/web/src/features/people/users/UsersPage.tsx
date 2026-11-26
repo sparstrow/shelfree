@@ -5,148 +5,55 @@ import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { type ListAction, type ListBulkAction, ListPage } from '@/components/list-page/ListPage'
 import type { EditorField } from '@/components/record-fields/model'
-import { Switch } from '@/components/ui/switch'
 import { useList, useRemove, useUpsert } from '@/data/queries'
 import { useMe } from '@/data/queries/session'
-import type { User } from '@/data/schemas'
+import type { RoleDef, User } from '@/data/schemas'
 import {
-  PEOPLE_MODULES,
-  PERM_LEVELS,
-  type PermLevel,
   USER_ROLES,
   USER_STATUSES,
   type UserStatus,
   accessSummary,
   blankUser,
   formatLastActive,
-  normalizePerms,
-  normalizeSettings,
   normalizeUser,
-  permLevel,
   roleDefaultPerms,
   roleDefaultSettings,
   userDeleteBlocked,
   userStatusTransitionError,
   validateUser,
 } from '@/domain/people'
-import { EM_DASH } from '@/lib/format'
-import { cn } from '@/lib/utils'
 import { makeUsersDataset } from './dataset'
-
-const PERM_LABEL: Record<PermLevel, string> = {
-  none: 'None',
-  read: 'Read',
-  write: 'Write',
-}
+import { PermissionsEditor } from './PermissionsEditor'
 
 const route = getRouteApi('/people/users/')
 
-/** Modules that have a settings area (spec 2026-11-24); Home and Notes have none. */
-const SETTINGS_AREA_MODULES: ReadonlySet<string> = new Set(['finance', 'sales', 'purchasing', 'warehouse', 'production', 'people'])
-
+/** A person's module permissions — the shared editor, with "Apply <role> defaults" from the role definitions. */
 function UserPermissionsSection({
   user,
   editing,
+  roleDefs,
   onChange,
 }: {
   user: User
   editing: boolean
+  roleDefs: readonly RoleDef[]
   onChange?: (key: keyof User & string, value: unknown) => void
 }) {
-  const perms = normalizePerms(user.perms)
-  const settings = normalizeSettings(user.settings)
   return (
-    <div className="mt-4">
-      <div className="mb-1.5 flex items-center justify-between">
-        <span className="text-[11px] font-semibold tracking-[0.05em] text-muted-foreground">MODULE PERMISSIONS</span>
-        {editing && onChange && (
-          <button
-            type="button"
-            onClick={() => {
-              const nextPerms = roleDefaultPerms(user.role)
-              onChange('perms', nextPerms)
-              onChange('settings', roleDefaultSettings(user.role, nextPerms))
-            }}
-            className="border-0 bg-transparent p-0 text-[11.5px] font-medium text-primary hover:underline"
-          >
-            Apply {user.role} defaults
-          </button>
-        )}
-      </div>
-      <div className="grid grid-cols-[84px_minmax(0,1fr)_64px] items-end gap-x-2 border-b border-border pb-1 text-[10.5px] font-semibold tracking-[0.04em] text-muted-foreground">
-        <span>Module</span>
-        <span>Access</span>
-        <span className="text-center leading-tight">Manage settings</span>
-      </div>
-      <div className="flex flex-col">
-        {PEOPLE_MODULES.map((mod) => {
-          const current = permLevel(perms, mod.key)
-          // Only modules with a settings area get the right, and it needs access to the module.
-          const hasSettingsArea = SETTINGS_AREA_MODULES.has(mod.key)
-          const canManageSettings = hasSettingsArea && current !== 'none' && settings[mod.key] === true
-          return (
-            <div
-              key={mod.key}
-              data-module={mod.key}
-              className="grid grid-cols-[84px_minmax(0,1fr)_64px] items-center gap-x-2 border-b border-dashed border-border py-1.5"
-            >
-              <span className="truncate text-[12.5px] text-muted-foreground">{mod.label}</span>
-              <div
-                role="radiogroup"
-                aria-label={`${mod.label} permission`}
-                className="inline-grid grid-cols-3 rounded-lg border border-border bg-muted/40 p-0.5"
-              >
-                {PERM_LEVELS.map((level) => {
-                  const selected = current === level
-                  return (
-                    <button
-                      key={level}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      disabled={!editing}
-                      onClick={() => {
-                        onChange?.('perms', { ...perms, [mod.key]: level })
-                        if (level === 'none' && settings[mod.key]) onChange?.('settings', { ...settings, [mod.key]: false })
-                      }}
-                      className={cn(
-                        'h-6 rounded-md border-0 px-1.5 text-[11.5px] transition-colors duration-[120ms]',
-                        selected
-                          ? 'bg-primary font-semibold text-primary-foreground shadow-xs'
-                          : 'bg-transparent font-medium text-muted-foreground',
-                        editing && !selected && 'hover:text-foreground',
-                        !editing && 'cursor-default',
-                      )}
-                    >
-                      {PERM_LABEL[level]}
-                    </button>
-                  )
-                })}
-              </div>
-              <div className="flex h-[28px] items-center justify-center">
-                {editing && hasSettingsArea ? (
-                  <Switch
-                    disabled={current === 'none'}
-                    aria-label={`${mod.label} manage settings`}
-                    checked={canManageSettings}
-                    onCheckedChange={(checked) => onChange?.('settings', { ...settings, [mod.key]: checked })}
-                  />
-                ) : (
-                  <span
-                    className={cn(
-                      'text-[12.5px] font-medium',
-                      canManageSettings ? 'text-foreground' : 'text-muted-foreground',
-                    )}
-                  >
-                    {canManageSettings ? 'Yes' : EM_DASH}
-                  </span>
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
+    <PermissionsEditor
+      perms={user.perms}
+      settings={user.settings}
+      editing={editing}
+      onChange={onChange}
+      applyDefaults={{
+        label: `Apply ${user.role} defaults`,
+        run: () => {
+          const nextPerms = roleDefaultPerms(user.role, roleDefs)
+          onChange?.('perms', nextPerms)
+          onChange?.('settings', roleDefaultSettings(user.role, nextPerms, roleDefs))
+        },
+      }}
+    />
   )
 }
 
@@ -154,6 +61,9 @@ export function UsersPage({ initialActiveId = null }: { initialActiveId?: string
   const { sel } = route.useSearch()
   const users = useList('users')
   const employees = useList('employees')
+  // Role definitions (Settings ▸ Team & roles) give a role's default module access.
+  const roleDefsQuery = useList('roleDefs')
+  const roleDefs = useMemo(() => roleDefsQuery.data ?? [], [roleDefsQuery.data])
   const me = useMe()
   const save = useUpsert('users')
   const del = useRemove('users')
@@ -376,11 +286,11 @@ export function UsersPage({ initialActiveId = null }: { initialActiveId?: string
           undo: (u) => void save.mutateAsync(u),
         }}
         editor={{
-          blank: (rows) => blankUser(rows),
+          blank: (rows) => blankUser(rows, undefined, roleDefs),
           onChange: (draft, key, mode) => {
             if (key === 'role' && mode === 'new') {
-              const perms = roleDefaultPerms(draft.role)
-              return { ...draft, perms, settings: roleDefaultSettings(draft.role, perms) }
+              const perms = roleDefaultPerms(draft.role, roleDefs)
+              return { ...draft, perms, settings: roleDefaultSettings(draft.role, perms, roleDefs) }
             }
             return draft
           },
@@ -417,8 +327,8 @@ export function UsersPage({ initialActiveId = null }: { initialActiveId?: string
               ],
             }
           },
-          extra: (u) => <UserPermissionsSection user={u} editing={false} />,
-          extraEdit: (draft, _mode, onChange) => <UserPermissionsSection user={draft} editing={true} onChange={onChange} />,
+          extra: (u) => <UserPermissionsSection user={u} editing={false} roleDefs={roleDefs} />,
+          extraEdit: (draft, _mode, onChange) => <UserPermissionsSection user={draft} editing={true} roleDefs={roleDefs} onChange={onChange} />,
         }}
       />
       <ConfirmDialog

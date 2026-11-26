@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   type FavoriteLike,
+  DEFAULT_FAVORITES_CONFIG,
   capFavorites,
   dropFavorite,
+  favoritesCapError,
   favoritesOfView,
   moveFavorite,
   nextFavoriteOrder,
@@ -59,5 +61,16 @@ describe('favoritesOfView', () => {
   it('finds the pointers to one view', () => {
     const list = [{ ...fav('a', 0, 'view'), viewId: 'v1' }, { ...fav('b', 1, 'view'), viewId: 'v2' }, fav('c', 2)]
     expect(ids(favoritesOfView(list, 'v1'))).toEqual(['a'])
+  })
+})
+
+describe('favourites configuration', () => {
+  it('accepts a whole number of pins from 3 to 30', () => {
+    expect(favoritesCapError(3)).toBeNull()
+    expect(favoritesCapError(30)).toBeNull()
+    expect(favoritesCapError(2)).toMatch(/3 to 30/)
+    expect(favoritesCapError(31)).toMatch(/3 to 30/)
+    expect(favoritesCapError(10.5)).toMatch(/3 to 30/)
+    expect(DEFAULT_FAVORITES_CONFIG).toEqual({ enabled: true, cap: 10, shareRole: 'admin' })
   })
 })

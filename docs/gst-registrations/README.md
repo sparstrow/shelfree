@@ -147,7 +147,7 @@ cancel / delete writes it back to the Business profile record).
   *no locations in this state*, *PAN mismatch* and *casual validity ended* notes (drawer notice).
 - **Changed:** the card layout is a list row + drawer (the list template); the *Locations* fact is the site names in
   the drawer and a count in the grid. Keys are the template's plus **P** (make primary) and **C** (cancel registration).
-- **Not ported (G-032):** the per-location rows on a card (mark as declared, make principal), the dashed "Add a
+- **Not ported (G-031):** the per-location rows on a card (mark as declared, make principal), the dashed "Add a
   registration in another state" tile, and the PAN warning inside Business profile reading *all* registrations (it still
   reads the primary GSTIN).
 
