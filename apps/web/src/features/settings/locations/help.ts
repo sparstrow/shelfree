@@ -70,4 +70,25 @@ export const LOCATIONS_HELP: HelpMap = {
     title: 'Open documents',
     body: 'Purchase orders, receipts, assembly orders and sales orders still in progress at this site.',
   },
+  // Setup wizard and floors (run 2.7)
+  floors: {
+    title: 'Floors',
+    body: 'The levels of the building, ground first. Each floor has its own areas. A floor can’t be removed while it still has areas.',
+  },
+  floorCode: {
+    title: 'Floor code',
+    body: 'A short code for the floor, up to 4 letters or digits (L1, L2, MZ). Unique within the site.',
+  },
+  building: {
+    title: 'How many floors?',
+    body: 'A single level, or a building with several floors. You can add or rename floors later when you edit the site.',
+  },
+  areas: {
+    title: 'Areas',
+    body: 'The building blocks of a floor — receiving, storage, assembly, shipping. Picked areas are placed on the ground floor, with shelving seeded in the storage ones. Areas are set up here when the site is created.',
+  },
+  quickStart: {
+    title: 'Quick start',
+    body: 'Fills in the site type, floors and areas of a typical setup. Change anything afterwards.',
+  },
 }

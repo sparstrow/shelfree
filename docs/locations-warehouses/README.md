@@ -281,10 +281,10 @@ ungated, on by default (multi-state or 3PL sites would likely be Growth).
   stock, open documents) with views All / Active / each type; drawer fields name, code, type, status, country,
   state (GST state dropdown for India, free-text region elsewhere), address, city, PIN, area, GST certificate
   status (India only), site manager (employee), 3PL operator vendor (3PL only); the rules below.
-- **Not ported (G-016, G-031):** the Structure Designer (floors, zones, aisles, bins, 2D/3D) and the 4-step
-  creation wizard, and the registration extras — *Add registration* from the drawer, the GSTIN chip, *Mark as declared*
-  (the *Active needs a registration* rule and the registration line were ported in run 2.5a, see the update below). Creation is the plain
-  drawer; sites carry no floors or layouts yet.
+- **Not ported (G-016, G-031):** the Structure Designer (zones, aisles, bins, 2D/3D canvas; the 4-step creation wizard and floors
+  shipped in run 2.7, see the last update) and the registration extras — *Add registration* from the drawer, the GSTIN chip, *Mark as declared*
+  (the *Active needs a registration* rule and the registration line were ported in run 2.5a, see the update below). Creation is the setup
+  wizard since run 2.7.
 - **Deliberate:** the **code is fixed once any document refers to it** (the prototype let it change, which would
   orphan the purchase orders, receipts and sales orders that carry the code). The site **id never changes**
   (`WH-<CODE>`, numbered when taken). **There is always at least one active location** (new rule: save and
@@ -321,7 +321,7 @@ receipts and sales orders carry the `code`. `LocationUsage` (derived, never stor
 - **Audit:** create, edit and delete of a site; status, state, certificate status, operator and manager changes
   (actor, site, before / after). **Permission:** Warehouse *Manage settings* right to write; Warehouse read access
   to view (read-only mode without the right). No personal data beyond the business address.
-- Decisions & deferred-to-backend: registrations (Active needs one), the Structure Designer and wizard (G-016 / G-017),
+- Decisions & deferred-to-backend: registrations (Active needs one), the Structure Designer (G-016) and registrations (G-017, closed),
   filtering inactive sites out of document pickers and counting BOM WIP / production output locations as usage
   (G-019).
 
@@ -341,3 +341,91 @@ fixed code, blocked delete, last active location, help, member read-only).
   "No stores match"), the Warehouse sidebar page *Stock by Location*, the item card's *Stock by location* card and the Items
   drawer's *STOCK BY LOCATION* heading read the workspace's `object.location` wording (`useLocationTerm()`); unchanged
   by default. Settings navigation, breadcrumb and Find a setting still use the registry label (G-032).
+
+### Update 2026-11-26 (run 2.7) — New location setup wizard, floors and layouts (narrows G-016)
+
+**What changed.** *New location* (button and `N`) opens a 4-step wizard instead of the drawer. The drawer remains the edit surface
+for existing sites (edit in place) and gains a *Floors* block. The list gains *Floors* and *Areas* columns and the drawer *Floors* /
+*Areas* facts. The visual Structure Designer is still not ported (G-016, G-042).
+
+**Files.** Template: `apps/web/src/components/wizard/` (`Wizard.tsx`, `fields.tsx`, `control-class.ts`, `shortcut-meta.ts`) — a shadcn
+`Dialog` step wizard onboarding will reuse. Feature: `features/settings/locations/` (`LocationWizard.tsx` — the steps,
+`FloorsEditor.tsx` — floors in the drawer, `area-icons.ts`). Rules: `domain/location-layouts.ts` (area-type catalogue, placement, floors,
+quick starts), `domain/location-wizard.ts` (draft, per-step errors). Commands: `data/api/warehouse-settings.ts`. Seed:
+`data/seed/location-layouts.ts`. `ListPage` gained one optional prop, `onNew` (takes over the New button, `N` and `startNew()`).
+
+**The wizard (parity with the prototype's `wizSteps`).**
+1. *Basics* — Name, Code (blank = suggested from the name; the suggestion is the placeholder), site type cards (Distribution centre,
+   Manufacturing + DC, Third-party (3PL), Retail forward stock). Needs a name; the code must not be another site's.
+2. *Building* — Single level / Multi-level; the floors listed ground at the bottom; for a building each floor's code (max 4) and
+   name, Add floor, Remove. Floor codes must be unique ("Each floor needs a unique code (e.g. L1, L2, MZ).").
+3. *Areas* — quick starts (Small stockroom, Single-floor DC, Multi-floor building; each also sets the site type and floors), a live
+   floor preview, and the 12 area types with a 1–6 count each. Never blocks.
+4. *Finish* — a review (name, code, type, building, areas, location), street address, city, state (GST dropdown for India, free-text
+   region elsewhere), PIN code, floor area (sq ft), country, status, the derived GST registration line, certificate status (India),
+   site manager, 3PL operator. These keep the saving rules: state required for India, Active needs a registration for the state,
+   a 3PL operator must exist. An error found on Create sends the wizard back to the step that owns it.
+
+Step dots show progress and are clickable back to visited steps (forward only through steps that validate); Back keeps values;
+Esc closes, asking first when anything was entered. Keys: Enter in a field, Ctrl/Cmd + Enter, Alt + ←/→ (catalogue: Settings ▸
+Keyboard shortcuts ▸ *Wizard*). Focus moves to each step's first field; steps slide in; full-screen sheet on a phone.
+
+**Deliberate differences.** Labels are *Name* / *Code* (as the drawer) not *Warehouse name* / *Short code*; the title, button and
+messages follow the workspace's location wording ("New store"). The prototype's static hint lines under selects are the labels'
+quiet help (ⓘ). *Contact* is the site manager (an employee link) — the prototype's final model has no contact name / phone / email
+on a site, and People ▸ Contacts rule forbids new flat contact columns. The registration line has no *Add registration* button
+(G-031). New sites start **Setting up** like the drawer did. The prototype opened the designer after creating; the React app stays
+on the list (no designer yet). Aisle ids are deterministic (`a-<zone index>-<run>`) instead of random.
+
+### Data model (additions)
+- `warehouse.floors?: Floor[]` — `{ id, name, code, level }`, ground = level 1 (levels follow the order). A site saved before floors
+  existed reads as one `{ id: 'l1', name: 'Ground floor', code: 'L1', level: 1 }`. Floor ids never change; names and codes can.
+- Collection `locationLayouts` (`shelfree.v2.locationLayouts`, key `id` = `<siteId>::<floorId>`, one per site + floor), schema
+  `locationLayoutSchema`: `warehouseId, floorId, floorW, floorH` (feet; 224 × 152 when the wizard placed areas and the floor
+  grew as needed, 80 × 56 empty), `zones: Zone[]`, `aisles: Aisle[]`, `bins: { [binCode]: { sku?, qty?, lot? } }` (edited bins only).
+  - **Zone ("area")**: `id, code, name, type, color, status (available|inuse|maintenance), x, y, w, h` (feet, origin top-left).
+    `type` is one of the 12 catalogue ids (`receiving, bulk, pick, fragile, qc, components, assembly, finished, shipping, staging,
+    returns, office`); the catalogue (`AREA_TYPES`: name, description, colour, default footprint, `storage` racked | floor | none) is
+    fixed code, not data. Code = first three letters of the name, numbered when taken (`BUL`, `BUL2`).
+  - **Aisle ("rack run")**: `id, zoneId, code, dir (v|h), x, y, bays, levels, binsPerBay, sides, aisleWidth`.
+- **Placement** (`placeAreas`): areas of the picked types, in the order picked, left to right from an 8 ft margin with an 8 ft gap,
+  wrapping to a new row past the right edge (floor 224 ft wide); the floor grows taller when a row runs off the bottom. Racked areas
+  (Bulk storage, Pick area, Fragile ceramic, Component bins, Finished goods) get shelving: two runs when the area is ≥ 28 ft wide,
+  else one — code `<first letter><zone number, 2 digits><run>`, `bays` = clamp(round((h − 8) / 4), 4, 10), 3 levels for Fragile ceramic
+  and 4 otherwise, 1 bin per bay for Fragile ceramic, 3 for Component bins, 2 otherwise, 2 sides, 6 ft aisle. The wizard puts the areas
+  on the **ground floor**; every other floor starts empty.
+
+### Rules (additions; `domain/location-layouts.ts`, `domain/location-wizard.ts`, Vitest-tested; the backend enforces the same)
+- A site has at least one floor; floor codes (letters and digits, max 4, upper-cased) are unique within the site; a blank name
+  becomes *Level n*, a blank code *L<n>*.
+- A floor that still has areas can't be removed (the save is refused with "<floor> has N areas — remove them first").
+- Saving a site keeps one layout per floor: a new floor gets an empty layout, a removed (empty) floor loses its layout.
+- Creating a site stores it and its layouts together (the areas only on creation; saving an existing site ignores them).
+- Deleting a site deletes its layouts; Undo restores the site and the layouts it had. The delete rules are unchanged.
+
+### Persistence
+`shelfree.v2.warehouses` (now with `floors`) and `shelfree.v2.locationLayouts`. Seed (`data/seed/location-layouts.ts`, mirroring the prototype's
+`baseWarehouses()` / `baseLayouts()`): Tiruvannamalai — Main has *Ground floor* (10 areas, 6 rack runs) and *Carton loft* (MZ: 1 area, 2 runs);
+Assembly unit has *Ground floor* (4 areas, 2 runs); Chennai DC has one empty ground floor.
+
+### Backend-build notes (additions)
+- `POST /locations` accepts `{ ...site, floors, areas: [{ typeId, count }] }` and places the areas server-side with the same
+  `placeAreas` algorithm (or accepts explicit zones), in one transaction with the site and its floor rows; `PUT /locations/{id}` accepts
+  `floors` (add / rename / remove; 409 while a removed floor has areas or two floors share a code).
+  `DELETE /locations/{id}` cascades to floors and layouts (soft-delete so Undo can restore them).
+- Tables: `location_floors(id, location_id, name, code, level)` unique `(location_id, code)`; `location_layouts(id, location_id, floor_id,
+  floor_w, floor_h)`; `layout_zones(id, layout_id, code, name, type, color, status, x, y, w, h)`; `layout_aisles(id, zone_id, code, dir, x, y,
+  bays, levels, bins_per_bay, sides, aisle_width)`; `layout_bins(layout_id, code, sku, qty, lot)`. Everything reaches the tenant through
+  `location_id`. `GET /locations/{id}/layouts` for the designer.
+- **Audit:** `location.created` (floors, areas placed), `location.floors.updated`, `location.deleted` (layouts removed). **Permission:** the
+  same Warehouse *Manage settings* right; the wizard is not shown without it. No personal data.
+- Decisions & deferred-to-backend: areas, racks and bins are edited in the Structure Designer (G-016, G-042); filtering inactive sites out
+  of pickers and counting BOM WIP / production output locations as usage stays open (G-019 — touches six pickers and two settings
+  readers, so it was left for the run that touches them).
+
+### Tests
+Vitest `domain/location-layouts.test.ts` (catalogue, picks, codes, placement, shelving, layouts, floors, quick starts, the seam: seed,
+create, floor sync, blocked removal, delete + Undo), `domain/location-wizard.test.ts` (draft, per-step errors). Playwright
+`e2e/settings-location-wizard.spec.ts`: multi-floor site from a template, validation blocking Next on every step, Back and step dots keep
+values, Enter / N / Alt + ←/→ / focus, Esc discard confirm, delete + Undo, floors edited in the drawer, phone sheet, member read-only;
+`e2e/settings-warehouse.spec.ts` and `e2e/settings-workspace-a.spec.ts` create sites through the wizard.

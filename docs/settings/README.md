@@ -222,7 +222,7 @@ the same turn; it also feeds Find a setting.
 - **Item categories** (`/warehouse/settings/categories`, list on `ListPage embedded`) — see
   `docs/item-categories/README.md`.
 - **Locations & warehouses** (`/warehouse/settings/locations`, list on `ListPage embedded`) — see
-  `docs/locations-warehouses/README.md` ("React app"). Structure Designer and wizard not ported (G-016).
+  `docs/locations-warehouses/README.md` ("React app"). New location opens the 4-step setup wizard (run 2.7, `components/wizard/`); floors are edited in the drawer; the Structure Designer is not ported (G-016).
 - **Number sequences** (`/<module>/settings/sequences`, `/settings/shared/sequences`) — see
   `docs/number-sequences/README.md`.
 - **Keyboard shortcuts** (`/settings/shortcuts`, custom, personal). Renders `SHORTCUT_GROUPS` from

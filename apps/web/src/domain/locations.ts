@@ -9,6 +9,7 @@
 import type { AssemblyOrder, GstRegistration, Item, PurchaseOrder, PurchaseReceipt, SalesOrder, Warehouse } from '@/data/schemas'
 import { gstStateByCode } from './gst'
 import { locationRegistrationError } from './gst-registrations'
+import { normalizeFloors, validateFloors } from './location-layouts'
 
 export const LOCATION_TYPES = [
   { value: 'mixed', label: 'Manufacturing + DC' },
@@ -148,6 +149,8 @@ export function validateLocation(
   else if (original && original.code !== code && (usage?.docs ?? 0) > 0) {
     errors.code = 'Documents already refer to this code — it can’t change.'
   }
+  const floorsError = draft.floors ? validateFloors(draft.floors) : null
+  if (floorsError) errors.floors = floorsError
   const indian = isIndianSite(draft)
   if (indian && !draft.state) {
     errors.state = 'Choose the state — it decides which GST registration this site files under.'
@@ -191,6 +194,7 @@ export function normalizeLocation(draft: Warehouse): Warehouse {
     area: Number.isFinite(Number(draft.area)) && Number(draft.area) > 0 ? Math.round(Number(draft.area)) : 0,
     pobStatus: indian ? draft.pobStatus || 'undeclared' : 'undeclared',
     operatorVendorId: draft.type === '3pl' ? draft.operatorVendorId : '',
+    ...(draft.floors ? { floors: normalizeFloors(draft.floors) } : {}),
   }
 }
 

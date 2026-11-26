@@ -92,10 +92,15 @@ Each entry: **id · title** — where, what is wrong or missing, why it was left
 
 ### Settings ▸ Warehouse (run 2.2)
 
-- **G-016 · Locations: Structure Designer and creation wizard not ported** — the prototype's 2D/3D designer
-  (floors, zones, aisles, bins, occupancy) and 4-step wizard on Locations & warehouses are not in the React app;
-  sites are created and edited in the drawer and carry no floors or layouts. *Fix by:* its own run (needs a
-  layout data model: floors, zones, aisles, bin overrides — see `docs/locations-warehouses/README.md`).
+- **G-016 · Locations: Structure Designer not ported** — the prototype's 2D/3D designer (canvas, racks and aisles
+  editing, bin matrix, occupancy, drag) is not in the React app. The 4-step setup wizard, floors and the
+  `locationLayouts` collection (areas and seeded racks) shipped in run 2.7 and hold the shape the designer will
+  read and edit; the drawer shows floor and area counts but nothing edits areas or racks after creation. *Fix by:*
+  its own run (canvas + inspector on `locationLayouts`; see `docs/locations-warehouses/README.md`, "Update 2026-11-26").
+- **G-042 · Areas can't be changed after a site is created** — the wizard's Areas step is create-only (as in the
+  prototype) and the drawer only edits floors, so an area, rack run or bin can't be added, moved, renamed or removed
+  yet; as a result a floor that has areas can never be removed (its Remove button is disabled with the reason).
+  *Fix by:* the Structure Designer run (G-016).
 - **G-019 · Inactive sites still appear in document pickers; some references don't block delete** —
   `selectableLocations()` exists but the PO, receipt, assembly-order and item-stock pickers still list every
   site; BOM `wipLocation` and production settings' output location aren't counted as usage, so deleting a site

@@ -1,5 +1,5 @@
 import type { Dataset, GridColumn } from '@/components/data-grid/model'
-import type { Warehouse } from '@/data/schemas'
+import type { Floor, Warehouse } from '@/data/schemas'
 import {
   LOCATION_POB,
   LOCATION_STATUSES,
@@ -13,6 +13,12 @@ import { EM_DASH } from '@/lib/format'
 
 /** A site with the figures and names the grid shows beside it. */
 export interface LocationRow extends Warehouse {
+  /** The building's floors, ground first (a site saved before floors existed reads as one ground floor). */
+  floors: Floor[]
+  /** Areas on each floor, by floor id. */
+  areaCounts: Record<string, number>
+  /** Areas on all floors. */
+  areaTotal: number
   stock: number
   openDocs: number
   managerName: string
@@ -57,6 +63,10 @@ export function locationsDataset(term: { singular: string; plural: string } = { 
         return w.registration
       case 'area':
         return w.area
+      case 'floors':
+        return w.floors.length
+      case 'areas':
+        return w.areaTotal
       case 'stock':
         return w.stock
       case 'openDocs':
@@ -84,6 +94,8 @@ export function locationsDataset(term: { singular: string; plural: string } = { 
       col('registration', 'GST registration', 160, { type: 'mono', visible: false }),
       col('pob', 'GST certificate', 150, { visible: false }),
       col('area', 'Area (sq ft)', 112, { type: 'num', align: 'right', visible: false }),
+      col('floors', 'Floors', 88, { type: 'num', align: 'right' }),
+      col('areas', 'Areas', 88, { type: 'num', align: 'right', agg: 'sum', aggFmt: 'int' }),
       col('stock', 'Units in stock', 120, { type: 'num', align: 'right', agg: 'sum', aggFmt: 'int' }),
       col('openDocs', 'Open documents', 130, { type: 'num', align: 'right', agg: 'sum', aggFmt: 'int' }),
     ],

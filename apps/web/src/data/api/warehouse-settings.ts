@@ -4,7 +4,14 @@
  */
 import { api } from '@/data/api'
 import { CommandError } from '@/data/api/commands'
-import { type ItemCategory, type Warehouse, itemCategorySchema, warehouseSchema } from '@/data/schemas'
+import {
+  type ItemCategory,
+  type LocationLayout,
+  type Warehouse,
+  itemCategorySchema,
+  locationLayoutSchema,
+  warehouseSchema,
+} from '@/data/schemas'
 import {
   categoriesWithout,
   categoryById,
@@ -14,6 +21,15 @@ import {
   reassignItemCategory,
   validateCategory,
 } from '@/domain/item-categories'
+import {
+  type AreaPick,
+  buildLayouts,
+  emptyLayout,
+  floorAreaCounts,
+  floorRemoveBlockReason,
+  floorsOf,
+  floorsRemovedWithAreas,
+} from '@/domain/location-layouts'
 import {
   type LocationUsage,
   applyPrincipal,
@@ -94,13 +110,40 @@ export interface SaveWarehouseResult {
   moved: Warehouse | null
 }
 
-/** Create or update a site: `PUT /locations/{id}`. Enforces the location rules in `domain/locations`. */
-export async function saveWarehouse(input: Warehouse): Promise<SaveWarehouseResult> {
-  const [all, vendors, usage, registrations] = await Promise.all([
+
+export interface SaveWarehouseOptions {
+  /** Areas the setup wizard picked. Used only when the site is new: they are placed on its ground floor. */
+  areas?: readonly AreaPick[]
+}
+
+/**
+ * Keep the layouts in step with the site's floors: a layout for every floor (the picked areas on the
+ * ground floor of a new site, empty otherwise), none for floors that were removed.
+ */
+async function syncLayouts(site: Warehouse, isNew: boolean, picks: readonly AreaPick[]): Promise<void> {
+  if (!site.floors) return
+  const mine = (await api.locationLayouts.list()).filter((l) => l.warehouseId === site.id)
+  const have = new Set(mine.map((l) => l.floorId))
+  const keep = new Set(site.floors.map((f) => f.id))
+  for (const l of mine) if (!keep.has(l.floorId)) await api.locationLayouts.remove(l.id)
+  const fresh = isNew
+    ? buildLayouts(site.id, site.floors, picks)
+    : site.floors.filter((f) => !have.has(f.id)).map((f) => emptyLayout(site.id, f.id))
+  if (fresh.length > 0) await api.locationLayouts.upsertMany(fresh.map((l) => locationLayoutSchema.parse(l)))
+}
+
+/**
+ * Create or update a site: `PUT /locations/{id}`. Enforces the location rules in `domain/locations`. A new
+ * site gets a layout per floor (with the wizard's areas on the ground floor); a floor that still has areas
+ * can't be removed.
+ */
+export async function saveWarehouse(input: Warehouse, options: SaveWarehouseOptions = {}): Promise<SaveWarehouseResult> {
+  const [all, vendors, usage, registrations, layouts] = await Promise.all([
     api.warehouses.list(),
     api.vendors.list(),
     loadLocationUsage(),
     api.gstRegistrations.list(),
+    api.locationLayouts.list(),
   ])
   const original = all.find((w) => w.id === input.id) ?? null
   const now = new Date().toISOString()
@@ -114,19 +157,38 @@ export async function saveWarehouse(input: Warehouse): Promise<SaveWarehouseResu
     validateLocation(candidate, others, original, usage.get(candidate.id), new Set(vendors.map((v) => v.no)), registrations),
   )
   if (problem) throw new CommandError(problem)
+  if (original && candidate.floors) {
+    const [blocked] = floorsRemovedWithAreas(floorsOf(original), candidate.floors, floorAreaCounts(layouts, original.id))
+    if (blocked) {
+      throw new CommandError(floorRemoveBlockReason(blocked, floorAreaCounts(layouts, original.id)[blocked.id] ?? 0) ?? 'This floor still has areas.')
+    }
+  }
   const withIt = original ? all.map((w) => (w.id === candidate.id ? candidate : w)) : [...all, candidate]
   const { list, moved } = applyPrincipal(withIt, candidate.id)
   const changed = list.filter((w) => w.id === candidate.id || w.id === moved?.id)
   await api.warehouses.upsertMany(changed.map((w) => warehouseSchema.parse(w)))
+  await syncLayouts(candidate, !original, options.areas ?? [])
   return { saved: candidate, moved }
 }
 
-/** Delete a site: `DELETE /locations/{id}`. Refused while it holds stock, has open documents, or is the principal place. */
-export async function deleteWarehouse(id: string): Promise<void> {
+/**
+ * Delete a site: `DELETE /locations/{id}`. Refused while it holds stock, has open documents, or is the principal
+ * place. Its layouts go with it; they are returned so Undo can put them back.
+ */
+export async function deleteWarehouse(id: string): Promise<LocationLayout[]> {
   const [all, usage] = await Promise.all([api.warehouses.list(), loadLocationUsage()])
   const site = all.find((w) => w.id === id)
   if (!site) throw new CommandError('Location not found.')
   const reason = locationDeleteBlockReason(site, all, usage.get(id))
   if (reason) throw new CommandError(reason)
+  const layouts = (await api.locationLayouts.list()).filter((l) => l.warehouseId === id)
   await api.warehouses.remove(id)
+  for (const l of layouts) await api.locationLayouts.remove(l.id)
+  return layouts
+}
+
+/** Put a deleted site back (Undo) with the layouts it had. */
+export async function restoreWarehouse(site: Warehouse, layouts: readonly LocationLayout[]): Promise<void> {
+  await saveWarehouse(site)
+  if (layouts.length > 0) await api.locationLayouts.upsertMany(layouts.map((l) => locationLayoutSchema.parse(l)))
 }

@@ -98,6 +98,12 @@ page that uses it — that is the point, so put shared behaviour in the template
   page's own keys are a `ShortcutMeta` in its `shortcuts.ts`, spread into
   `ListPage`'s `shortcuts` prop; add the page's group to the catalogue in the same
   turn.
+- **Step wizard** → `src/components/wizard/Wizard.tsx` (shadcn Dialog; full-screen sheet on a phone). A flow gives `steps`
+  (`{ id, label, subtitle, validate?, render }`), `createDraft`, `finishLabel` and `onFinish` (return `{ step, errors }` to send the
+  user back). The template owns step dots (clickable back to visited steps), Back / Continue / Finish, blocking per-step validation with
+  errors in place, keys (Enter, Ctrl/Cmd+Enter, Alt+←/→, Esc with a discard confirm when dirty), first-field focus and step motion;
+  steps lay out fields with `WizardField` / `wizardControlClass`. Keys are data in `wizard/shortcut-meta.ts` (Keyboard shortcuts ▸
+  Wizard). Reference build: `features/settings/locations/LocationWizard.tsx`; `ListPage`'s `onNew` swaps the New drawer for a wizard.
 - **Exceptions are options, never copies.** A page that must differ switches a
   standard part off or adds its own through the template's props (e.g. Purchase
   Lines omits `remove`/`create`/`preview`; receipt lines pass no `onChange`, so

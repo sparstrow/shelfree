@@ -327,6 +327,15 @@ export const userSchema = z.object({
 export type User = z.infer<typeof userSchema>
 
 // ── Settings ▸ Locations & warehouses ────────────────────────────────────────
+/** A floor of a site's building (`level` 1 = ground). A layout exists for every floor. */
+export const floorSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  code: z.string(),
+  level: z.number(),
+})
+export type Floor = z.infer<typeof floorSchema>
+
 export const warehouseSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -342,11 +351,64 @@ export const warehouseSchema = z.object({
   pobStatus: z.string(),
   managerEmpId: z.string(),
   operatorVendorId: z.string(),
+  /** The building's floors, ground first. Absent on records saved before floors existed (read as one ground floor). */
+  floors: z.array(floorSchema).optional(),
   /** Stamped when the site is saved from Settings (ISO date-time); seed rows have none. */
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
 })
 export type Warehouse = z.infer<typeof warehouseSchema>
+
+/** An area (zone) on a floor. Feet, origin top-left. `type` is an id of the area-type catalogue (`domain/location-layouts`). */
+export const layoutZoneSchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  name: z.string(),
+  type: z.string(),
+  color: z.string(),
+  status: z.enum(['available', 'inuse', 'maintenance']),
+  x: z.number(),
+  y: z.number(),
+  w: z.number(),
+  h: z.number(),
+})
+export type LayoutZone = z.infer<typeof layoutZoneSchema>
+
+/** A rack run (an "aisle" of the prototype) inside a zone. */
+export const layoutAisleSchema = z.object({
+  id: z.string(),
+  zoneId: z.string(),
+  code: z.string(),
+  dir: z.enum(['v', 'h']),
+  x: z.number(),
+  y: z.number(),
+  bays: z.number(),
+  levels: z.number(),
+  binsPerBay: z.number(),
+  sides: z.number(),
+  aisleWidth: z.number(),
+})
+export type LayoutAisle = z.infer<typeof layoutAisleSchema>
+
+/** An edited bin (only edited bins are stored; the rest are generated). */
+export const layoutBinSchema = z.object({
+  sku: z.string().optional(),
+  qty: z.number().optional(),
+  lot: z.string().optional(),
+})
+
+/** What a site's floor contains. One per site + floor; `id` is `<siteId>::<floorId>`. */
+export const locationLayoutSchema = z.object({
+  id: z.string(),
+  warehouseId: z.string(),
+  floorId: z.string(),
+  floorW: z.number(),
+  floorH: z.number(),
+  zones: z.array(layoutZoneSchema),
+  aisles: z.array(layoutAisleSchema),
+  bins: z.record(z.string(), layoutBinSchema),
+})
+export type LocationLayout = z.infer<typeof locationLayoutSchema>
 
 // ── Notes (append-only log on every record) ──────────────────────────────────
 export const noteSchema = z.object({
