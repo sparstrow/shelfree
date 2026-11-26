@@ -24,6 +24,7 @@ import {
   itemCategorySchema,
   itemSchema,
   itemUnitSetSchema,
+  locationLayoutSchema,
   noteSchema,
   numberSequenceSchema,
   paymentTermSchema,
@@ -50,6 +51,7 @@ import {
 import { seedGstStates, seedTaxCodes } from '@/data/seed/settings-finance'
 import { seedGstRegistrations } from '@/data/seed/settings-workspace'
 import { seedItemUnits } from '@/data/seed/item-units'
+import { seedLocationLayouts, seedWarehousesWithFloors } from '@/data/seed/location-layouts'
 import { seedNumberSequences } from '@/data/seed/number-sequences'
 import { seedPurchasePrices } from '@/data/seed/purchase-prices'
 import { seedRoleDefs } from '@/data/seed/roles'
@@ -151,7 +153,7 @@ export const api = {
   warehouses: createCollection({
     key: 'warehouses',
     schema: warehouseSchema,
-    seed: seed.seedWarehouses,
+    seed: seedWarehousesWithFloors,
     idOf: (r) => r.id,
   }),
   notes: createCollection({
@@ -259,6 +261,13 @@ export const api = {
     key: 'gstRegistrations',
     schema: gstRegistrationSchema,
     seed: seedGstRegistrations,
+    idOf: (r) => r.id,
+  }),
+  /** Settings ▸ Locations & warehouses: the areas and shelving on each floor of a site (`shelfree.v2.locationLayouts`, one per site + floor). */
+  locationLayouts: createCollection({
+    key: 'locationLayouts',
+    schema: locationLayoutSchema,
+    seed: seedLocationLayouts,
     idOf: (r) => r.id,
   }),
   /** Settings ▸ Team & roles: each role's default module access (`shelfree.v2.roleDefs`). */

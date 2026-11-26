@@ -204,6 +204,11 @@ export interface ListPageProps<T> {
    * defines, like the built-in roles in Settings ▸ Team & roles.
    */
   noCreate?: boolean
+  /**
+   * Take over "New" from the drawer: the New button, the `N` key and `startNew()` without a draft call this instead
+   * (e.g. a setup wizard, as on Settings ▸ Locations & warehouses). Needs `editor`; the drawer still edits existing rows.
+   */
+  onNew?: () => void
 
   /** Row whose preview is open on arrival (`?sel=` deep links). */
   initialActiveId?: string | null
@@ -273,6 +278,7 @@ export function ListPage<T>({
   preview,
   editor,
   noCreate = false,
+  onNew,
   initialActiveId = null,
   initialDraft,
   topBarExtra,
@@ -438,6 +444,10 @@ export function ListPage<T>({
   // ── editor (reference lists) ────────────────────────────────────────────────
   const startNew = (draft?: T) => {
     if (readOnly || !editor || noCreate) return
+    if (onNew && draft === undefined) {
+      onNew()
+      return
+    }
     setActiveId(null)
     setEditing({ mode: 'new', draft: draft ?? editor.blank(rows ?? []), orig: null, errors: {}, formError: '' })
   }

@@ -5,10 +5,12 @@ import {
   deleteWarehouse,
   loadLocationUsage,
   restoreItemCategory,
+  restoreWarehouse,
   saveItemCategory,
   saveWarehouse,
 } from '@/data/api/warehouse-settings'
-import type { ItemCategory, Warehouse } from '@/data/schemas'
+import type { ItemCategory, LocationLayout, Warehouse } from '@/data/schemas'
+import type { AreaPick } from '@/domain/location-layouts'
 import { useList } from './index'
 
 /** The category tree. */
@@ -48,7 +50,12 @@ export function useLocationUsage() {
 
 /** Usage depends on stock and documents too, so any write there refreshes it via the shared prefix of the other keys. */
 const refreshLocationReaders = (client: ReturnType<typeof useQueryClient>) =>
-  client.invalidateQueries({ queryKey: ['warehouses'] })
+  Promise.all(['warehouses', 'locationLayouts'].map((name) => client.invalidateQueries({ queryKey: [name] })))
+
+/** The areas and shelving on every floor of every site. */
+export function useLocationLayouts() {
+  return useList('locationLayouts')
+}
 
 export function useSaveWarehouse() {
   const client = useQueryClient()
@@ -58,4 +65,21 @@ export function useSaveWarehouse() {
 export function useDeleteWarehouse() {
   const client = useQueryClient()
   return useMutation({ mutationFn: (id: string) => deleteWarehouse(id), onSuccess: () => refreshLocationReaders(client) })
+}
+
+/** Create a site from the setup wizard: the site plus the areas placed on its ground floor. */
+export function useCreateWarehouse() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ site, areas }: { site: Warehouse; areas: readonly AreaPick[] }) => saveWarehouse(site, { areas }),
+    onSuccess: () => refreshLocationReaders(client),
+  })
+}
+
+export function useRestoreWarehouse() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ site, layouts }: { site: Warehouse; layouts: readonly LocationLayout[] }) => restoreWarehouse(site, layouts),
+    onSuccess: () => refreshLocationReaders(client),
+  })
 }

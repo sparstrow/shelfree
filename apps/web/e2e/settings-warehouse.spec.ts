@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { type Page, expect, test } from '@playwright/test'
 
 test.describe('Settings ▸ Item categories', () => {
   test.beforeEach(async ({ page }) => {
@@ -144,15 +144,22 @@ test.describe('Settings ▸ Locations & warehouses', () => {
     await expect(grid.getByRole('row', { name: /TVM-MAIN/ })).toHaveCount(0)
   })
 
-  test('creates, edits and deletes a location, with Undo', async ({ page }) => {
+  /** New location opens the setup wizard; walk it to the end with just the basics and a state. */
+  const createViaWizard = async (page: Page, site: { name: string; code: string; state: string; city?: string }) => {
     await page.getByRole('button', { name: 'New location', exact: true }).click()
-    const drawer = page.getByRole('complementary', { name: 'New location' })
-    await expect(drawer).toBeVisible()
-    await drawer.getByLabel('Name', { exact: true }).fill('Salem outlet')
-    await drawer.getByLabel('Code', { exact: true }).fill('slm-out')
-    await drawer.getByLabel('State', { exact: true }).selectOption({ label: 'Tamil Nadu' })
-    await drawer.getByLabel('City', { exact: true }).fill('Salem')
-    await drawer.getByRole('button', { name: 'Create location', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: 'New location' })
+    await expect(dialog).toBeVisible()
+    await dialog.getByLabel('Name', { exact: true }).fill(site.name)
+    await dialog.getByLabel('Code', { exact: true }).fill(site.code)
+    for (let i = 0; i < 3; i++) await dialog.getByRole('button', { name: 'Continue', exact: true }).click()
+    await dialog.getByLabel('State', { exact: true }).selectOption({ label: site.state })
+    if (site.city) await dialog.getByLabel('City', { exact: true }).fill(site.city)
+    await dialog.getByRole('button', { name: 'Create location', exact: true }).click()
+    await expect(dialog).toBeHidden()
+  }
+
+  test('creates (through the setup wizard), edits and deletes a location, with Undo', async ({ page }) => {
+    await createViaWizard(page, { name: 'Salem outlet', code: 'slm-out', state: 'Tamil Nadu', city: 'Salem' })
 
     const row = page.getByRole('row', { name: /SLM-OUT/ })
     await expect(row).toContainText('Salem outlet')
@@ -176,19 +183,20 @@ test.describe('Settings ▸ Locations & warehouses', () => {
     await expect(page.getByRole('row', { name: /SLM-OUT/ })).toBeVisible()
   })
 
-  test('validates the form: required, duplicate code, state, 3PL fields', async ({ page }) => {
-    await page.keyboard.press('n')
-    const drawer = page.getByRole('complementary', { name: 'New location' })
+  test('validates an edit: required, duplicate code, 3PL fields', async ({ page }) => {
+    await createViaWizard(page, { name: 'Copy', code: 'CPY', state: 'Tamil Nadu' })
+    await page.getByRole('row', { name: /CPY/ }).dblclick()
+    const drawer = page.getByRole('complementary', { name: 'Edit location' })
     await expect(drawer).toBeVisible()
-    await drawer.getByRole('button', { name: 'Create location', exact: true }).click()
+    await drawer.getByLabel('Name', { exact: true }).fill('')
+    await drawer.getByLabel('Code', { exact: true }).fill('')
+    await drawer.getByRole('button', { name: 'Save changes', exact: true }).click()
     await expect(drawer.getByText('Enter a warehouse name.')).toBeVisible()
     await expect(drawer.getByText('Enter a short code (e.g. MAIN).')).toBeVisible()
-    await expect(drawer.getByText('Choose the state — it decides which GST registration this site files under.')).toBeVisible()
 
     await drawer.getByLabel('Name', { exact: true }).fill('Copy')
     await drawer.getByLabel('Code', { exact: true }).fill('tvm-main')
-    await drawer.getByLabel('State', { exact: true }).selectOption({ label: 'Tamil Nadu' })
-    await drawer.getByRole('button', { name: 'Create location', exact: true }).click()
+    await drawer.getByRole('button', { name: 'Save changes', exact: true }).click()
     await expect(drawer.getByText('Code “TVM-MAIN” is already used by another warehouse.')).toBeVisible()
 
     // 3PL adds the operator; a site outside India drops the GST fields.
@@ -204,14 +212,12 @@ test.describe('Settings ▸ Locations & warehouses', () => {
   })
 
   test('saving a site as principal moves the state’s previous principal to Additional', async ({ page }) => {
-    await page.keyboard.press('n')
-    const drawer = page.getByRole('complementary', { name: 'New location' })
-    await drawer.getByLabel('Name', { exact: true }).fill('Salem HQ')
-    await drawer.getByLabel('Code', { exact: true }).fill('SLM-HQ')
-    await drawer.getByLabel('State', { exact: true }).selectOption({ label: 'Tamil Nadu' })
+    await createViaWizard(page, { name: 'Salem HQ', code: 'SLM-HQ', state: 'Tamil Nadu' })
+    await page.getByRole('row', { name: /SLM-HQ/ }).dblclick()
+    const drawer = page.getByRole('complementary', { name: 'Edit location' })
     await drawer.getByLabel('On the GST certificate as', { exact: true }).selectOption({ label: 'Principal place of business' })
     await expect(drawer.getByText('Saving makes this the principal place and moves Tiruvannamalai — Main to Additional.')).toBeVisible()
-    await drawer.getByRole('button', { name: 'Create location', exact: true }).click()
+    await drawer.getByRole('button', { name: 'Save changes', exact: true }).click()
     await expect(page.getByText('Principal place changed')).toBeVisible()
 
     await page.getByRole('row', { name: /TVM-MAIN/ }).click()

@@ -20,6 +20,7 @@ import { LIST_EDITOR_SHORTCUTS, LIST_PAGE_SHORTCUTS } from '@/components/list-pa
 import { RECORD_PAGE_SHORTCUTS } from '@/components/record-page/shortcut-meta'
 import { FAVORITES_VIEWS_SHORTCUTS } from '@/components/saved-views/shortcut-meta'
 import { SETTINGS_FRAME_SHORTCUTS } from '@/components/settings/shortcut-meta'
+import { WIZARD_SHORTCUTS } from '@/components/wizard/shortcut-meta'
 import { REGISTRATION_CANCEL_SHORTCUT, REGISTRATION_PRIMARY_SHORTCUT } from '@/features/settings/gst-registrations/shortcuts'
 import { PO_RECEIVE_SHORTCUT } from '@/features/purchasing/purchase-orders/shortcuts'
 import { PRICE_CHANGE_SHORTCUT, PRICE_TIER_SHORTCUT } from '@/features/purchasing/purchase-prices/shortcuts'
@@ -152,10 +153,11 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
     ...LIST_PAGE_SHORTCUTS,
   ]),
   group('settings-locations', 'Settings › Locations & warehouses', [
-    ...LIST_EDITOR_SHORTCUTS.map((s) => (s.combo === 'N' ? { ...s, desc: 'New location — set up as a Distribution site in India, status Setting up.' } : s)),
-    { combo: 'Delete', desc: 'Delete the active location — blocked while it holds stock, has open documents or is the principal place.' },
+    ...LIST_EDITOR_SHORTCUTS.map((s) => (s.combo === 'N' ? { ...s, desc: 'New location — opens the setup wizard (Basics, Building, Areas, Finish) with a Distribution site in India, status Setting up.' } : s)),
+    { combo: 'Delete', desc: 'Delete the active location — blocked while it holds stock, has open documents or is the principal place. Its floors and areas go with it.' },
     ...LIST_PAGE_SHORTCUTS,
   ]),
+  group('wizard', 'Wizard — step-by-step setup (New location)', WIZARD_SHORTCUTS),
   group('settings-tax-settings', 'Settings › Tax settings', [
     { combo: 'Ctrl/Cmd + S', desc: 'Save the changed tax settings. A change shows a dot beside its label until saved.' },
     { combo: 'Esc', desc: 'Discard the unsaved changes (when no description is open).' },

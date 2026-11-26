@@ -181,6 +181,14 @@ audit log table, which auth provider) next to each.
   reject state change while open documents reference the location; no PII added (site manager is an
   employee link; the free-typed contact phone/email fields were removed).
 
+- [ ] **Location setup wizard, floors and layouts (2026-11-26):** audit `location.created` (with its floors and the areas
+  placed), `location.floors.updated` (floors added / renamed / removed) and `location.deleted` (including the layouts removed with it);
+  enforce `locations.manage` on `POST /locations`, `PUT /locations/{id}` and layout writes — the wizard is not offered to a member and
+  the API refuses a write without the right; layouts are tenant-scoped through their site (`warehouse_id`, never a free id); reject
+  duplicate floor codes and a floor removal while it has areas server-side. No personal data added (the site manager stays an
+  employee link; the wizard collects no contact name, phone or email); nothing sensitive in localStorage beyond the existing
+  `shelfree.v2.warehouses` / `shelfree.v2.locationLayouts` demo stores.
+
 - [ ] **Vendor GST registration (2026-09-28):** audit event `vendor.gst_registration.updated` on every type/GSTIN change; permission `vendors.tax.edit`; GSTIN is business identity (not PII) — unregistered individual vendors' personal details stay in Contacts.
 
 - [ ] **Personal settings — profile PII (2026-11-26, run 2.6):** name, email and phone on the profile are personal

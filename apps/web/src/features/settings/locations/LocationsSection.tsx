@@ -1,13 +1,21 @@
-import { useMemo } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { type ListDelete, type ListEditor, ListPage } from '@/components/list-page/ListPage'
 import { SettingsPage } from '@/components/settings/SettingsPage'
 import { useList } from '@/data/queries'
 import { useLocationTerm } from '@/data/queries/regional-terminology'
-import { useDeleteWarehouse, useLocationUsage, useSaveWarehouse } from '@/data/queries/warehouse-settings'
-import type { Warehouse } from '@/data/schemas'
+import {
+  useCreateWarehouse,
+  useDeleteWarehouse,
+  useLocationLayouts,
+  useLocationUsage,
+  useRestoreWarehouse,
+  useSaveWarehouse,
+} from '@/data/queries/warehouse-settings'
+import type { LocationLayout, Warehouse } from '@/data/schemas'
 import { GST_STATES } from '@/domain/gst'
 import { locationRegistrationError, registrationForSite } from '@/domain/gst-registrations'
+import { floorAreaCounts, floorsOf, normalizeFloors, siteAreaCount } from '@/domain/location-layouts'
 import {
   LOCATION_COUNTRIES,
   LOCATION_POB,
@@ -28,7 +36,9 @@ import {
 } from '@/domain/locations'
 import { EM_DASH, int } from '@/lib/format'
 import { type LocationRow, locationsDataset } from './dataset'
+import { FloorsEditor } from './FloorsEditor'
 import { LOCATIONS_HELP } from './help'
+import { LocationWizard } from './LocationWizard'
 
 const STATE_OPTIONS = GST_STATES.filter((s) => !s.legacy).map((s) => ({ value: s.code, label: s.name }))
 const NONE = ''
@@ -48,41 +58,52 @@ const toWarehouse = (r: LocationRow): Warehouse => ({
   pobStatus: r.pobStatus,
   managerEmpId: r.managerEmpId,
   operatorVendorId: r.operatorVendorId,
+  floors: r.floors,
   ...(r.createdAt ? { createdAt: r.createdAt } : {}),
   ...(r.updatedAt ? { updatedAt: r.updatedAt } : {}),
 })
 
 /**
  * Warehouse ▸ Settings ▸ Locations & warehouses (`/warehouse/settings/locations`).
- * The prototype also had a Structure Designer (zones, aisles, bins) and a creation
- * wizard on this page — neither is ported yet (see docs/gaps.md).
+ * New location opens the setup wizard (floors and areas are placed when a site is created); the
+ * drawer edits existing sites, floors included. The prototype's Structure Designer (zones, aisles,
+ * bins) is not ported yet (see docs/gaps.md, G-016).
  */
 export function LocationsSection({ readOnly = false }: { readOnly?: boolean } = {}) {
   const warehouses = useList('warehouses')
   const employees = useList('employees')
   const vendors = useList('vendors')
   const registrations = useList('gstRegistrations')
+  const layouts = useLocationLayouts()
   const term = useLocationTerm()
   const usageQuery = useLocationUsage()
   const save = useSaveWarehouse()
+  const create = useCreateWarehouse()
   const remove = useDeleteWarehouse()
+  const restore = useRestoreWarehouse()
+  const [wizardOpen, setWizardOpen] = useState(false)
+  /** Layouts of the sites deleted in this session, so Undo can put them back with the site. */
+  const deletedLayouts = useRef(new Map<string, LocationLayout[]>())
 
   const sites = useMemo(() => warehouses.data ?? [], [warehouses.data])
   const usage = usageQuery.data
 
   const rows = useMemo<LocationRow[] | undefined>(() => {
-    if (warehouses.data === undefined || usage === undefined || registrations.data === undefined) return undefined
+    if (warehouses.data === undefined || usage === undefined || registrations.data === undefined || layouts.data === undefined) return undefined
     const empName = new Map((employees.data ?? []).map((e) => [e.id, e.name]))
     const vendorName = new Map((vendors.data ?? []).map((v) => [v.no, v.name]))
     return sites.map((w) => ({
       ...w,
+      floors: floorsOf(w),
+      areaCounts: floorAreaCounts(layouts.data ?? [], w.id),
+      areaTotal: siteAreaCount(layouts.data ?? [], w.id),
       stock: usage.get(w.id)?.stock ?? 0,
       openDocs: usage.get(w.id)?.openDocs ?? 0,
       managerName: empName.get(w.managerEmpId) ?? '',
       operatorName: vendorName.get(w.operatorVendorId) ?? '',
       registration: registrationForSite(registrations.data ?? [], w)?.gstin ?? '',
     }))
-  }, [warehouses.data, usage, sites, employees.data, vendors.data, registrations.data])
+  }, [warehouses.data, usage, sites, employees.data, vendors.data, registrations.data, layouts.data])
 
   const dataset = useMemo(() => locationsDataset(term), [term])
 
@@ -99,9 +120,11 @@ export function LocationsSection({ readOnly = false }: { readOnly?: boolean } = 
   const del: ListDelete<LocationRow> = {
     blockedReason: (w) => locationDeleteBlockReason(w, sites, usage?.get(w.id)),
     describe: (w) => `${w.code} · ${w.name}`,
-    note: 'It holds no stock and has no open documents.',
-    run: (w) => remove.mutateAsync(w.id),
-    undo: (w) => void save.mutateAsync(toWarehouse(w)),
+    note: 'It holds no stock and has no open documents. Its floors and areas are removed with it.',
+    run: async (w) => {
+      deletedLayouts.current.set(w.id, await remove.mutateAsync(w.id))
+    },
+    undo: (w) => void restore.mutateAsync({ site: toWarehouse(w), layouts: deletedLayouts.current.get(w.id) ?? [] }),
   }
 
   const editor: ListEditor<LocationRow> = {
@@ -203,6 +226,8 @@ export function LocationsSection({ readOnly = false }: { readOnly?: boolean } = 
         subtitle: locationAddress(w) || undefined,
         notice: blocked ?? uncovered ?? undefined,
         facts: [
+          { k: 'Floors', v: int(w.floors.length) },
+          { k: 'Areas', v: int(w.areaTotal) },
           ...(isIndianSite(w) ? [{ k: 'GST registration', v: w.registration || 'None for this state' }] : []),
           { k: 'Units in stock', v: int(w.stock) },
           { k: 'Open documents', v: int(w.openDocs) },
@@ -229,6 +254,9 @@ export function LocationsSection({ readOnly = false }: { readOnly?: boolean } = 
       managerName: '',
       operatorName: '',
       registration: '',
+      floors: floorsOf({}),
+      areaCounts: {},
+      areaTotal: 0,
     }),
     onChange: (draft, key) => {
       if (key === 'code') return { ...draft, code: draft.code.toUpperCase().replace(/[^A-Z0-9-]/g, '') }
@@ -238,7 +266,7 @@ export function LocationsSection({ readOnly = false }: { readOnly?: boolean } = 
     },
     normalize: (draft) => {
       const n = normalizeLocation(draft)
-      return { ...draft, ...n, id: draft.id || nextLocationId(sites, n.code) }
+      return { ...draft, ...n, floors: normalizeFloors(draft.floors), id: draft.id || nextLocationId(sites, n.code) }
     },
     validate: (draft, others) => {
       const original = sites.find((w) => w.id === draft.id) ?? null
@@ -258,13 +286,24 @@ export function LocationsSection({ readOnly = false }: { readOnly?: boolean } = 
       }
     },
     label: (w) => `${w.code} · ${w.name}`,
-    extraEdit: (draft) => {
+    extra: (w) => <FloorsEditor floors={w.floors} areaCounts={w.areaCounts} editing={false} />,
+    extraEdit: (draft, _mode, change, errors) => {
       const displaced = principalDisplaced(toWarehouse(draft), sites)
-      if (!displaced) return null
       return (
-        <p aria-live="polite" className="m-0 mt-3 text-[12px] text-muted-foreground">
-          Saving makes this the principal place and moves {displaced.name} to Additional.
-        </p>
+        <>
+          <FloorsEditor
+            floors={draft.floors}
+            areaCounts={draft.areaCounts}
+            editing
+            error={errors.floors}
+            onChange={(floors) => change('floors', floors)}
+          />
+          {displaced && (
+            <p aria-live="polite" className="m-0 mt-3 text-[12px] text-muted-foreground">
+              Saving makes this the principal place and moves {displaced.name} to Additional.
+            </p>
+          )}
+        </>
       )
     },
   }
@@ -282,13 +321,27 @@ export function LocationsSection({ readOnly = false }: { readOnly?: boolean } = 
         readOnly={readOnly}
         dataset={dataset}
         rows={rows}
-        isLoading={warehouses.isLoading || usageQuery.isLoading || registrations.isLoading}
-        error={warehouses.error ?? usageQuery.error ?? registrations.error}
-        onRefresh={() => Promise.all([warehouses.refetch(), usageQuery.refetch(), registrations.refetch()])}
+        isLoading={warehouses.isLoading || usageQuery.isLoading || registrations.isLoading || layouts.isLoading}
+        error={warehouses.error ?? usageQuery.error ?? registrations.error ?? layouts.error}
+        onRefresh={() => Promise.all([warehouses.refetch(), usageQuery.refetch(), registrations.refetch(), layouts.refetch()])}
         remove={del}
         editor={editor}
+        // New opens the setup wizard instead of the drawer (the N key too).
+        onNew={() => setWizardOpen(true)}
         emptyText={`No ${term.plural.toLowerCase()} match.`}
       />
+      {!readOnly && (
+        <LocationWizard
+          open={wizardOpen}
+          onClose={() => setWizardOpen(false)}
+          noun={term.singular.toLowerCase()}
+          sites={sites}
+          employees={employees.data ?? []}
+          vendors={vendors.data ?? []}
+          registrations={registrations.data ?? []}
+          onCreate={(site, areas) => create.mutateAsync({ site, areas })}
+        />
+      )}
     </SettingsPage>
   )
 }
