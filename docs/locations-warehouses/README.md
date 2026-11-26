@@ -347,6 +347,7 @@ fixed code, blocked delete, last active location, help, member read-only).
 **What changed.** *New location* (button and `N`) opens a 4-step wizard instead of the drawer. The drawer remains the edit surface
 for existing sites (edit in place) and gains a *Floors* block. The list gains *Floors* and *Areas* columns and the drawer *Floors* /
 *Areas* facts. The visual Structure Designer is still not ported (G-016, G-042).
+The Areas step subtitle says areas can’t be changed after creation (the prototype said “you can rearrange them after”, which is only true once the designer exists — G-042).
 
 **Files.** Template: `apps/web/src/components/wizard/` (`Wizard.tsx`, `fields.tsx`, `control-class.ts`, `shortcut-meta.ts`) — a shadcn
 `Dialog` step wizard onboarding will reuse. Feature: `features/settings/locations/` (`LocationWizard.tsx` — the steps,

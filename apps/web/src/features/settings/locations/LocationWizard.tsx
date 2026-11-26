@@ -293,7 +293,7 @@ export function LocationWizard({ open, onClose, noun, sites, employees, vendors,
       {
         id: 'areas',
         label: 'Areas',
-        subtitle: 'Add the areas you have — you can rearrange them after.',
+        subtitle: 'Add the areas you have. They can’t be changed once the site is created.',
         render: ({ draft, update }) => {
           const placed = placeAreas(draft.areas)
           const chosen = new Map(draft.areas.map((a) => [a.id, a.count]))
