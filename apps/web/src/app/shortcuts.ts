@@ -220,6 +220,23 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
     { combo: 'Esc', desc: 'Discard unsaved changes.' },
     { combo: 'Space (on a switch)', desc: 'Turn the pinned sidebar section on or off for everyone.' },
   ]),
+  // Run 2.6 — Personal
+  group('settings-personal-form', 'Settings › Personal (Profile, Appearance, Notifications, Language & region, Personal defaults)', [
+    { combo: 'Ctrl/Cmd + S', desc: 'Save your changes. Personal settings are yours: every user can edit them.' },
+    { combo: 'Esc', desc: 'Discard unsaved changes — an Appearance preview goes back to the saved theme.' },
+    { combo: 'Space (on a switch)', desc: 'Turn the focused alert or option on or off.' },
+    { combo: '?', desc: 'Show or hide every description inline. Remembered for you.' },
+  ]),
+  group('settings-personal-favorites', 'Settings › Personal › Favorites & views', [
+    { combo: 'Enter (renaming a view)', desc: 'Save the new name.' },
+    { combo: 'Esc (renaming a view)', desc: 'Cancel the rename.' },
+    { combo: 'Space (on the recents switch)', desc: 'Show or hide recent pages in page search — saves straight away.' },
+  ]),
+  group('settings-personal-security', 'Settings › Personal › Security', [
+    { combo: 'Enter (in Change password)', desc: 'Submit the password change.' },
+    { combo: 'Esc', desc: 'Close the Change password or Turn off two-factor dialog without changing anything.' },
+    { combo: 'Space (on the two-factor switch)', desc: 'Turn two-factor authentication on, or ask to turn it off.' },
+  ]),
   group('settings-shortcuts', 'Settings › Keyboard shortcuts', [
     { combo: '/', desc: 'Focus the search box.' },
     { combo: 'Esc', desc: 'Clear the search.' },

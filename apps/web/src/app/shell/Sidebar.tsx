@@ -14,6 +14,7 @@ import {
 import { useNavModules } from '@/app/shell/use-nav-modules'
 import { useGridViews } from '@/app/stores/grid-views'
 import { type DemoRole, useUi } from '@/app/stores/ui'
+import { useShownTheme } from '@/app/use-theme'
 import { useFavoriteActions } from '@/components/saved-views/use-favorite-actions'
 import { pageIdentityOf } from '@/components/saved-views/use-page-identity'
 import { firstSection, isSettingsModule, moduleSettingsFromPath } from '@/components/settings/registry'
@@ -38,7 +39,8 @@ import { useLocationTerm } from '@/data/queries/regional-terminology'
 import { pageDisplayLabel } from '@/domain/terminology'
 import type { Favorite } from '@/data/schemas'
 import { capFavorites, overflowLabel } from '@/domain/favorites'
-import { useMe, useWorkspace } from '@/data/queries/session'
+import { useMe, useUpdateMe, useWorkspace } from '@/data/queries/session'
+import { oppositeTheme } from '@/domain/personal-preferences'
 import { useFavoritesConfig, useNavigationSettings } from '@/data/queries/workspace-config'
 import { isTypingTarget } from '@/lib/keyboard'
 import { cn } from '@/lib/utils'
@@ -393,8 +395,8 @@ export function Sidebar() {
   const gridActiveView = useGridViews((s) => s.active)
   const renamingId = useGridViews((s) => s.renamingFavoriteId)
   const setRenamingFavorite = useGridViews((s) => s.setRenamingFavorite)
-  const theme = useUi((s) => s.theme)
-  const setTheme = useUi((s) => s.setTheme)
+  const theme = useShownTheme()
+  const updateMe = useUpdateMe()
   const demoRole = useUi((s) => s.demoRole)
   const setDemoRole = useUi((s) => s.setDemoRole)
 
@@ -832,7 +834,8 @@ export function Sidebar() {
             </DropdownMenuItem>
             <DropdownMenuItem
               className="gap-[10px] text-[12.5px] font-medium"
-              onSelect={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              // A shortcut into Settings ▸ Appearance: it saves the same personal theme setting.
+              onSelect={() => updateMe.mutate({ theme: oppositeTheme(theme) })}
             >
               {theme === 'dark' ? <Sun className="size-[15px]" /> : <Moon className="size-[15px]" />}
               {theme === 'dark' ? 'Light theme' : 'Dark theme'}

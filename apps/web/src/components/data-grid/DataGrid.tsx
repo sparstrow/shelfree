@@ -77,6 +77,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useList } from '@/data/queries'
+import { useMe } from '@/data/queries/session'
 import type { SavedView } from '@/data/schemas'
 import {
   type BulkOpDotToken,
@@ -337,7 +338,16 @@ export function DataGrid<T>({
   const [hidden, setHidden] = useState<Set<string>>(
     () => new Set(dataset.columns.filter((c) => !c.visible).map((c) => c.key)),
   )
-  const [compact, setCompact] = useState(true)
+  // Row density starts from the user's Settings ▸ Appearance default (compact unless they chose comfortable).
+  const defaultDensity = useMe().data?.defDensity
+  const [compact, setCompact] = useState(defaultDensity !== 'comfortable')
+  // The user's record can arrive after the grid first draws: apply their choice once, when it does.
+  const densityApplied = useRef(defaultDensity !== undefined)
+  useEffect(() => {
+    if (defaultDensity === undefined || densityApplied.current) return
+    densityApplied.current = true
+    setCompact(defaultDensity !== 'comfortable')
+  }, [defaultDensity])
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(20)
   const [selected, setSelected] = useState<Set<string>>(() => new Set())

@@ -182,3 +182,18 @@ audit log table, which auth provider) next to each.
   employee link; the free-typed contact phone/email fields were removed).
 
 - [ ] **Vendor GST registration (2026-09-28):** audit event `vendor.gst_registration.updated` on every type/GSTIN change; permission `vendors.tax.edit`; GSTIN is business identity (not PII) — unregistered individual vendors' personal details stay in Contacts.
+
+- [ ] **Personal settings — profile PII (2026-11-26, run 2.6):** name, email and phone on the profile are personal
+  data (`PATCH /me/settings`, the user comes from the session, never the body). Audit `user.profile.updated` with
+  before / after for name and email (phone masked in the event); a changed email re-verifies before it becomes the
+  sign-in. Email and phone are masked in lists and shown in full only to the user and to admins; erased with the
+  user on a GDPR / CCPA request. The same details are mirrored to the People ▸ Users record in one transaction.
+- [ ] **Personal settings — password, 2FA and sessions (2026-11-26, run 2.6):** the Security page is UI only. The
+  password is posted once over TLS to the auth service (`POST /me/password`: current + new), checked against the
+  current hash and the password policy (min 10 characters, mixed case, a digit, not reused), hashed server-side
+  (argon2id / bcrypt), never logged, echoed, or kept in client storage; success ends the user's other sessions.
+  Turning 2FA off requires re-authentication and emits `auth.2fa.disabled`; enrolling uses an authenticator app with
+  recovery codes shown once. Sessions come from the server (`GET /me/sessions`, `DELETE /me/sessions?except=current`);
+  every password change, 2FA change and session sign-out is an auth audit event (actor, IP, device, time).
+  Rate-limit password attempts. Personal preferences (theme, density, notification flags, formats, defaults) hold
+  no secrets and may live in the user's settings row; they are scoped to the session user and never readable by others.

@@ -5,6 +5,8 @@
  * tenant's settings. No credentials or tokens are ever stored client-side.
  */
 import { z } from 'zod'
+import { DENSITY_OPTIONS, NOTIFY_CHANNEL_OPTIONS, THEME_OPTIONS, clampAssemblyQty, initials } from '@/domain/personal-preferences'
+import { api } from './index'
 
 export const workspaceSchema = z.object({
   name: z.string(),
@@ -39,6 +41,29 @@ export const meSchema = z.object({
   defLocation: z.string(),
   /** `?` on a Settings page shows every description inline. Off by default (quiet pages). */
   showSetHelp: z.boolean(),
+  // ── Personal settings (run 2.6). One flat record per user; each section saves only its own keys. ──
+  /** Appearance. `system` follows the device. */
+  theme: z.enum(THEME_OPTIONS),
+  /** Default row density of data grids. */
+  defDensity: z.enum(DENSITY_OPTIONS),
+  /** Notifications. */
+  notifyLowStock: z.boolean(),
+  notifyPO: z.boolean(),
+  notifyMentions: z.boolean(),
+  notifyDigest: z.boolean(),
+  notifyChannel: z.enum(NOTIFY_CHANNEL_OPTIONS),
+  /** Language & region. '' = the workspace format (Settings ▸ Regional & format). */
+  dateFmt: z.string(),
+  numFmt: z.string(),
+  /** Personal defaults. */
+  defLanding: z.string(),
+  defAssemblyLoc: z.string(),
+  defAssemblyQty: z.number().int().min(1),
+  showTaxSplit: z.boolean(),
+  /** Page search lists recently opened pages when the box is empty (Favorites & views). */
+  showRecents: z.boolean(),
+  /** Security: a flag only. The password, the second factor and the sessions live with the backend. */
+  twoFA: z.boolean(),
 })
 export type Me = z.infer<typeof meSchema>
 
@@ -71,8 +96,25 @@ const ME: Me = {
   avatar: 'KE',
   language: 'English (India)',
   locale: 'en-IN',
-  defLocation: 'TVM-Main',
+  defLocation: 'TVM-MAIN',
   showSetHelp: false,
+  theme: 'dark',
+  // The grid has always opened compact; the prototype stored this value but never applied it.
+  defDensity: 'compact',
+  notifyLowStock: true,
+  notifyPO: true,
+  notifyMentions: true,
+  notifyDigest: false,
+  notifyChannel: 'In-app + email',
+  dateFmt: '',
+  numFmt: '',
+  // The prototype's default was Warehouse · Items but only ever applied Departments; the app opens on Purchase Orders.
+  defLanding: 'Purchasing · Purchase Orders',
+  defAssemblyLoc: '',
+  defAssemblyQty: 1,
+  showTaxSplit: false,
+  showRecents: true,
+  twoFA: true,
 }
 
 const WORKSPACE_KEY = 'shelfree.v2.workspace'
@@ -100,6 +142,38 @@ function writeStored(key: string, value: unknown): void {
 /** The workspace identity as stored right now, read synchronously (seed data for collections that start from it). */
 export const workspaceSnapshot = (): Workspace => readStored(WORKSPACE_KEY, workspaceSchema, WORKSPACE)
 
+/** The theme the first React build kept in the UI preferences (`shelfree.v2.ui`), used until the user saves one. */
+function legacyTheme(): Me['theme'] | null {
+  try {
+    const t = (JSON.parse(localStorage.getItem('shelfree.v2.ui') ?? '{}') as { state?: { theme?: unknown } }).state?.theme
+    return t === 'light' || t === 'dark' ? t : null
+  } catch {
+    return null
+  }
+}
+
+function readMe(): Me {
+  let stored: Partial<Me> = {}
+  try {
+    stored = JSON.parse(localStorage.getItem(ME_KEY) ?? '{}') as Partial<Me>
+  } catch {
+    // Unreadable: demo values.
+  }
+  const base = stored.theme ? ME : { ...ME, theme: legacyTheme() ?? ME.theme }
+  return readStored(ME_KEY, meSchema, base)
+}
+
+/** The signed-in user's preferences as stored right now, read synchronously (pre-paint theme, grid density). */
+export const meSnapshot = (): Me => readMe()
+
+/** Keep the People ▸ Users record in step with the profile (same person, one set of details). */
+async function mirrorProfileToUser(before: Me, after: Me): Promise<void> {
+  if (before.name === after.name && before.email === after.email) return
+  const users = await api.users.list()
+  const mine = users.find((u) => u.email.trim().toLowerCase() === before.email.trim().toLowerCase())
+  if (mine) await api.users.upsert({ ...mine, name: after.name, email: after.email })
+}
+
 export const sessionApi = {
   workspace: (): Promise<Workspace> => Promise.resolve(readStored(WORKSPACE_KEY, workspaceSchema, WORKSPACE)),
   /** Settings ▸ Business profile. Backend: `PATCH /workspace`, owner / admin only. */
@@ -108,11 +182,20 @@ export const sessionApi = {
     writeStored(WORKSPACE_KEY, parsed)
     return Promise.resolve(parsed)
   },
-  me: (): Promise<Me> => Promise.resolve(readStored(ME_KEY, meSchema, ME)),
-  /** My settings. Backend: `PATCH /me/settings`. */
-  updateMe: (next: Me): Promise<Me> => {
-    const parsed = meSchema.parse(next)
+  me: (): Promise<Me> => Promise.resolve(readMe()),
+  /**
+   * My settings, saved at block level: only the keys in `patch` change, on top of what is stored now, so one
+   * section's save never overwrites another's. A profile change is mirrored to the matching People ▸ Users record.
+   * Backend: `PATCH /me/settings` (the user comes from the session, never from the body).
+   */
+  patchMe: async (patch: Partial<Me>): Promise<Me> => {
+    const before = readMe()
+    const merged: Me = { ...before, ...patch }
+    if ('name' in patch) merged.avatar = initials(merged.name)
+    if ('defAssemblyQty' in patch) merged.defAssemblyQty = clampAssemblyQty(merged.defAssemblyQty)
+    const parsed = meSchema.parse(merged)
     writeStored(ME_KEY, parsed)
-    return Promise.resolve(parsed)
+    await mirrorProfileToUser(before, parsed)
+    return parsed
   },
 }

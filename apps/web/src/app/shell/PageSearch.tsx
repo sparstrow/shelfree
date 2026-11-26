@@ -4,6 +4,7 @@ import { type KeyboardEvent, useMemo, useRef, useState } from 'react'
 import { pagePath } from '@/app/nav'
 import { useNavPages } from '@/app/shell/use-nav-modules'
 import { useUi } from '@/app/stores/ui'
+import { useMe } from '@/data/queries/session'
 import { cn } from '@/lib/utils'
 import { describePath } from './use-active-page'
 
@@ -18,6 +19,8 @@ export function PageSearch() {
   const router = useRouter()
   const recents = useUi((s) => s.recents)
   const clearRecents = useUi((s) => s.clearRecents)
+  // Settings ▸ Personal ▸ Favorites & views can hide the recents list.
+  const showRecents = useMe().data?.showRecents !== false
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const [index, setIndex] = useState(0)
@@ -27,6 +30,7 @@ export function PageSearch() {
   const navPages = useNavPages()
   const results = useMemo<Result[]>(() => {
     if (!q) {
+      if (!showRecents) return []
       return recents
         .map((path) => {
           const at = describePath(path)
@@ -41,7 +45,7 @@ export function PageSearch() {
       .filter((p) => p.label.toLowerCase().includes(q) || p.moduleName.toLowerCase().includes(q))
       .slice(0, 8)
       .map((p) => ({ path: pagePath(p.moduleId, p.slug), label: p.label, moduleName: p.moduleName }))
-  }, [q, recents, navPages])
+  }, [q, recents, navPages, showRecents])
 
   const showPanel = open && (!!q || results.length > 0)
 

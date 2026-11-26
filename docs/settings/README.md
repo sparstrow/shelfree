@@ -68,8 +68,9 @@ the new app yet" inside the frame, with a link to a ported section.
 | Shared lists | `/settings/shared/sequences` Number sequences | list | yes |
 | Shared lists | `/settings/shared/statuses`, `fields`, `terms` | list | yes
 | Shared lists | `/settings/shared/tax-codes` | list | yes |
-| Personal | `/settings/me-profile`, `me-appearance`, `me-notifications`, `me-language`, `me-defaults`, `me-security` | form | not moved yet |
-| Personal | `/settings/me-favorites` Favorites & views | custom | not moved yet |
+| Personal | `/settings/me-profile`, `me-appearance`, `me-notifications`, `me-language`, `me-defaults` | form | yes (run 2.6, editable by every user; `docs/personal-settings/README.md`) |
+| Personal | `/settings/me-security` Security | custom (UI only, backend stubs) | yes (run 2.6) |
+| Personal | `/settings/me-favorites` Favorites & views | custom | yes (run 2.6, reuses the sidebar's `favorites` / `savedViews` collections) |
 | Personal | `/settings/shortcuts` Keyboard shortcuts | custom | yes |
 
 Roots: `/<module>/settings` redirects to the module's first section. `/settings` redirects to Business
